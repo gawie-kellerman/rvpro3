@@ -24,16 +24,16 @@ func (s *SerialDataService) Execute() {
 	s.initBuffer()
 	s.OnStartCallback(s)
 
-	for s.Terminating = false; !s.Terminated; {
+	for s.Terminate = false; !s.Terminated; {
 		s.now = time.Now()
 
 		if s.openConnection() {
 			s.receiveData()
 		}
 
-		s.Terminating = !s.LoopGuard.ShouldContinue(s.now)
+		s.Terminate = !s.LoopGuard.ShouldContinue(s.now)
 
-		if !s.Terminating {
+		if !s.Terminate {
 			s.onLoopCallback(s)
 		}
 	}

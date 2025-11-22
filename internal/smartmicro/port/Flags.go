@@ -1,6 +1,10 @@
 package port
 
-import "strings"
+import (
+	"strings"
+
+	"rvpro3/radarvision.com/utils"
+)
 
 type FlagsType uint32
 
@@ -59,7 +63,7 @@ func (f FlagsType) ToString() string {
 	return result.String()
 }
 
-func (f FlagsType) SizeOf(flags FlagsType) uint8 {
+func (f FlagsType) SizeOf() uint8 {
 	result := uint8(0)
 
 	if f.IsMessageCount() {
@@ -76,4 +80,19 @@ func (f FlagsType) SizeOf(flags FlagsType) uint8 {
 	}
 
 	return result
+}
+
+func (f FlagsType) PrintDetail(th *TransportHeader) {
+	if f.IsMessageCount() {
+		utils.Print.Detail("Message Counter", "%d\n", th.MessageCounter)
+	}
+	if f.IsTimestamp() {
+		utils.Print.Detail("Timestamp", "%d\n", th.Timestamp)
+	}
+	if f.IsSourceClientId() {
+		utils.Print.Detail("Source Client Id", "0x%x\n", th.SourceClientId)
+	}
+	if f.IsTargetClientId() {
+		utils.Print.Detail("Target Client Id", "0x%x\n", th.TargetClientId)
+	}
 }

@@ -1,6 +1,12 @@
 package utils
 
-import "net"
+import (
+	"net"
+	"time"
+
+	"github.com/pkg/errors"
+	"github.com/rs/zerolog/log"
+)
 
 type UDPServerConnection struct {
 	Sender          any
@@ -12,7 +18,10 @@ type UDPServerConnection struct {
 	retry           RetryGuard
 	readBufferSize  int
 	writeBufferSize int
+	FromAddr        net.UDPAddr
 }
+
+var ErrWriteToClosed = errors.New("write to closed connection")
 
 // Init to initialize details for the connection
 // sender is used indirectly from the callbacks.
@@ -31,7 +40,7 @@ func (m *UDPServerConnection) Init(
 	m.readBufferSize = readBufferSize
 	m.writeBufferSize = writeBufferSize
 	m.retry = RetryGuard{
-		ModCycles: uint32(reconnectOnCycle),
+		RetryEvery: uint32(reconnectOnCycle),
 	}
 }
 
@@ -65,11 +74,44 @@ func (m *UDPServerConnection) Listen() bool {
 	return true
 
 errorLabel:
-	if m.OnError != nil {
-		m.OnError(m, err)
-	}
+	m.sendError(err)
 	m.Close()
 	return false
+}
+
+func (m *UDPServerConnection) ReceiveData(buffer []byte, now time.Time, waitMs int) (bufferLen int) {
+	if m.connection == nil {
+		return 0
+	}
+	var err error
+	var fromAddr *net.UDPAddr
+
+	deadline := now.Add(time.Duration(waitMs) * time.Millisecond)
+
+	if err = m.connection.SetReadDeadline(deadline); err != nil {
+		goto errorLabel
+	}
+
+	if bufferLen, fromAddr, err = m.connection.ReadFromUDP(buffer); err != nil {
+		goto errorLabel
+	}
+
+	m.FromAddr = *fromAddr
+
+	return
+
+errorLabel:
+	m.sendError(err)
+	m.Close()
+	return 0
+}
+
+func (m *UDPServerConnection) sendError(err error) {
+	if m.OnError != nil {
+		m.OnError(m, err)
+	} else {
+		log.Err(err).Msgf("UDPServerConnection")
+	}
 }
 
 func (m *UDPServerConnection) Close() {
@@ -84,4 +126,27 @@ func (m *UDPServerConnection) Close() {
 
 func (m *UDPServerConnection) GetConnection() *net.UDPConn {
 	return m.connection
+}
+
+func (m *UDPServerConnection) WriteData(udpAddr net.UDPAddr, buffer []byte) {
+	var err error
+
+	if m.connection == nil {
+		m.sendError(ErrWriteToClosed)
+		return
+	}
+
+	if err = m.connection.SetWriteDeadline(time.Now().Add(3 * time.Second)); err != nil {
+		goto errLabel
+	}
+
+	if _, err = m.connection.WriteToUDP(buffer, &udpAddr); err != nil {
+		goto errLabel
+	}
+
+	return
+
+errLabel:
+	m.sendError(err)
+	return
 }

@@ -15,16 +15,18 @@ import (
 // executeWrite sends data from the Radar/via the Hub to the remote client
 // executeRead reads data from the remote client(instructions) and dispatches it to the radar
 type HubClient struct {
-	buffer       PacketBuffer
-	connection   net.TCPConn
-	writeCache   [2 * utils.Kilobyte]byte
-	writeChannel chan Packet
-	doneChannel  chan bool
-	host         *HubHost
-
+	buffer            PacketBuffer
+	connection        net.TCPConn
+	writeCache        [2 * utils.Kilobyte]byte
+	writeChannel      chan Packet
+	doneChannel       chan bool
+	host              *HubHost
+	stats             HubClientStat
 	terminate         bool
 	terminateRefCount atomic.Int32
 	OnError           func(*HubClient, error)
+	OnConnect         func(*HubClient)
+	OnDisconnect      func(*HubClient)
 }
 
 func (c *HubClient) Init(host *HubHost) {
@@ -34,6 +36,7 @@ func (c *HubClient) Init(host *HubHost) {
 }
 
 func (c *HubClient) Start(connection net.TCPConn) {
+	c.stats.RegisterConnect(connection.RemoteAddr())
 	c.buffer.Init(8 * utils.Kilobyte)
 	c.connection = connection
 	c.terminate = false
@@ -43,6 +46,10 @@ func (c *HubClient) Start(connection net.TCPConn) {
 
 	go c.executeRead()
 	go c.executeWrite()
+
+	if c.OnConnect != nil {
+		c.OnConnect(c)
+	}
 }
 
 func (c *HubClient) Stop() {
@@ -62,10 +69,14 @@ func (c *HubClient) executeWrite() {
 			c.writePacket(packet)
 
 		case <-c.doneChannel:
+			c.stats.RegisterDisconnect()
 			c.terminate = true
 			c.terminateRefCount.Add(-1)
 			close(c.writeChannel)
 			close(c.doneChannel)
+			if c.OnDisconnect != nil {
+				c.OnDisconnect(c)
+			}
 			return
 		}
 	}
@@ -122,7 +133,7 @@ func (c *HubClient) executeRead() {
 				break
 			}
 		}
-
+		c.stats.RegisterRead(bytesRead)
 		c.buffer.PushBytes(readBuffer[:bytesRead])
 		var packet Packet
 

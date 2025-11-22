@@ -12,12 +12,12 @@ import (
 
 type RadarServices struct {
 	keepAliveService service.UDPKeepAliveService
-	listenerService  service.UDPDataService
+	listenerService  service.UDPDataServiceOld
 	waitGroup        sync.WaitGroup
 }
 
 func (s *RadarServices) SetTargetIP(ipAddr string) {
-	s.keepAliveService.TargetIPAddr = ipAddr
+	s.keepAliveService.LocalIPAddr = ipAddr
 	s.listenerService.ServerIPAddr = ipAddr
 }
 
@@ -57,7 +57,7 @@ func (s *RadarServices) setup() {
 		log.Fatal(err)
 	}
 
-	s.listenerService.OnData = func(us *service.UDPDataService, u *net.UDPAddr, b []byte) {
+	s.listenerService.OnData = func(us *service.UDPDataServiceOld, u *net.UDPAddr, b []byte) {
 		fmt.Printf("%3d bytes received from %v\n", len(b), u)
 	}
 }

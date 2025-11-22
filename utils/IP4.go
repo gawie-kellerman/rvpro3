@@ -78,7 +78,7 @@ type IP4 struct {
 	Port  int
 }
 
-func (s IP4) ToString() string {
+func (s IP4) String() string {
 	res := strings.Builder{}
 	res.Grow(20)
 
@@ -142,6 +142,21 @@ func (s IP4) DistanceTo(ip4 uint32) int {
 func (s IP4) WithHost8(host int) IP4 {
 	s.bytes[3] = byte(host)
 	return s
+}
+
+func (s IP4) ToIPString() string {
+	res := strings.Builder{}
+	res.Grow(20)
+
+	res.WriteString(fmt.Sprintf(
+		"%d.%d.%d.%d",
+		s.bytes[0],
+		s.bytes[1],
+		s.bytes[2],
+		s.bytes[3],
+	))
+	return res.String()
+
 }
 
 func getPortFromString(addr string) int {

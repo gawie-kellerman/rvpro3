@@ -10,8 +10,12 @@ import (
 const StartPattern = 0x7e
 const ProtocolVersion = 1
 
-var ErrCRC = errors.New("CRC error")
+var ErrHeaderCRC = errors.New("transport header crc16 error")
 
+// TransportHeader is the map towards dissecting the content where:
+// HeaderLength + PayloadLength = Full Size including payload CRC16
+// HeaderLength include the header CRC16
+// TODO: Check into the sequence counter
 type TransportHeader struct {
 	StartPattern    uint8
 	ProtocolVersion uint8
@@ -35,12 +39,12 @@ func (header *TransportHeader) Init() {
 	header.ProtocolType = PtSmartMicroPort
 }
 
-func (header *TransportHeader) calcHeaderLen() uint8 {
-	return 10 + header.Flags.SizeOf(header.Flags)
+func (header *TransportHeader) GetSize() uint8 {
+	return 12 + header.Flags.SizeOf()
 }
 
 func (header *TransportHeader) Write(writer *utils.FixedBuffer) {
-	header.HeaderLength = header.calcHeaderLen()
+	header.HeaderLength = header.GetSize()
 	writer.StartWriteMarker()
 	writer.WriteU8(header.StartPattern)
 	writer.WriteU8(header.ProtocolVersion)
@@ -64,6 +68,21 @@ func (header *TransportHeader) Write(writer *utils.FixedBuffer) {
 	if header.Flags.IsTargetClientId() {
 		writer.WriteU32(header.TargetClientId, binary.BigEndian)
 	}
+}
+
+func (header *TransportHeader) PrintDetail() {
+	utils.Print.Detail("Transport Header", "\n")
+	utils.Print.Indent(2)
+	_, _ = utils.Print.Detail("Start Pattern", "0x%x\n", header.StartPattern)
+	_, _ = utils.Print.Detail("Protocol Version", "%d\n", header.ProtocolVersion)
+	_, _ = utils.Print.Detail("Header Length", "%d\n", header.HeaderLength)
+	_, _ = utils.Print.Detail("Payload Length", "%d\n", header.PayloadLength)
+	_, _ = utils.Print.Detail("Protocol Type", "%d, %s\n", int(header.ProtocolType), header.ProtocolType.ToString())
+	_, _ = utils.Print.Detail("Flags", "0b%b, %s\n", int(header.Flags), header.Flags.ToString())
+	header.Flags.PrintDetail(header)
+	_, _ = utils.Print.Detail("CRC16", "0x%04x\n", header.CRC16)
+	_, _ = utils.Print.Detail("CRC16 Check", "0x%04x\n", header.CheckCRC16)
+	utils.Print.Indent(-2)
 }
 
 func (header *TransportHeader) Read(reader *utils.FixedBuffer) {
@@ -94,9 +113,9 @@ func (header *TransportHeader) Read(reader *utils.FixedBuffer) {
 	header.CRC16 = reader.ReadU16(binary.BigEndian)
 }
 
-func (header *TransportHeader) IsValid() error {
+func (header *TransportHeader) Validate() error {
 	if header.CRC16 == header.CheckCRC16 {
 		return nil
 	}
-	return ErrCRC
+	return ErrHeaderCRC
 }

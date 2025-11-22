@@ -2,117 +2,112 @@ package service
 
 import (
 	"net"
+	"sync/atomic"
 	"time"
 
+	"github.com/rs/zerolog/log"
 	"rvpro3/radarvision.com/utils"
 )
 
-const udpBufferSize = 8192
-
-// UDPDataService has no IsActive for, if there is
-// no KeepAlive then there is no data
 type UDPDataService struct {
-	MixinDataService
-	ServerIPAddr string
-	OnData       func(*UDPDataService, *net.UDPAddr, []byte)
-	buffer       [udpBufferSize]byte
-	bufferLen    int
-	connection   *net.UDPConn
+	Connection        utils.UDPServerConnection
+	OnData            func(*UDPDataService, net.UDPAddr, []byte)
+	OnError           func(*UDPDataService, error)
+	OnTerminate       func(*UDPDataService)
+	Buffer            [udpBufferSize]byte
+	BufferLen         int
+	ListenAddr        utils.IP4
+	LoopGuard         utils.LoopGuard
+	Now               time.Time
+	doneChannel       chan bool
+	writeChannel      chan UDPSendData
+	terminate         bool
+	TerminateRefCount atomic.Int32
 }
 
-func (s *UDPDataService) Init() {
-	s.LoopGuard = utils.InfiniteLoopGuard{}
-	s.RetryGuard = utils.RetryGuard{
-		ModCycles: 5,
-	}
-}
-
-func (s *UDPDataService) Execute() {
-	s.OnStartCallback(s)
-
-	for s.Terminating = false; !s.Terminating; {
-		s.now = time.Now()
-
-		if s.openConnection() {
-			s.receiveData()
-		}
-
-		s.Terminating = !s.LoopGuard.ShouldContinue(s.now)
-
-		if !s.Terminating {
-			s.onLoopCallback(s)
+func (u *UDPDataService) WriteData(ip4 utils.IP4, data []byte) {
+	if !u.terminate {
+		u.writeChannel <- UDPSendData{
+			Address: ip4,
+			Data:    data,
 		}
 	}
-
-	s.closeConnection()
-	s.Terminated = true
-	s.OnTerminateCallback(s)
 }
 
-func (s *UDPDataService) openConnection() bool {
-	var err error
-	var serverAddr *net.UDPAddr
+func (u *UDPDataService) Start(listenAddr utils.IP4) {
+	u.TerminateRefCount.Store(2)
+	u.doneChannel = make(chan bool)
+	u.writeChannel = make(chan UDPSendData, 4)
+	u.ListenAddr = listenAddr
+	u.Connection.Init(u, listenAddr, 4*utils.Kilobyte, 4*utils.Kilobyte, 3)
 
-	if s.connection != nil {
-		return true
+	u.Connection.OnError = func(connection *utils.UDPServerConnection, err error) {
+		u.sendError(err)
 	}
-
-	if !s.RetryGuard.ShouldRetry() {
-		return false
+	if u.LoopGuard == nil {
+		u.LoopGuard = utils.InfiniteLoopGuard{}
 	}
-
-	if serverAddr, err = net.ResolveUDPAddr("udp4", s.ServerIPAddr); err != nil {
-		goto onErrorLabel
-	}
-
-	if s.connection, err = net.ListenUDP("udp4", serverAddr); err != nil {
-		goto onErrorLabel
-	}
-
-	if err = s.connection.SetReadBuffer(udpBufferSize); err != nil {
-		goto onErrorLabel
-	}
-
-	s.RetryGuard.Reset()
-	s.OnConnectCallback(s)
-
-	return true
-
-onErrorLabel:
-	s.OnErrorCallback(s, err)
-	s.closeConnection()
-	return false
+	go u.executeReader()
+	go u.executeWriter()
 }
 
-func (s *UDPDataService) receiveData() {
-	var err error
-	var fromAddr *net.UDPAddr
+func (u *UDPDataService) Stop() {
+	u.doneChannel <- true
 
-	deadline := time.Now().Add(time.Duration(3) * time.Second)
-
-	if err = s.connection.SetReadDeadline(deadline); err != nil {
-		goto onErrorLabel
+	for u.TerminateRefCount.Load() > 1 {
+		time.Sleep(100 * time.Millisecond)
 	}
-
-	if s.bufferLen, fromAddr, err = s.connection.ReadFromUDP(s.buffer[:]); err != nil {
-		goto onErrorLabel
-	}
-
-	if s.OnData != nil {
-		s.OnData(s, fromAddr, s.buffer[:s.bufferLen])
-	}
-
-	return
-
-onErrorLabel:
-	s.OnErrorCallback(s, err)
-	s.closeConnection()
 }
 
-func (s *UDPDataService) closeConnection() {
-	if s.connection != nil {
-		s.OnDisconnectCallback(s)
-		_ = s.connection.Close()
-		s.connection = nil
+func (u *UDPDataService) executeReader() {
+	for !u.terminate {
+		u.Now = time.Now()
+		if u.Connection.Listen() {
+			u.BufferLen = u.Connection.ReceiveData(u.Buffer[:], u.Now, 3000)
+			if u.BufferLen > 0 && u.OnData != nil {
+				u.OnData(u, u.Connection.FromAddr, u.Buffer[:u.BufferLen])
+			}
+		}
 	}
+
+	u.Connection.Close()
+	u.TerminateRefCount.Add(-1)
+
+	if u.OnTerminate != nil {
+		u.OnTerminate(u)
+	}
+}
+
+func (u *UDPDataService) sendError(err error) {
+	if u.OnError != nil {
+		u.OnError(u, err)
+	} else {
+		log.Err(err).Msgf("UDPDataService")
+	}
+}
+
+func (u *UDPDataService) executeWriter() {
+	for {
+		select {
+		case data := <-u.writeChannel:
+			u.writeData(data)
+
+		case <-u.doneChannel:
+			u.TerminateRefCount.Add(-1)
+			u.terminate = true
+			close(u.doneChannel)
+			close(u.writeChannel)
+			return
+		}
+	}
+}
+
+func (u *UDPDataService) writeData(data UDPSendData) {
+	udpAddr := data.Address.ToUDPAddr()
+	u.Connection.WriteData(udpAddr, data.Data)
+}
+
+type UDPSendData struct {
+	Address utils.IP4
+	Data    []byte
 }

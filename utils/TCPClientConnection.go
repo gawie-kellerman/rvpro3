@@ -7,10 +7,10 @@ import (
 )
 
 type TCPClientConnection struct {
-	Sender          any
+	Owner           any
 	OnError         func(*TCPClientConnection, error)
-	OnOpen          func(*TCPClientConnection)
-	OnClose         func(*TCPClientConnection)
+	OnConnect       func(*TCPClientConnection)
+	OnDisconnect    func(*TCPClientConnection)
 	remoteAddr      net.TCPAddr
 	localAddr       *net.TCPAddr
 	connection      *net.TCPConn
@@ -20,17 +20,17 @@ type TCPClientConnection struct {
 }
 
 func (cm *TCPClientConnection) Init(
-	sender any,
+	owner any,
 	remoteAddr IP4,
 	reconnectOnCycle int,
 	readBufferSize int,
 	writeBufferSize int,
 ) {
-	cm.Sender = sender
+	cm.Owner = owner
 	cm.remoteAddr = remoteAddr.ToTCPAddr()
 	cm.connection = nil
 	cm.retry = RetryGuard{
-		ModCycles: uint32(reconnectOnCycle),
+		RetryEvery: uint32(reconnectOnCycle),
 	}
 	cm.readBufferSize = readBufferSize
 	cm.writeBufferSize = writeBufferSize
@@ -45,7 +45,7 @@ func (cm *TCPClientConnection) SetLocalAddr(localAddr *net.TCPAddr) {
 	cm.localAddr = localAddr
 }
 
-func (cm *TCPClientConnection) Open() bool {
+func (cm *TCPClientConnection) Connect() bool {
 	var err error
 
 	if cm.connection != nil {
@@ -69,22 +69,22 @@ func (cm *TCPClientConnection) Open() bool {
 	}
 
 	cm.retry.Reset()
-	if cm.OnOpen != nil {
-		cm.OnOpen(cm)
+	if cm.OnConnect != nil {
+		cm.OnConnect(cm)
 	}
 	return true
 
 errorLabel:
 	cm.onError(err)
 
-	cm.Close()
+	cm.Disconnect()
 	return false
 }
 
-func (cm *TCPClientConnection) Close() {
+func (cm *TCPClientConnection) Disconnect() {
 	if cm.connection != nil {
-		if cm.OnClose != nil {
-			cm.OnClose(cm)
+		if cm.OnDisconnect != nil {
+			cm.OnDisconnect(cm)
 		}
 		_ = cm.connection.Close()
 		cm.connection = nil
@@ -95,6 +95,6 @@ func (cm *TCPClientConnection) onError(err error) {
 	if cm.OnError != nil {
 		cm.OnError(cm, err)
 	} else {
-		log.Err(err).Msg("TCPClientConnection.onError")
+		log.Err(err).Msg("TCPClientConnection.HandleError")
 	}
 }

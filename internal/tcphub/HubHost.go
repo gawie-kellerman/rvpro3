@@ -13,13 +13,13 @@ import (
 var GlobalHubHost HubHost
 
 type HubHost struct {
-	terminate  bool
-	terminated bool
-	listenAddr utils.IP4
-	doneChan   chan bool
-	clients    [2]HubClient
-	dispatcher HubDispatcher
-
+	terminate          bool
+	terminated         bool
+	listenAddr         utils.IP4
+	doneChan           chan bool
+	clients            [2]HubClient
+	clientLen          int
+	dispatcher         HubDispatcher
 	OnError            func(*HubHost, error)
 	OnRejectConnection func(*HubHost, *net.TCPConn)
 	OnAcceptConnection func(*HubHost, *net.TCPConn)
@@ -35,6 +35,12 @@ func (h *HubHost) Start(listenAddr utils.IP4) {
 		for i := range h.clients {
 			client := &h.clients[i]
 			client.Init(h)
+			client.OnConnect = func(hub *HubClient) {
+				h.clientLen++
+			}
+			client.OnDisconnect = func(hub *HubClient) {
+				h.clientLen--
+			}
 		}
 		go h.executeListen()
 
@@ -134,9 +140,10 @@ func (h *HubHost) onAcceptConnection(client *net.TCPConn) {
 }
 
 func (h *HubHost) WriteToClients(packet Packet) {
-	for i := range h.clients {
-		client := &h.clients[i]
-		client.Write(packet)
+	if h.clientLen > 0 {
+		for i := range h.clients {
+			client := &h.clients[i]
+			client.Write(packet)
+		}
 	}
-
 }

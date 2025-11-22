@@ -49,3 +49,43 @@ UDPDataProcessor uses UDPDataMapper
 ... Must be able to make call to throw away message that will not be used in downline
 
 
+
+
+
+BIG IDEA:
+Instruction Executor
+
+Methods:
+ExecuteIncoming()
+ExecuteIdle()
+ExecuteStartup()
+
+Must be able to handle instruction responses
+Must be able to handle the lack of instruction responses
+
+The gist:
+It gets loaded with 1 or more instructions to execute against
+a radar.  
+The instruction requests gets retried if not received baded on a
+retry count
+
+
+InstructionService
+Properties
+1. queue
+2. 
+
+Methods:
+Enqueue(inFront bool)
+OnHandleResponse(*self, queueItem, instruction) shouldPop?
+OnHandleIdle
+
+InstructionQueueItem
+1. MaxRetries
+2. RetryCount
+3. RetryOn
+4. RadarIP
+5. RadarPort
+6. SequenceNo
+7. Instruction
+

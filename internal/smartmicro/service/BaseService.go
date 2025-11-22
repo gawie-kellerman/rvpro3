@@ -8,7 +8,7 @@ import (
 
 type MixinDataService struct {
 	now               time.Time
-	Terminating       bool
+	Terminate         bool
 	Terminated        bool
 	LoopGuard         utils.LoopGuard
 	RetryGuard        utils.RetryGuard

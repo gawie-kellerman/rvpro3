@@ -224,3 +224,26 @@ func (obj *FixedBuffer) ReadBytes(size int) []byte {
 	obj.ReadPos += size
 	return res
 }
+
+func (obj *FixedBuffer) SkipRead(nofBytes int) {
+	obj.ReadPos += nofBytes
+}
+
+func (obj *FixedBuffer) SkipWrite(nofBytes int) {
+	obj.WritePos += nofBytes
+}
+
+func (obj *FixedBuffer) ReadBuffer(value []byte) {
+	if !obj.CanRead(len(value)) {
+		obj.Err = ErrBufferOverflow
+		return
+	}
+
+	copy(value, obj.buffer[obj.ReadPos:obj.ReadPos+len(value)])
+	obj.ReadPos += len(value)
+}
+
+func (obj *FixedBuffer) ResetTo(readPos int, writePos int) {
+	obj.ReadPos = readPos
+	obj.WritePos = writePos
+}

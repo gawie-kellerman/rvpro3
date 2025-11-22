@@ -12,6 +12,7 @@ import (
 // sends it to VirtualHost, which sends it to HubClient.  HubClient sends it
 // to HubHost which dispenses it to HubDispatcher
 type HubDispatcher struct {
+	stats        HubDispatcherStat
 	writeChannel chan Packet
 	doneChannel  chan bool
 	terminate    bool
@@ -47,19 +48,24 @@ func (hd *HubDispatcher) executeWrite() {
 func (hd *HubDispatcher) writePacket(packet Packet) {
 	var err error
 	var conn *net.UDPConn
+	packetLen := uint32(len(packet.Data))
 
 	localAddr := hd.LocalAddr.ToUDPAddr()
-	remoteAddr := packet.GetTargetIP().WithPort(0).ToUDPAddr()
+	remoteAddr := packet.GetTargetIP().ToUDPAddr()
 
 	if conn, err = net.DialUDP("udp4", &localAddr, &remoteAddr); err != nil {
+		hd.stats.RegisterError(packetLen)
 		hd.onError(err)
 		return
 	} else {
 		defer conn.Close()
 
 		if _, err = conn.Write(packet.Data); err != nil {
+			hd.stats.RegisterError(packetLen)
 			hd.onError(err)
 			return
+		} else {
+			hd.stats.RegisterWrite(packetLen)
 		}
 	}
 }

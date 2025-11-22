@@ -9,7 +9,7 @@ import (
 
 type Mode1Runner struct {
 	KeepAliveService service.UDPKeepAliveService
-	ListenerService  service.UDPDataService
+	ListenerService  service.UDPDataServiceOld
 	waitGroup        *sync.WaitGroup
 	Processor        UDPDataProcessor
 }
@@ -21,7 +21,7 @@ func (s *Mode1Runner) Execute(wg *sync.WaitGroup) {
 	go s.ListenerService.Execute()
 
 	wg.Add(1)
-	go s.KeepAliveService.Execute()
+	go s.KeepAliveService.executeWrite()
 }
 
 func (s *Mode1Runner) setup(group *sync.WaitGroup) {

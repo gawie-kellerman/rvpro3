@@ -63,7 +63,7 @@ func (s *SerialDataParser) parseMessage(buffer []byte) []byte {
 		goto errorLabel
 	}
 
-	if err = th.IsValid(); err != nil {
+	if err = th.Validate(); err != nil {
 		goto errorLabel
 	}
 

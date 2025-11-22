@@ -1,5 +1,7 @@
 package port
 
+import "github.com/pkg/errors"
+
 // Protocol is a zero base struct
 type Protocol struct{}
 type ProtocolType uint8
@@ -19,8 +21,10 @@ const (
 	PtSmartMicroIAP
 )
 
-func (p *Protocol) ToString(protocolType ProtocolType) string {
-	switch protocolType {
+var ErrPayloadCRC = errors.New("payload crc16 error")
+
+func (p ProtocolType) ToString() string {
+	switch p {
 	case PtSmartMicroCANv1:
 		return "smartmicro can v1"
 

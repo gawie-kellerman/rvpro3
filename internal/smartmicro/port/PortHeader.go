@@ -30,7 +30,7 @@ func (id PortIdentifier) ToString() string {
 	case PiUncertainty:
 		return "Uncertainty"
 	case PiInstruction:
-		return "Instruction"
+		return "instruction"
 	case PiEventTrigger:
 		return "EventTrigger"
 	case PiPVR:
@@ -74,6 +74,10 @@ type PortHeader struct {
 	PortIndex          uint8
 	HeaderMajorVersion uint8
 	HeaderMinorVersion uint8
+}
+
+func (s *PortHeader) GetByteSize() int {
+	return 4 + 2 + 2 + 8 + 4 + 4
 }
 
 func (s *PortHeader) IsObjectList() bool {
@@ -134,4 +138,26 @@ func (s *PortHeader) Read(reader *utils.FixedBuffer) {
 
 func (s *PortHeader) GetOrder() binary.ByteOrder {
 	return s.BodyOrder.ToGo()
+}
+
+func (s *PortHeader) Init(identifier PortIdentifier) {
+	s.Identifier = identifier
+	s.PortMajorVersion = 2
+	s.PortMinorVersion = 2
+	s.HeaderMajorVersion = 2
+	s.HeaderMinorVersion = 0
+	s.BodyOrder = LittleEndian
+	s.PortIndex = 0
+}
+
+func (s *PortHeader) PrintDetail() {
+	utils.Print.Detail("Port Header", "\n")
+	utils.Print.Indent(2)
+	utils.Print.Detail("Port Identifier", "%d, 0x%0x, %s\n", s.Identifier, s.Identifier, s.Identifier.ToString())
+	utils.Print.Detail("Port Version", "%d.%d\n", s.PortMajorVersion, s.PortMinorVersion)
+	utils.Print.Detail("Timestamp", "%d\n", s.Timestamp)
+	utils.Print.Detail("Body Order", "%s\n", s.BodyOrder.ToString())
+	utils.Print.Detail("Port Size", "%d\n", s.PortSize)
+	utils.Print.Detail("Header Version", "%d.%d\n", s.HeaderMajorVersion, s.HeaderMinorVersion)
+	utils.Print.Indent(-2)
 }

@@ -68,7 +68,7 @@ func (vh *VirtualHost) executeReadFromHub() {
 	contDeadlines := 0
 
 	for !vh.terminate {
-		if vh.tcpConn.Open() {
+		if vh.tcpConn.Connect() {
 			if cnx := vh.tcpConn.GetConnection(); cnx != nil {
 				_ = cnx.SetReadDeadline(time.Now().Add(1 * time.Second))
 
@@ -77,12 +77,12 @@ func (vh *VirtualHost) executeReadFromHub() {
 						contDeadlines++
 						if contDeadlines > maxContinuousDeadlines {
 							vh.onError(ErrContinuousDeadlines)
-							vh.tcpConn.Close()
+							vh.tcpConn.Disconnect()
 						}
 					} else {
 						contDeadlines = 0
 						vh.onError(err)
-						vh.tcpConn.Close()
+						vh.tcpConn.Disconnect()
 					}
 				} else {
 					// Data successfully read

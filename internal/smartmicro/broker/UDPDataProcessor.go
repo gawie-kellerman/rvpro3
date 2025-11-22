@@ -1,10 +1,13 @@
 package broker
 
 import (
+	"errors"
 	"net"
 	"sync"
 	"time"
 
+	errors2 "github.com/pkg/errors"
+	"github.com/rs/zerolog/log"
 	"rvpro3/radarvision.com/internal/smartmicro/port"
 	"rvpro3/radarvision.com/internal/smartmicro/service"
 	"rvpro3/radarvision.com/utils"
@@ -20,15 +23,19 @@ type UDPDataProcessor struct {
 	UsesInstruction bool
 	waitGroup       *sync.WaitGroup
 	hub             MessageHub
+
+	OnError func(*UDPDataProcessor, error)
 }
 
-func (s *UDPDataProcessor) LatchOnto(ds *service.UDPDataService, waitGroup *sync.WaitGroup) {
+var ErrInvalidRadar = errors.New("invalid radar")
+
+func (s *UDPDataProcessor) LatchOnto(ds *service.UDPDataServiceOld, waitGroup *sync.WaitGroup) {
 	s.hub.Init()
 	s.waitGroup = waitGroup
 	ds.OnData = s.onDataHandler
 }
 
-func (s *UDPDataProcessor) onDataHandler(service *service.UDPDataService, addr *net.UDPAddr, bytes []byte) {
+func (s *UDPDataProcessor) onDataHandler(service *service.UDPDataServiceOld, addr *net.UDPAddr, bytes []byte) {
 	radarIndex := RadarIndex(addr)
 
 	if radarIndex == -1 {
@@ -39,7 +46,7 @@ func (s *UDPDataProcessor) onDataHandler(service *service.UDPDataService, addr *
 	var th port.TransportHeader
 	var ph port.PortHeader
 
-	reader := utils.NewFixedBuffer(bytes)
+	reader := utils.NewFixedBuffer(bytes, 0, len(bytes))
 
 	th.Read(&reader)
 	ph.Read(&reader)
@@ -49,7 +56,7 @@ func (s *UDPDataProcessor) onDataHandler(service *service.UDPDataService, addr *
 		return
 	}
 
-	if err := th.IsValid(); err != nil {
+	if err := th.Validate(); err != nil {
 		s.logIntegrityErr(err)
 		return
 	}
@@ -83,10 +90,21 @@ func (s *UDPDataProcessor) shouldProcess(portId port.PortIdentifier) bool {
 }
 
 func (s *UDPDataProcessor) logIntegrityErr(err error) {
+	s.onError(err)
 }
 
 func (s *UDPDataProcessor) logMappingError(err error) {
+	s.onError(err)
 }
 
 func (s *UDPDataProcessor) logInvalidRadar(addr *net.UDPAddr) {
+	s.onError(errors2.Wrap(ErrInvalidRadar, addr.String()))
+}
+
+func (s *UDPDataProcessor) onError(err error) {
+	if s.OnError != nil {
+		s.OnError(s, err)
+	} else {
+		log.Err(err)
+	}
 }

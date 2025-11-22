@@ -10,6 +10,8 @@ import (
 	"rvpro3/radarvision.com/utils"
 )
 
+const udpBufferSize = 8 * utils.Kilobyte
+
 // VirtualRadar hosts a UDP Server on the Client Desktop that serves
 // to intercept instructions sent from the desktop to the radar
 // as well as relaying UDP from the actual radar to the desktop
@@ -66,9 +68,6 @@ func (s *VirtualRadar) executeRead() {
 					packet := NewPacket(s.buffer[:s.bufferLen])
 					packet.SetTarget(s.udpServer.GetConnection().LocalAddr().(*net.UDPAddr))
 					s.host.WriteToHub(packet)
-					// Likely received instruction from TUI
-					// TODO: Send the UDP back to RVPro via the Proxy
-
 				}
 			}
 		} else {

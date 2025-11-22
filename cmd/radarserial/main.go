@@ -19,7 +19,7 @@ func main() {
 	}
 
 	serialService.LoopGuard = &utils.InfiniteLoopGuard{}
-	serialService.RetryGuard.ModCycles = 3
+	serialService.RetryGuard.RetryEvery = 3
 	serialService.OnError = func(_ any, err error) {
 		fmt.Println(err)
 	}
