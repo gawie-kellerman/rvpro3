@@ -7,6 +7,8 @@ import (
 var tzOffset int
 var tzName string
 
+const DisplayDTMS = "2006-01-02T15:04:05.000"
+
 func init() {
 	tzName, tzOffset = time.Now().Zone()
 	tzOffset *= 1000
@@ -25,4 +27,8 @@ func (timeImpl) IsOlderThan(anchor time.Time, duration time.Duration) bool {
 	now := time.Now()
 	diff := now.Sub(anchor).Abs()
 	return diff > duration
+}
+
+func (timeImpl) ToDisplayDTMS(now time.Time) string {
+	return now.Format(DisplayDTMS)
 }

@@ -1,7 +1,9 @@
 package main
 
-import "fmt"
+import (
+	"rvpro3/radarvision.com/utils"
+)
 
 func main() {
-	fmt.Println("crosstest is working")
+	utils.Debug.Println("crosstest is working")
 }

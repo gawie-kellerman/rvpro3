@@ -85,7 +85,7 @@ func TestQueueBuffer_PopWithOptimize(t *testing.T) {
 	assert.Equal(t, 20, qb.GetFrontAvail())
 	assert.Equal(t, 20, qb.GetBackAvail())
 
-	// Pushing the alphabet means that the buffer must be optimized
+	// Pushing the alphabet means that the Buffer must be optimized
 	panicOnPush(qb.PushData([]byte(alphabet), false))
 	assert.True(t, bytes.EqualFold(qb.GetDataSlice(), []byte(sample+alphabet)))
 }

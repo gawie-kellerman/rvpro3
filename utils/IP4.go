@@ -159,6 +159,11 @@ func (s IP4) ToIPString() string {
 
 }
 
+func (s IP4) WriteToFixedBuffer(writer *FixedBuffer) {
+	writer.WriteBytes(s.bytes[:])
+	writer.WriteU16(uint16(s.Port), binary.BigEndian)
+}
+
 func getPortFromString(addr string) int {
 	port, err := strconv.Atoi(getPortPart(addr))
 	if err != nil {

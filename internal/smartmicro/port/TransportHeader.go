@@ -28,8 +28,18 @@ type TransportHeader struct {
 	Timestamp      uint64
 	SourceClientId uint32
 	TargetClientId uint32
+	DataIdentifier uint16
+	Segmentation   uint16
 	CRC16          uint16
 	CheckCRC16     uint16
+}
+
+func NewTransportHeader(buffer []byte) *TransportHeader {
+	th2 := TransportHeader{}
+	reader := utils.NewFixedBuffer(buffer, 0, len(buffer))
+	th2.Read(&reader)
+
+	return &th2
 }
 
 func (header *TransportHeader) Init() {
@@ -73,15 +83,6 @@ func (header *TransportHeader) Write(writer *utils.FixedBuffer) {
 func (header *TransportHeader) PrintDetail() {
 	utils.Print.Detail("Transport Header", "\n")
 	utils.Print.Indent(2)
-	_, _ = utils.Print.Detail("Start Pattern", "0x%x\n", header.StartPattern)
-	_, _ = utils.Print.Detail("Protocol Version", "%d\n", header.ProtocolVersion)
-	_, _ = utils.Print.Detail("Header Length", "%d\n", header.HeaderLength)
-	_, _ = utils.Print.Detail("Payload Length", "%d\n", header.PayloadLength)
-	_, _ = utils.Print.Detail("Protocol Type", "%d, %s\n", int(header.ProtocolType), header.ProtocolType.ToString())
-	_, _ = utils.Print.Detail("Flags", "0b%b, %s\n", int(header.Flags), header.Flags.ToString())
-	header.Flags.PrintDetail(header)
-	_, _ = utils.Print.Detail("CRC16", "0x%04x\n", header.CRC16)
-	_, _ = utils.Print.Detail("CRC16 Check", "0x%04x\n", header.CheckCRC16)
 	utils.Print.Indent(-2)
 }
 
@@ -109,6 +110,15 @@ func (header *TransportHeader) Read(reader *utils.FixedBuffer) {
 	if header.Flags.IsTargetClientId() {
 		header.TargetClientId = reader.ReadU32(binary.BigEndian)
 	}
+
+	if header.Flags.IsDataIdentifier() {
+		header.DataIdentifier = reader.ReadU16(binary.BigEndian)
+	}
+
+	if header.Flags.IsSegmentation() {
+		header.Segmentation = reader.ReadU16(binary.BigEndian)
+	}
+
 	header.CheckCRC16 = reader.CalcReadCRC()
 	header.CRC16 = reader.ReadU16(binary.BigEndian)
 }

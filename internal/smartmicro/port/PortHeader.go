@@ -6,40 +6,6 @@ import (
 	"rvpro3/radarvision.com/utils"
 )
 
-type PortIdentifier uint32
-
-const PiObjectList = 88
-const PiStatistics = 25
-const PiDiagnostics = 86
-const PiWgs84 = 137
-const PiUncertainty = 157
-const PiInstruction = 46
-const PiEventTrigger = 24
-const PiPVR = 29
-
-func (id PortIdentifier) ToString() string {
-	switch id {
-	case PiObjectList:
-		return "ObjectList"
-	case PiStatistics:
-		return "Statistics"
-	case PiDiagnostics:
-		return "Diagnostics"
-	case PiWgs84:
-		return "WGS84"
-	case PiUncertainty:
-		return "Uncertainty"
-	case PiInstruction:
-		return "instruction"
-	case PiEventTrigger:
-		return "EventTrigger"
-	case PiPVR:
-		return "PVR"
-	default:
-		return "Unknown"
-	}
-}
-
 type BodyOrder uint8
 
 const LittleEndian = 2
@@ -52,7 +18,7 @@ func (o BodyOrder) ToGo() binary.ByteOrder {
 	return binary.BigEndian
 }
 
-func (o BodyOrder) ToString() string {
+func (o BodyOrder) String() string {
 	switch o {
 	case LittleEndian:
 		return "Little Endian"
@@ -153,11 +119,15 @@ func (s *PortHeader) Init(identifier PortIdentifier) {
 func (s *PortHeader) PrintDetail() {
 	utils.Print.Detail("Port Header", "\n")
 	utils.Print.Indent(2)
-	utils.Print.Detail("Port Identifier", "%d, 0x%0x, %s\n", s.Identifier, s.Identifier, s.Identifier.ToString())
+	utils.Print.Detail("Port Identifier", "%d, 0x%0x, %s\n", s.Identifier, s.Identifier, s.Identifier.String())
 	utils.Print.Detail("Port Version", "%d.%d\n", s.PortMajorVersion, s.PortMinorVersion)
 	utils.Print.Detail("Timestamp", "%d\n", s.Timestamp)
-	utils.Print.Detail("Body Order", "%s\n", s.BodyOrder.ToString())
+	utils.Print.Detail("Body Order", "%s\n", s.BodyOrder.String())
 	utils.Print.Detail("Port Size", "%d\n", s.PortSize)
 	utils.Print.Detail("Header Version", "%d.%d\n", s.HeaderMajorVersion, s.HeaderMinorVersion)
 	utils.Print.Indent(-2)
+}
+
+func (s *PortHeader) Validate() error {
+	return nil
 }

@@ -57,7 +57,7 @@ func (s *ListRadarsCmd) Init(params *radarUtilParams) {
 			th.Read(&reader)
 			ph.Read(&reader)
 
-			Terminal.Println("Received data from", addr.String(), "with protocol", th.ProtocolType.ToString())
+			Terminal.Println("Received data from", addr.String(), "with protocol", th.ProtocolType.String())
 			s.quitStrategy.Iterate()
 		}
 	}

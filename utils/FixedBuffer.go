@@ -11,7 +11,7 @@ import (
 )
 
 type FixedBuffer struct {
-	buffer      []byte
+	Buffer      []byte
 	WritePos    int
 	ReadPos     int
 	readMarker  int
@@ -19,24 +19,24 @@ type FixedBuffer struct {
 	Err         error
 }
 
-var ErrBufferOverflow = errors.New("buffer overflow")
+var ErrBufferOverflow = errors.New("Buffer overflow")
 
 func NewFixedBuffer(buffer []byte, readPos int, writePos int) FixedBuffer {
 	return FixedBuffer{
-		buffer:   buffer,
+		Buffer:   buffer,
 		WritePos: writePos,
 		ReadPos:  readPos,
 	}
 }
 
 func (obj *FixedBuffer) AvailForWrite() int {
-	return cap(obj.buffer) - obj.WritePos
+	return cap(obj.Buffer) - obj.WritePos
 }
 
 func (obj *FixedBuffer) CanWrite(needBytes int) bool {
 	newOff := obj.WritePos + needBytes
 
-	return newOff <= cap(obj.buffer)
+	return newOff <= cap(obj.Buffer)
 }
 
 func (obj *FixedBuffer) CanRead(nofBytes int) bool {
@@ -51,12 +51,12 @@ func (obj *FixedBuffer) WriteBytes(write []byte) {
 		return
 	}
 
-	obj.WritePos += copy(obj.buffer[obj.WritePos:obj.WritePos+len(write)], write)
+	obj.WritePos += copy(obj.Buffer[obj.WritePos:obj.WritePos+len(write)], write)
 }
 
 func (obj *FixedBuffer) Reset() {
 	obj.Err = nil
-	obj.buffer = obj.buffer[:0]
+	//obj.Buffer = obj.Buffer[:0] // worried about this line
 	obj.ReadPos = 0
 	obj.WritePos = 0
 	obj.readMarker = 0
@@ -69,7 +69,7 @@ func (obj *FixedBuffer) WriteU8(value uint8) {
 		return
 	}
 
-	obj.buffer[obj.WritePos] = value
+	obj.Buffer[obj.WritePos] = value
 	obj.WritePos++
 }
 
@@ -79,7 +79,7 @@ func (obj *FixedBuffer) ReadU8() uint8 {
 		return 0
 	}
 
-	result := obj.buffer[obj.ReadPos]
+	result := obj.Buffer[obj.ReadPos]
 	obj.ReadPos++
 	return result
 }
@@ -89,7 +89,7 @@ func (obj *FixedBuffer) WriteU16(value uint16, order binary.ByteOrder) {
 		obj.Err = ErrBufferOverflow
 		return
 	}
-	order.PutUint16(obj.buffer[obj.WritePos:obj.WritePos+2], value)
+	order.PutUint16(obj.Buffer[obj.WritePos:obj.WritePos+2], value)
 	obj.WritePos += 2
 }
 
@@ -98,7 +98,7 @@ func (obj *FixedBuffer) WriteU32(value uint32, order binary.ByteOrder) {
 		obj.Err = ErrBufferOverflow
 		return
 	}
-	order.PutUint32(obj.buffer[obj.WritePos:obj.WritePos+4], value)
+	order.PutUint32(obj.Buffer[obj.WritePos:obj.WritePos+4], value)
 	obj.WritePos += 4
 }
 
@@ -107,8 +107,21 @@ func (obj *FixedBuffer) WriteU64(value uint64, order binary.ByteOrder) {
 		obj.Err = ErrBufferOverflow
 		return
 	}
-	order.PutUint64(obj.buffer[obj.WritePos:obj.WritePos+8], value)
+	order.PutUint64(obj.Buffer[obj.WritePos:obj.WritePos+8], value)
 	obj.WritePos += 8
+}
+
+func (obj *FixedBuffer) WriteBool(value bool) {
+	if !obj.CanWrite(1) {
+		obj.Err = ErrBufferOverflow
+		return
+	}
+	if value {
+		obj.Buffer[obj.WritePos] = byte(1)
+	} else {
+		obj.Buffer[obj.WritePos] = byte(0)
+	}
+	obj.WritePos++
 }
 
 func (obj *FixedBuffer) WriteI64(value int64, order binary.ByteOrder) {
@@ -121,7 +134,7 @@ func (obj *FixedBuffer) ReadU16(order binary.ByteOrder) (result uint16) {
 		return 0
 	}
 
-	result = order.Uint16(obj.buffer[obj.ReadPos:])
+	result = order.Uint16(obj.Buffer[obj.ReadPos:])
 	obj.ReadPos += 2
 	return result
 }
@@ -131,7 +144,7 @@ func (obj *FixedBuffer) ReadU32(order binary.ByteOrder) (result uint32) {
 		obj.Err = ErrBufferOverflow
 		return 0
 	}
-	result = order.Uint32(obj.buffer[obj.ReadPos:])
+	result = order.Uint32(obj.Buffer[obj.ReadPos:])
 	obj.ReadPos += 4
 	return result
 }
@@ -141,7 +154,7 @@ func (obj *FixedBuffer) ReadU64(order binary.ByteOrder) (result uint64) {
 		obj.Err = ErrBufferOverflow
 		return 0
 	}
-	result = order.Uint64(obj.buffer[obj.ReadPos:])
+	result = order.Uint64(obj.Buffer[obj.ReadPos:])
 	obj.ReadPos += 8
 	return result
 }
@@ -161,7 +174,7 @@ func (obj *FixedBuffer) ReadF64(order binary.ByteOrder) float64 {
 }
 
 func (obj *FixedBuffer) DumpDebug() {
-	hexStr := hex.EncodeToString(obj.buffer[:obj.WritePos])
+	hexStr := hex.EncodeToString(obj.Buffer[:obj.WritePos])
 	fmt.Println(hexStr)
 }
 
@@ -174,11 +187,11 @@ func (obj *FixedBuffer) StartWriteMarker() {
 }
 
 func (obj *FixedBuffer) CalcReadCRC() uint16 {
-	return crc16.ChecksumCCITTFalse(obj.buffer[obj.readMarker:obj.ReadPos])
+	return crc16.ChecksumCCITTFalse(obj.Buffer[obj.readMarker:obj.ReadPos])
 }
 
 func (obj *FixedBuffer) CalcWriteCRC() uint16 {
-	return crc16.ChecksumCCITTFalse(obj.buffer[obj.writeMarker:obj.WritePos])
+	return crc16.ChecksumCCITTFalse(obj.Buffer[obj.writeMarker:obj.WritePos])
 }
 
 func (obj *FixedBuffer) WriteCRC16(order binary.ByteOrder) uint16 {
@@ -189,11 +202,11 @@ func (obj *FixedBuffer) WriteCRC16(order binary.ByteOrder) uint16 {
 }
 
 func (obj *FixedBuffer) AsReadSlice() []byte {
-	return obj.buffer[:obj.ReadPos]
+	return obj.Buffer[:obj.ReadPos]
 }
 
 func (obj *FixedBuffer) AsWriteSlice() []byte {
-	return obj.buffer[:obj.WritePos]
+	return obj.Buffer[:obj.WritePos]
 }
 
 func (obj *FixedBuffer) WriteF32(speed float32, order binary.ByteOrder) {
@@ -207,7 +220,7 @@ func (obj *FixedBuffer) WriteF64(speed float64, order binary.ByteOrder) {
 }
 
 func (obj *FixedBuffer) AvailForRead() []byte {
-	return obj.buffer[obj.ReadPos:]
+	return obj.Buffer[obj.ReadPos:]
 }
 
 func (obj *FixedBuffer) SeekRead(size int) {
@@ -220,7 +233,7 @@ func (obj *FixedBuffer) ReadBytes(size int) []byte {
 		return nil
 	}
 
-	res := obj.buffer[obj.ReadPos : obj.ReadPos+size]
+	res := obj.Buffer[obj.ReadPos : obj.ReadPos+size]
 	obj.ReadPos += size
 	return res
 }
@@ -239,7 +252,7 @@ func (obj *FixedBuffer) ReadBuffer(value []byte) {
 		return
 	}
 
-	copy(value, obj.buffer[obj.ReadPos:obj.ReadPos+len(value)])
+	copy(value, obj.Buffer[obj.ReadPos:obj.ReadPos+len(value)])
 	obj.ReadPos += len(value)
 }
 

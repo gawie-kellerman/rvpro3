@@ -17,12 +17,12 @@ type UDPDataService struct {
 	Buffer            [udpBufferSize]byte
 	BufferLen         int
 	ListenAddr        utils.IP4
-	LoopGuard         utils.LoopGuard
 	Now               time.Time
 	doneChannel       chan bool
 	writeChannel      chan UDPSendData
 	terminate         bool
 	TerminateRefCount atomic.Int32
+	Stats             UDPDataServiceStatistics
 }
 
 func (u *UDPDataService) WriteData(ip4 utils.IP4, data []byte) {
@@ -35,6 +35,7 @@ func (u *UDPDataService) WriteData(ip4 utils.IP4, data []byte) {
 }
 
 func (u *UDPDataService) Start(listenAddr utils.IP4) {
+	u.Stats.Init()
 	u.TerminateRefCount.Store(2)
 	u.doneChannel = make(chan bool)
 	u.writeChannel = make(chan UDPSendData, 4)
@@ -44,9 +45,6 @@ func (u *UDPDataService) Start(listenAddr utils.IP4) {
 	u.Connection.OnError = func(connection *utils.UDPServerConnection, err error) {
 		u.sendError(err)
 	}
-	if u.LoopGuard == nil {
-		u.LoopGuard = utils.InfiniteLoopGuard{}
-	}
 	go u.executeReader()
 	go u.executeWriter()
 }
@@ -54,7 +52,7 @@ func (u *UDPDataService) Start(listenAddr utils.IP4) {
 func (u *UDPDataService) Stop() {
 	u.doneChannel <- true
 
-	for u.TerminateRefCount.Load() > 1 {
+	for u.TerminateRefCount.Load() > 0 {
 		time.Sleep(100 * time.Millisecond)
 	}
 }
@@ -63,10 +61,20 @@ func (u *UDPDataService) executeReader() {
 	for !u.terminate {
 		u.Now = time.Now()
 		if u.Connection.Listen() {
+			u.Stats.Register(udpSocketSuccess, u.Now)
+
 			u.BufferLen = u.Connection.ReceiveData(u.Buffer[:], u.Now, 3000)
-			if u.BufferLen > 0 && u.OnData != nil {
-				u.OnData(u, u.Connection.FromAddr, u.Buffer[:u.BufferLen])
+			if u.BufferLen > 0 {
+				u.Stats.Register(udpDataReceived, u.Now)
+				u.Stats.Aggregate(udpDataTotal, uint64(u.BufferLen), u.Now)
+				if u.OnData != nil {
+					u.OnData(u, u.Connection.FromAddr, u.Buffer[:u.BufferLen])
+				}
+			} else {
+				u.Stats.Register(updDataNotReceived, u.Now)
 			}
+		} else {
+			u.Stats.Register(updSocketFailure, u.Now)
 		}
 	}
 

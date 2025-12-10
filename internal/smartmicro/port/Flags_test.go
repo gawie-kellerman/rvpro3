@@ -19,5 +19,5 @@ func TestFlags_Compound(t *testing.T) {
 	value.Set(FlMessageCount)
 	value.Set(FlTimestamp)
 	assert.Equal(t, expected, value)
-	fmt.Println(value.ToString())
+	fmt.Println(value.String())
 }

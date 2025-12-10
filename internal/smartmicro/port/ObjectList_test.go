@@ -1,11 +1,12 @@
 package port
 
 import (
-	"fmt"
 	"testing"
+
+	"rvpro3/radarvision.com/utils"
 )
 
 func TestObjectClassType_ToString(t *testing.T) {
 	car := OctCar
-	fmt.Println(car.ToString())
+	utils.Debug.Println(car)
 }

@@ -82,7 +82,7 @@ func (qb *QueueBuffer) PushSize(size int, force bool) PushOutcome {
 }
 
 // PushData
-// Use force parameter to reset the buffer if the buffer is large enough
+// Use force parameter to reset the Buffer if the Buffer is large enough
 // to contain the data but does not have sufficient space left
 // Returns
 func (qb *QueueBuffer) PushData(data []byte, force bool) PushOutcome {
@@ -149,13 +149,13 @@ func (qb *QueueBuffer) EnsureFit(sizeNeeded int, force bool) PushOutcome {
 		return PoMessageTooLarge
 	}
 
-	// The message can fit if buffer is optimized
+	// The message can fit if Buffer is optimized
 	if sizeNeeded <= qb.GetTotalAvail() {
 		qb.Optimize()
 		return PoSuccess
 	}
 
-	// Force the message in by resetting the buffer
+	// Force the message in by resetting the Buffer
 	if force {
 		qb.Reset()
 		return PoBufferReset

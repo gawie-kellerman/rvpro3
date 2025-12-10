@@ -2,88 +2,10 @@ package port
 
 import (
 	"encoding/binary"
+	"os"
 
 	"rvpro3/radarvision.com/utils"
 )
-
-type StatisticsMode uint8
-type StatisticsOutputType uint8
-type StatisticsFeatures uint8
-
-const (
-	SmVolume StatisticsMode = iota
-	SmAvgSpeed
-	SmPercSpeed85th
-	SmOccupancy
-	SmHeadway
-	SmGap
-	SmUnset
-)
-
-const (
-	SotCurrentData StatisticsOutputType = iota
-	SotArchiveData
-)
-
-const (
-	SfVolume StatisticsFeatures = 1 << iota
-	SfOccupancy
-	SfAvgSpeed
-	SfPercSpeed85th
-	SfHeadway
-	SfGap
-)
-
-func (s StatisticsMode) ToString() string {
-	switch s {
-	case SmVolume:
-		return "Volume"
-	case SmOccupancy:
-		return "Occupancy"
-	case SmAvgSpeed:
-		return "AvgSpeed"
-	case SmPercSpeed85th:
-		return "PercSpeed85th"
-	case SmHeadway:
-		return "Headway"
-	case SmGap:
-		return "Gap"
-	case SmUnset:
-		return "Unset"
-	default:
-		return "Unknown"
-	}
-}
-
-func (s StatisticsOutputType) ToString() string {
-	switch s {
-	case SotCurrentData:
-		return "Current Data"
-	case SotArchiveData:
-		return "Archive Data"
-	default:
-		return "Unknown"
-	}
-}
-
-func (s StatisticsFeatures) ToString() string {
-	switch s {
-	case SfVolume:
-		return "Volume"
-	case SfOccupancy:
-		return "Occupancy"
-	case SfAvgSpeed:
-		return "AvgSpeed"
-	case SfPercSpeed85th:
-		return "PercSpeed85th"
-	case SfHeadway:
-		return "Headway"
-	case SfGap:
-		return "Gap"
-	default:
-		return "Unknown"
-	}
-}
 
 type Statistics struct {
 	Th       TransportHeader
@@ -176,4 +98,35 @@ func (s *Statistics) ReadBytes(bytes []byte) error {
 	}
 	s.ReadPortData(&reader)
 	return reader.Err
+}
+
+func (s *Statistics) ReadFile(filename string) (err error) {
+	var data []byte
+
+	if data, err = os.ReadFile(filename); err != nil {
+		return err
+	}
+
+	if err = s.ReadBytes(data); err != nil {
+		return err
+	}
+
+	return s.Validate()
+
+}
+
+func (s *Statistics) Validate() (err error) {
+	if err = s.Th.Validate(); err != nil {
+		return err
+	}
+
+	if err = s.Ph.Validate(); err != nil {
+		return err
+	}
+
+	if s.Crc != s.CrcCheck {
+		return ErrPayloadCRC
+	}
+
+	return nil
 }

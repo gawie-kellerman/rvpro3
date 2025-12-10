@@ -9,7 +9,7 @@ import (
 
 func TestFixedBuffer_Writing(t *testing.T) {
 	fixed := FixedBuffer{
-		buffer: make([]byte, 1024),
+		Buffer: make([]byte, 1024),
 	}
 
 	fixed.WriteU8(1)
@@ -22,7 +22,7 @@ func TestFixedBuffer_Writing(t *testing.T) {
 
 func TestFixedBuffer_Reading(t *testing.T) {
 	fixed := FixedBuffer{
-		buffer: make([]byte, 1024),
+		Buffer: make([]byte, 1024),
 	}
 	fixed.WriteU8(1)
 	fixed.WriteU8(2)

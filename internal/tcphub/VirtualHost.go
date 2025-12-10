@@ -143,7 +143,6 @@ func (vh *VirtualHost) executeWriteToHub() {
 }
 
 func (vh *VirtualHost) writePacketToHub(packet Packet) {
-
 	if cnx := vh.tcpConn.GetConnection(); cnx != nil {
 		var packetBytes [4 * utils.Kilobyte]byte
 		if slice, err := packet.SaveToBytes(packetBytes[:]); err != nil {

@@ -2,6 +2,7 @@ package port
 
 import (
 	"encoding/binary"
+	"os"
 
 	"rvpro3/radarvision.com/utils"
 )
@@ -48,9 +49,39 @@ func (s *EventTrigger) ReadBytes(bytes []byte) error {
 	reader := utils.NewFixedBuffer(bytes, 0, len(bytes))
 	s.Th.Read(&reader)
 	s.Ph.Read(&reader)
-	if reader.Err == nil {
+	if reader.Err != nil {
 		return reader.Err
 	}
 	s.ReadPortData(&reader)
 	return reader.Err
+}
+
+func (s *EventTrigger) ReadFile(filename string) (err error) {
+	var data []byte
+
+	if data, err = os.ReadFile(filename); err != nil {
+		return err
+	}
+
+	if err = s.ReadBytes(data); err != nil {
+		return err
+	}
+
+	return s.Validate()
+}
+
+func (s *EventTrigger) Validate() (err error) {
+	if err = s.Th.Validate(); err != nil {
+		return err
+	}
+
+	if err = s.Ph.Validate(); err != nil {
+		return err
+	}
+
+	if s.Crc != s.CrcCheck {
+		return ErrPayloadCRC
+	}
+
+	return nil
 }

@@ -2,64 +2,24 @@ package port
 
 import (
 	"encoding/binary"
+	"os"
 
 	"rvpro3/radarvision.com/utils"
 )
 
-type ObjectClassType uint8
-
-const isNewObject = 1
-
-const (
-	OctUndefined ObjectClassType = iota
-	OctPedestrian
-	OctBicycle
-	OctMotorbike
-	OctCar
-	OctReserved
-	OctDelivery
-	OctShortTruck
-	OctLongTruck
-)
-
-func (o ObjectClassType) ToString() string {
-	switch o {
-	case OctUndefined:
-		return "UNDEFINED"
-	case OctPedestrian:
-		return "PEDESTRIAN"
-	case OctBicycle:
-		return "BICYCLE"
-	case OctMotorbike:
-		return "MOTORBIKE"
-	case OctCar:
-		return "CAR"
-	case OctReserved:
-		return "RESERVED"
-	case OctDelivery:
-		return "DELIVERY TRUCK"
-	case OctShortTruck:
-		return "SHORT TRUCK"
-	case OctLongTruck:
-		return "LONG TRUCK"
-	default:
-		return "UNDEFINED"
-	}
-}
-
 type ObjectListHeader struct {
 	CycleDuration    uint32
 	NofObjects       uint16
-	IsTimeSynced     uint8
-	HeaderPad        uint8
+	SelectedRefPoint uint8
+	ObjectSize       uint8
 	MeasureTimestamp uint64
 }
 
 func (h *ObjectListHeader) Read(reader *utils.FixedBuffer, order binary.ByteOrder) {
 	h.CycleDuration = reader.ReadU32(order)
 	h.NofObjects = reader.ReadU16(order)
-	h.IsTimeSynced = reader.ReadU8()
-	h.HeaderPad = reader.ReadU8()
+	h.SelectedRefPoint = reader.ReadU8()
+	h.ObjectSize = reader.ReadU8()
 	h.MeasureTimestamp = reader.ReadU64(order)
 }
 
@@ -81,9 +41,13 @@ type ObjectListDetail struct {
 	Lane                  uint16
 	CyclesSinceLastUpdate uint16
 	Zone                  uint32
+	WgsLongFront          float64
+	WgsLatFront           float64
+	WgsLongFacing         float64
+	WgsLatFacing          float64
 }
 
-func (h *ObjectListDetail) Read(reader *utils.FixedBuffer, order binary.ByteOrder) {
+func (h *ObjectListDetail) Read(reader *utils.FixedBuffer, objectSize uint8, order binary.ByteOrder) {
 	h.XFront = reader.ReadF32(order)
 	h.YFront = reader.ReadF32(order)
 	h.XFacing = reader.ReadF32(order)
@@ -101,6 +65,15 @@ func (h *ObjectListDetail) Read(reader *utils.FixedBuffer, order binary.ByteOrde
 	h.Lane = reader.ReadU16(order)
 	h.CyclesSinceLastUpdate = reader.ReadU16(order)
 	h.Zone = reader.ReadU32(order)
+
+	if objectSize == 96-40 {
+		// then we are done
+	} else if objectSize == 128-40 {
+		h.WgsLongFront = reader.ReadF64(order)
+		h.WgsLatFront = reader.ReadF64(order)
+		h.WgsLongFacing = reader.ReadF64(order)
+		h.WgsLatFacing = reader.ReadF64(order)
+	}
 }
 
 func (h *ObjectListDetail) IsNew() bool {
@@ -132,7 +105,7 @@ func (h *ObjectList) ReadPortData(reader *utils.FixedBuffer) {
 	h.Details = make([]ObjectListDetail, h.Header.NofObjects)
 
 	for i := 0; i < int(h.Header.NofObjects); i++ {
-		h.Details[i].Read(reader, order)
+		h.Details[i].Read(reader, h.Header.ObjectSize, order)
 	}
 
 	if !h.Th.Flags.IsSkipPayloadCrc() {
@@ -151,4 +124,37 @@ func (h *ObjectList) ReadBytes(bytes []byte) error {
 	h.ReadPortData(&reader)
 
 	return reader.Err
+}
+
+func (h *ObjectList) ReadFile(filename string) (err error) {
+	var data []byte
+
+	if data, err = os.ReadFile(filename); err != nil {
+		return err
+	}
+
+	if err = h.ReadBytes(data); err != nil {
+		return err
+	}
+
+	return h.Validate()
+}
+
+func (h *ObjectList) Validate() (err error) {
+	if err = h.Th.Validate(); err != nil {
+		return err
+	}
+
+	if err = h.Ph.Validate(); err != nil {
+		return err
+	}
+
+	if h.Crc != h.CrcCheck {
+		return ErrPayloadCRC
+	}
+
+	return nil
+}
+
+func (h *ObjectList) Dump(stdout *os.File) {
 }

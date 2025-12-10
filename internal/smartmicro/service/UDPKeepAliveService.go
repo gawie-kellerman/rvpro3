@@ -37,6 +37,7 @@ func (s *UDPKeepAliveService) Start(targetIPAddr utils.IP4) {
 	s.terminated = false
 	s.LocalIPAddr = targetIPAddr
 	s.connection.Init(s.LocalIPAddr, s.MulticastIPAddr, s, s.ReconnectOnCycle)
+
 	go s.executeWrite()
 }
 

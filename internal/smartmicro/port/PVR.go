@@ -2,6 +2,7 @@ package port
 
 import (
 	"encoding/binary"
+	"os"
 
 	"rvpro3/radarvision.com/utils"
 )
@@ -103,4 +104,35 @@ func (h *PVR) Write(writer *utils.FixedBuffer) {
 		h.Crc = writer.WriteCRC16(binary.BigEndian)
 		h.CrcCheck = h.Crc
 	}
+}
+
+func (h *PVR) ReadFile(filename string) (err error) {
+	var data []byte
+
+	if data, err = os.ReadFile(filename); err != nil {
+		return err
+	}
+
+	if err = h.ReadBytes(data); err != nil {
+		return err
+	}
+
+	return h.Validate()
+
+}
+
+func (h *PVR) Validate() (err error) {
+	if err = h.Th.Validate(); err != nil {
+		return err
+	}
+
+	if err = h.Ph.Validate(); err != nil {
+		return err
+	}
+
+	if h.Crc != h.CrcCheck {
+		return ErrPayloadCRC
+	}
+
+	return nil
 }
