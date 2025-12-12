@@ -56,7 +56,6 @@ func (s *SDLCService) Stop() {
 func (s *SDLCService) executeReader() {
 	for !s.terminate {
 		if s.Serial.Connect() {
-			fmt.Println("reading...")
 			readSize := s.Serial.Read(s.readBuffer[:])
 			if readSize > 0 {
 				if err := s.serialBuffer.Push(s.readBuffer[:readSize]); err != nil {

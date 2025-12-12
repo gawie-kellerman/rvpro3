@@ -40,7 +40,7 @@ func (s *ListRadarsCmd) Init(params *radarUtilParams) {
 	}
 
 	s.dataService.OnTerminate = func(sender *service.UDPDataService) {
-		Terminal.Println("Data service completed")
+		Terminal.Println("data service completed")
 		s.waitGroup.Done()
 	}
 
@@ -74,12 +74,12 @@ func (s *ListRadarsCmd) Execute() {
 	s.quitStrategy.PrintDetail(&Terminal)
 	Terminal.Println("Starting Alive Service")
 	Terminal.Indent(2)
-	Terminal.PrintfLnKv("Target IP", "%s", s.targetIP.String())
+	Terminal.PrintfLnKv("Target RVProIP", "%s", s.targetIP.String())
 	Terminal.PrintfLnKv("Client ID", "0x%x", s.clientId)
 	s.aliveService.Start(s.targetIP)
 
 	Terminal.Indent(-2)
-	Terminal.Println("Starting Data Service")
+	Terminal.Println("Starting data Service")
 	s.dataService.Start(s.targetIP)
 
 	Terminal.Indent(2)

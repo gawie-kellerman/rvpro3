@@ -76,7 +76,7 @@ type radarUtilParams struct {
 
 func (s *radarUtilParams) Setup() {
 	clientIdPtr := flag.String("clientid", "0x01000001", "Client ID")
-	targetIPPtr := flag.String("targetip", "192.168.11.1:55555", "Target IP")
+	targetIPPtr := flag.String("targetip", "192.168.11.1:55555", "Target RVProIP")
 	commandPtr := flag.String("cmd", "help", "Command to execute.  Options include (help, list-radars, live-zones). E.g. -cmd=live-zones")
 	quitStrategyPtr := flag.String("qs", "seconds", "Quit strategy (infinite, iterations, seconds)")
 	liveConfigFilenamePtr := flag.String("liveconfig", "live-zones.json", "Path to live config file.")

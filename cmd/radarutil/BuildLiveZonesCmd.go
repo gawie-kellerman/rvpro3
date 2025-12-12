@@ -200,12 +200,12 @@ func (s *BuildLiveZonesCmd) Execute() {
 
 	Terminal.Println("Starting Alive Service")
 	Terminal.Indent(2)
-	Terminal.PrintfLnKv("Target IP", "%s", s.targetIP.String())
+	Terminal.PrintfLnKv("Target RVProIP", "%s", s.targetIP.String())
 	Terminal.PrintfLnKv("Client ID", "0x%x", s.clientId)
 	s.aliveService.Start(s.targetIP)
 
 	Terminal.Indent(-2)
-	Terminal.Println("Starting Data Service")
+	Terminal.Println("Starting data Service")
 	s.dataService.Start(s.targetIP)
 
 	Terminal.Indent(2)

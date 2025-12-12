@@ -11,36 +11,42 @@ import (
 type uartFailAction uint8
 
 const MaxCyclesArg = "max-cycles"
+const CycleDurationArg = "cycle-duration"
 const DetectEveryArg = "detect-every"
 const StatusEveryArg = "status-every"
 
 type UARTFail struct {
 	Mixin
-	detectEnc    sdlc.SDLCRequestEncoder
-	statusEnc    sdlc.SDLCRequestEncoder
-	cycleCounter int
-	action       uartFailAction
-	MaxCycles    int
-	DetectEvery  int
-	StatusEvery  int
+	detectEnc     sdlc.SDLCRequestEncoder
+	statusEnc     sdlc.SDLCRequestEncoder
+	cycleCounter  int
+	action        uartFailAction
+	MaxCycles     int
+	DetectEvery   int
+	StatusEvery   int
+	CycleDuration int
 }
 
 func (c *UARTFail) Init() {
 	c.MaxCycles = utils.Args.Get(MaxCyclesArg).(int)
 	c.DetectEvery = utils.Args.Get(DetectEveryArg).(int)
 	c.StatusEvery = utils.Args.Get(StatusEveryArg).(int)
+	c.CycleDuration = utils.Args.Get(CycleDurationArg).(int)
 
 	utils.Print.Ln("Running UART Fail with:")
 	utils.Print.Ln("  Max Cycles: ", c.MaxCycles)
-	utils.Print.Ln("  Detect Every: ", c.DetectEvery, "seconds")
-	utils.Print.Ln("  Status Every: ", c.StatusEvery, "seconds")
+	utils.Print.Ln("  Detect Every: ", c.DetectEvery, "cycles")
+	utils.Print.Ln("  Status Every: ", c.StatusEvery, "cycles")
+	utils.Print.Ln("  Cycle Duration: ", c.CycleDuration, "milliseconds")
+
 }
 
 func (c *UARTFail) Execute() {
 	for !c.terminate {
 		if c.cycleCounter%c.DetectEvery == 0 {
 			c.sendDetect()
-		} else if c.cycleCounter%c.StatusEvery == 0 {
+		}
+		if c.cycleCounter%c.StatusEvery == 0 {
 			c.sendStatusRequest()
 		}
 
@@ -48,7 +54,7 @@ func (c *UARTFail) Execute() {
 			c.terminate = true
 		}
 
-		time.Sleep(1 * time.Second)
+		time.Sleep(time.Duration(c.CycleDuration) * time.Millisecond)
 		c.cycleCounter++
 	}
 

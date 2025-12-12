@@ -10,17 +10,6 @@ import (
 	"rvpro3/radarvision.com/utils"
 )
 
-type SDLCResponseCode uint8
-
-const StaticStatusResponseCode SDLCResponseCode = 0x40
-const CMUFrameStreamCode SDLCResponseCode = 0x41
-const DateTimeStreamCode SDLCResponseCode = 0x42
-const BIUDiagnosticResponseCode SDLCResponseCode = 0x43
-const SDLCDiagnosticResponseCode SDLCResponseCode = 0x44
-const SIUDiagnosticResponseCode SDLCResponseCode = 0x45
-const DynamicStatusResponseCode SDLCResponseCode = 0x46
-const AcknowledgeResponseCode SDLCResponseCode = 0x4F
-
 type SDLCResponseDecoder struct {
 	rawData [256]byte
 	slice   []byte
@@ -59,7 +48,7 @@ func (d BIUDiagnostics) PrintDetail() {
 	utils.Print.Detail("DateTime Broadcast", "%d\n", d.DateTimeBroadcastCounter)
 
 	for counter := range d.CallDataRequestCounter {
-		utils.Print.Detail("Call Data Request ", "%d\n", counter)
+		utils.Print.Detail("Call data Request ", "%d\n", counter)
 	}
 
 	for counter := range d.ResetDiagnosticCounter {
@@ -168,8 +157,8 @@ func (s *SDLCResponseDecoder) Init(buffer []byte) (err error) {
 	return err
 }
 
-func (s *SDLCResponseDecoder) GetIdentifier() SDLCResponseCode {
-	return SDLCResponseCode(s.slice[1])
+func (s *SDLCResponseDecoder) GetIdentifier() SDLCIdentifier {
+	return SDLCIdentifier(s.slice[1])
 }
 
 func (s *SDLCResponseDecoder) GetBIUDiagnostics() (BIUDiagnostics, error) {

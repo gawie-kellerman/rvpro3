@@ -7,24 +7,24 @@ import (
 )
 
 type UDPClientConnection struct {
-	Owner           any
-	connection      *net.UDPConn
-	retryGuard      RetryGuard
-	LocalIPAddr     IP4
-	MulticastIPAddr IP4
-	OnConnect       func(*UDPClientConnection)
-	OnDisconnect    func(*UDPClientConnection)
-	OnError         func(*UDPClientConnection, error)
+	Owner        any
+	connection   *net.UDPConn
+	retryGuard   RetryGuard
+	LocalIPAddr  IP4
+	RemoteAddr   IP4
+	OnConnect    func(*UDPClientConnection)
+	OnDisconnect func(*UDPClientConnection)
+	OnError      func(*UDPClientConnection, error)
 }
 
 func (s *UDPClientConnection) Init(
 	localIPAddr IP4,
-	multicastIPAddr IP4,
+	remoteAddr IP4,
 	owner any,
 	reconnectOnCycle int,
 ) {
-	s.LocalIPAddr = localIPAddr.WithPort(0)
-	s.MulticastIPAddr = multicastIPAddr
+	s.LocalIPAddr = localIPAddr
+	s.RemoteAddr = remoteAddr
 	s.Owner = owner
 	s.retryGuard.RetryEvery = uint32(reconnectOnCycle)
 }
@@ -44,14 +44,15 @@ func (s *UDPClientConnection) Connect() bool {
 		return false
 	}
 
-	mAddr := s.MulticastIPAddr.ToUDPAddr()
+	rAddr := s.RemoteAddr.ToUDPAddr()
 	lAddr := s.LocalIPAddr.ToUDPAddr()
 
-	if s.connection, err = net.DialUDP("udp4", &lAddr, &mAddr); err != nil {
+	if s.connection, err = net.DialUDP("udp4", &lAddr, &rAddr); err != nil {
 		goto errorLabel
 	}
 
 	s.retryGuard.Reset()
+
 	if s.OnConnect != nil {
 		s.OnConnect(s)
 	}

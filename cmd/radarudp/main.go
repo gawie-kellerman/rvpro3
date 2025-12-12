@@ -67,7 +67,7 @@ func main() {
 	var clientId int
 	var command string
 
-	flag.StringVar(&targetIP, "targetip", "192.168.11.1:55555", "Local UDP bound target IP address with port")
+	flag.StringVar(&targetIP, "targetip", "192.168.11.1:55555", "Local UDP bound target RVProIP address with port")
 	flag.IntVar(&clientId, "clientid", 0x100001, "Radar Client ID")
 	flag.StringVar(&command, "commands", "radar-list", "List available radars")
 

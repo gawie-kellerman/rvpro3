@@ -1,7 +1,7 @@
 #!/usr/bin/env zsh
 
 echo "Compiling sdlcutil-arm32"
-GOOS=linux GOARCH=arm go1.24.11 build -o sdlcutil-arm32 .
+GOOS=linux GOARCH=arm go build -o sdlcutil-arm32 .
 
 if [ $? -eq 0 ]; then
   echo "Compilation success"

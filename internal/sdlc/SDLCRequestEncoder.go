@@ -8,16 +8,12 @@ import (
 
 type SDLCRequestCode uint8
 
-const StaticStatusRequestCode SDLCRequestCode = 0x10
-const SendDetectDataCode SDLCRequestCode = 0x11
-const ConfigBIURequestCode SDLCRequestCode = 0x12
-const BIUDiagnosticRequestCode SDLCRequestCode = 0x13
-const SDLCDiagnosticRequestCode SDLCRequestCode = 0x14
-const DynamicStatusRequestCode SDLCRequestCode = 0x15
-const SIUDiagnosticRequestCode SDLCRequestCode = 0x16
-
 type SDLCRequestEncoder struct {
 	buffer [64]byte
+}
+
+func (s *SDLCRequestEncoder) GetIdentifier() SDLCIdentifier {
+	return SDLCIdentifier(s.buffer[1])
 }
 
 func (s *SDLCRequestEncoder) BIUDiagnostics(reset byte) ([]byte, error) {
@@ -43,6 +39,12 @@ func (s *SDLCRequestEncoder) Diagnostics(reset byte) ([]byte, error) {
 	return Codec.Encode(fb.AsWriteSlice())
 }
 
+// TS2Detect is 8 bytes where
+// byte 0..1 = BIU 1
+// byte 2..3 = BIU 2
+// byte 4..5 = BIU 3
+// byte 6..7 = BIU 4
+// This is a Little Endian presentation
 func (s *SDLCRequestEncoder) TS2Detect(detects uint64) ([]byte, error) {
 	fb := utils.FixedBuffer{Buffer: s.buffer[:]}
 	fb.WriteU8(startMarker)

@@ -85,7 +85,7 @@ func (vh *VirtualHost) executeReadFromHub() {
 						vh.tcpConn.Disconnect()
 					}
 				} else {
-					// Data successfully read
+					// data successfully read
 					contDeadlines = 0
 					vh.buffer.PushBytes(vh.readBuffer[:vh.readBufferLen])
 

@@ -5,6 +5,7 @@ import (
 	"flag"
 	"strings"
 	"sync"
+	"time"
 
 	"go.bug.st/serial"
 	"rvpro3/radarvision.com/cmd/sdlcutil/sdlccase"
@@ -32,16 +33,18 @@ func main() {
 	}
 
 	service := sdlc.SDLCService{}
-	service.Serial.Init(portName, baudRate, dataBits, parity, stopBits)
 	service.Serial.OnConnect = onConnect
 	service.Serial.OnError = onSerialError
 	service.Serial.OnRead = onSerialRead
 	service.Serial.OnWrote = onSerialWrite
 	service.OnPopMessage = onPopMessage
+	service.Serial.Init(portName, baudRate, dataBits, parity, stopBits)
 
 	wg := sync.WaitGroup{}
 	wg.Add(1)
 	service.Start()
+
+	time.Sleep(1 * time.Second)
 
 	startRunner(runnerName, &service, func(sdlccase.ISDLCCase) {
 		wg.Done()
@@ -78,7 +81,7 @@ func isValidCommand(cmd string) bool {
 
 func readArgs() bool {
 	portNameArg := flag.String("port", "/dev/ttymxc2", "serial port device path")
-	baudRateArg := flag.Int("baudrate", 11500, "serial baud rate")
+	baudRateArg := flag.Int("baudrate", 115200, "serial baud rate")
 	dataBitsArg := flag.Int("databits", 8, "serial data bits")
 	stopBitsArg := flag.Int("stopbits", 0, "serial stop bits (default 0)")
 	helpArg := flag.Bool("help", false, "show help")
@@ -86,6 +89,7 @@ func readArgs() bool {
 	maxCyclesArg := flag.Int(sdlccase.MaxCyclesArg, 60, "Maximum number of cycles")
 	detectEveryArg := flag.Int(sdlccase.DetectEveryArg, 3, "Send detection every n seconds")
 	statusEveryArg := flag.Int(sdlccase.StatusEveryArg, 1, "Status every n seconds")
+	cycleDurationArg := flag.Int(sdlccase.CycleDurationArg, 1000, "Cycle duration is n milliseconds")
 
 	flag.Parse()
 
@@ -96,6 +100,7 @@ func readArgs() bool {
 	utils.Args.Set(sdlccase.MaxCyclesArg, *maxCyclesArg)
 	utils.Args.Set(sdlccase.DetectEveryArg, *detectEveryArg)
 	utils.Args.Set(sdlccase.StatusEveryArg, *statusEveryArg)
+	utils.Args.Set(sdlccase.CycleDurationArg, *cycleDurationArg)
 
 	runnerName = strings.ToLower(*runnerArg)
 	if len(runnerName) == 0 || *helpArg || !isValidCommand(runnerName) {
@@ -103,7 +108,7 @@ func readArgs() bool {
 		utils.Print.RawLn()
 		utils.Print.RawLn("Runners:")
 		utils.Print.RawLn("  show-uartfail    Shows UART failures by alternating a status and detect request every 3 seconds")
-		utils.Print.RawLn("                   Uses: max-cycles, detect-every, status-every")
+		utils.Print.RawLn("                   Uses: max-cycles, detect-every, status-every, cycle-duration")
 		utils.Print.RawLn()
 		return false
 	}
@@ -140,7 +145,7 @@ func onPopMessage(service *sdlc.SDLCService, bytes []byte) {
 	case sdlc.AcknowledgeResponseCode:
 		obj, err := response.GetAcknowledge()
 		utils.Debug.Panic(err)
-		utils.Print.Feature(featureAcknowledge, "Acknowledged", obj)
+		utils.Print.FmtFeature(featureAcknowledge, "Acknowledged %d\n", obj)
 
 	default:
 		utils.Print.WarnLn("Unknown SDLC service identifier: ", response.GetIdentifier())

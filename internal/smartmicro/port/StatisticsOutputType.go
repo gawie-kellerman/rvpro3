@@ -10,9 +10,9 @@ const (
 func (s StatisticsOutputType) String() string {
 	switch s {
 	case SotCurrentData:
-		return "Current Data"
+		return "Current data"
 	case SotArchiveData:
-		return "Archive Data"
+		return "Archive data"
 	default:
 		return "Unknown"
 	}

@@ -1,7 +1,9 @@
 package sdlc
 
 import (
+	"encoding/hex"
 	"fmt"
+	"math"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -11,7 +13,6 @@ import (
 func Test_CMUFrameStream(t *testing.T) {
 	decoder := SDLCResponseDecoder{}
 	utils.Debug.Panic(decoder.InitFromHex("024100000000220109CA8303"))
-
 	assert.Equal(t, CMUFrameStreamCode, decoder.GetIdentifier())
 	cmuFrame, err := decoder.GetCMUFrame()
 	utils.Debug.Panic(err)
@@ -33,4 +34,24 @@ func decodeDate(t *testing.T, hexStr string) {
 	dateTime, err := decoder.GetDateTime()
 	utils.Debug.Panic(err)
 	fmt.Printf("%s\n", dateTime.String())
+}
+
+func TestDunno(t *testing.T) {
+	decoder := SDLCResponseDecoder{}
+	utils.Debug.Panic(decoder.InitFromHex("02110000000000000000A0AF03"))
+	fmt.Println(decoder.GetIdentifier().String())
+}
+
+func TestSDLCRequestEncoder_TS2Detect(t *testing.T) {
+	encode := func(value uint64, expect string) {
+		encoder := SDLCRequestEncoder{}
+		detect, err := encoder.TS2Detect(value)
+		utils.Debug.Panic(err)
+		assert.Equal(t, expect, hex.EncodeToString(detect))
+	}
+
+	encode(7, "0211070000000000000067b703")
+	encode(127000, "021118f0010000000000e9f903")
+	encode(math.MaxUint64, "0211ffffffffffffffff064e03")
+	encode(0, "02110000000000000000a0af03")
 }

@@ -45,8 +45,8 @@ func cycle(t *testing.T, expected string) {
 
 	assert.Equal(t, expected, sdlcSendStr)
 
-	utils.Debug.Println("Source:", expected)
-	utils.Debug.Println("Decode:", sdlcReceiveStr)
+	utils.Print.Ln("Source:", expected)
+	utils.Print.Ln("Decode:", sdlcReceiveStr)
 }
 
 //func TestSendDetectRequest_EncodeTS2(t *testing.T) {

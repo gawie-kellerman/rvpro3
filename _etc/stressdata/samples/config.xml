@@ -1,0 +1,10 @@
+<Config targetIP="192.168.11.2:55555" startupDelaySeconds="2" runSeconds="44" tps="1">
+    <Radar isActive="true" radarIP="192.168.11.12:55555">
+        <Type name="ObjectList" directory="./_etc/stressdata/objectlist" run="false" latchNo="0"
+              latchDurationSecs="0"/>
+        <Type name="Statistics-Countdown" directory="./_etc/stressdata/stats/countdown" run="false" latchNo="1"
+              latchDurationSecs="10"/>
+        <Type name="Statistics-Detail" directory="./_etc/stressdata/stats/detail" run="false" latchNo="1"
+              latchDurationSecs="0"/>
+    </Radar>
+</Config>
