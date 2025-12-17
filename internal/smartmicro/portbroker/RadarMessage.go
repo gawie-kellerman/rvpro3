@@ -16,6 +16,6 @@ var messagePool = sync.Pool{
 type RadarMessage struct {
 	CreateOn  time.Time
 	IPAddress utils.IP4
-	Buffer    [1500]byte
+	Buffer    [3000]byte
 	BufferLen int
 }

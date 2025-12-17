@@ -12,8 +12,8 @@ import (
 type ListRadarsCmd struct {
 	clientId     uint32
 	targetIP     utils.IP4
-	aliveService service.UDPKeepAliveService
-	dataService  service.UDPDataService
+	aliveService service.UDPKeepAlive
+	dataService  service.UDPData
 	waitGroup    sync.WaitGroup
 	radarIPs     map[utils.IP4]bool
 	quitStrategy QuitStrategy
@@ -34,17 +34,17 @@ func (s *ListRadarsCmd) Init(params *radarUtilParams) {
 		s.dataService.Stop()
 	}
 
-	s.aliveService.OnTerminate = func(sender *service.UDPKeepAliveService) {
+	s.aliveService.OnTerminate = func(sender *service.UDPKeepAlive) {
 		Terminal.Println("Alive service completed")
 		s.waitGroup.Done()
 	}
 
-	s.dataService.OnTerminate = func(sender *service.UDPDataService) {
+	s.dataService.OnTerminate = func(sender *service.UDPData) {
 		Terminal.Println("data service completed")
 		s.waitGroup.Done()
 	}
 
-	s.dataService.OnData = func(dataService *service.UDPDataService, addr net.UDPAddr, bytes []byte) {
+	s.dataService.OnData = func(dataService *service.UDPData, addr net.UDPAddr, bytes []byte) {
 		ip4 := utils.IP4Builder.FromIP(addr.IP, addr.Port)
 		_, ok := s.radarIPs[ip4]
 
@@ -62,7 +62,7 @@ func (s *ListRadarsCmd) Init(params *radarUtilParams) {
 		}
 	}
 
-	s.dataService.OnError = func(dataService *service.UDPDataService, err error) {
+	s.dataService.OnError = func(dataService *service.UDPData, err error) {
 		Terminal.PrintErrMsg("Program abort due to error:")
 		Terminal.PrintErr(err)
 		s.aliveService.Stop()

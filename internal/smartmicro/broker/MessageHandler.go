@@ -38,8 +38,11 @@ func (h *MessageHandler) Init() {
 	h.pool = NewMessagePool()
 }
 
-func (h *MessageHandler) Execute() {
+func (h *MessageHandler) Run() {
+	go h.execute()
+}
 
+func (h *MessageHandler) execute() {
 	for h.Terminating = false; !h.Terminating; {
 		select {
 		case msg := <-h.channel:
@@ -71,6 +74,8 @@ func (h *MessageHandler) handleMessage(msg *Message) {
 	case port.PiStatistics:
 		h.Stats.Handle(msg)
 	}
+
+	msg.CompleteOn = time.Now()
 
 	h.pool.Release(msg)
 }

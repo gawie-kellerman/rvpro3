@@ -7,8 +7,8 @@ import (
 	"rvpro3/radarvision.com/utils"
 )
 
-// UDPKeepAliveService to keep the radar alive
-type UDPKeepAliveService struct {
+// UDPKeepAlive to keep the radar alive
+type UDPKeepAlive struct {
 	ClientId         uint32
 	LocalIPAddr      utils.IP4
 	MulticastIPAddr  utils.IP4
@@ -21,10 +21,10 @@ type UDPKeepAliveService struct {
 	terminate        bool
 	terminated       bool
 	now              time.Time
-	OnTerminate      func(*UDPKeepAliveService)
+	OnTerminate      func(*UDPKeepAlive)
 }
 
-func (s *UDPKeepAliveService) Init() {
+func (s *UDPKeepAlive) Init() {
 	s.CooldownMs = 1000
 	s.TimeoutMs = 1000
 	s.ClientId = 0x1000001
@@ -32,7 +32,7 @@ func (s *UDPKeepAliveService) Init() {
 	s.ReconnectOnCycle = 5
 }
 
-func (s *UDPKeepAliveService) Start(targetIPAddr utils.IP4) {
+func (s *UDPKeepAlive) Start(targetIPAddr utils.IP4) {
 	s.terminate = false
 	s.terminated = false
 	s.LocalIPAddr = targetIPAddr
@@ -41,14 +41,18 @@ func (s *UDPKeepAliveService) Start(targetIPAddr utils.IP4) {
 	go s.executeWrite()
 }
 
-func (s *UDPKeepAliveService) Stop() {
+func (s *UDPKeepAlive) Stop() {
 	s.terminate = true
 	for !s.terminated {
 		time.Sleep(100 * time.Millisecond)
 	}
 }
 
-func (s *UDPKeepAliveService) executeWrite() {
+func (s *UDPKeepAlive) Run() {
+	go s.executeWrite()
+}
+
+func (s *UDPKeepAlive) executeWrite() {
 	s.initBuffer()
 
 	for !s.terminate {
@@ -69,7 +73,7 @@ func (s *UDPKeepAliveService) executeWrite() {
 	}
 }
 
-func (s *UDPKeepAliveService) initBuffer() {
+func (s *UDPKeepAlive) initBuffer() {
 	alive := port.NewClientKeepAlive(
 		s.ClientId,
 		s.LocalIPAddr.ToU32(),
@@ -81,7 +85,7 @@ func (s *UDPKeepAliveService) initBuffer() {
 	s.bufferLen = writer.WritePos
 }
 
-func (s *UDPKeepAliveService) sendAlive() {
+func (s *UDPKeepAlive) sendAlive() {
 	cnx := s.connection.GetConnection()
 
 	if cnx == nil {

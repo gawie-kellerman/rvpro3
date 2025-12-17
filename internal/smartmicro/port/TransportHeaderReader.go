@@ -113,7 +113,7 @@ func (t TransportHeaderReader) CheckFormat() error {
 func (t TransportHeaderReader) PrintDetail() {
 	utils.Print.Detail("Transport Header", "\n")
 	utils.Print.Indent(2)
-	_, _ = utils.Print.Detail("Start Pattern", "0x%x\n", t.GetStartPattern())
+	_, _ = utils.Print.Detail("Run Pattern", "0x%x\n", t.GetStartPattern())
 	_, _ = utils.Print.Detail("Protocol Version", "%d\n", t.GetProtocolVersion())
 	_, _ = utils.Print.Detail("Header Length", "%d\n", t.GetHeaderLength())
 	_, _ = utils.Print.Detail("Payload Length", "%d\n", t.GetPayloadLength())
@@ -130,7 +130,7 @@ func (t TransportHeaderReader) PrintFlags() {
 	_, _ = utils.Print.Detail("Flags", "0b%b, %s\n", int(t.GetFlags()), t.GetFlags())
 
 	if flags.IsMessageCount() {
-		utils.Print.Detail("Message Count", "%d\n", int(t.GetMessageCounter()))
+		utils.Print.Detail("Message Data", "%d\n", int(t.GetMessageCounter()))
 	}
 
 	if flags.IsTimestamp() {
@@ -149,7 +149,7 @@ func (t TransportHeaderReader) PrintFlags() {
 		utils.Print.Detail("data Identifier", "%d\n", int(t.GetDataIdentifier()))
 	}
 
-	if flags.IsSegmentation() {
+	if flags.IsSegmentation(nil) {
 		utils.Print.Detail("Segmentation", "%d\n", int(t.GetSegmentation()))
 	}
 }

@@ -13,29 +13,29 @@ import (
 	"rvpro3/radarvision.com/utils"
 )
 
-type UDPDataProcessor struct {
-	UsesObjectList  bool
-	UsesPVR         bool
-	UsesStatistics  bool
-	UsesTriggers    bool
-	UsesDiagnostics bool
-	UsesWgs84       bool
-	UsesInstruction bool
-	waitGroup       *sync.WaitGroup
-	hub             MessageHub
+type UDPEventProcessor struct {
+	IsProcessObjectList  bool
+	IsProcessPVR         bool
+	IsProcessStatistics  bool
+	IsProcessTriggers    bool
+	IsProcessDiagnostics bool
+	IsProcessWgs84       bool
+	IsProcessInstruction bool
+	waitGroup            *sync.WaitGroup
+	hub                  MessageHub
 
-	OnError func(*UDPDataProcessor, error)
+	OnError func(*UDPEventProcessor, error)
 }
 
 var ErrInvalidRadar = errors.New("invalid radar")
 
-func (s *UDPDataProcessor) LatchOnto(ds *service.UDPDataServiceOld, waitGroup *sync.WaitGroup) {
+func (s *UDPEventProcessor) LatchOnto(ds *service.UDPDataServiceOld, waitGroup *sync.WaitGroup) {
 	s.hub.Init()
 	s.waitGroup = waitGroup
 	ds.OnData = s.onDataHandler
 }
 
-func (s *UDPDataProcessor) onDataHandler(service *service.UDPDataServiceOld, addr *net.UDPAddr, bytes []byte) {
+func (s *UDPEventProcessor) onDataHandler(service *service.UDPDataServiceOld, addr *net.UDPAddr, bytes []byte) {
 	radarIndex := RadarIndex(addr)
 
 	if radarIndex == -1 {
@@ -68,40 +68,40 @@ func (s *UDPDataProcessor) onDataHandler(service *service.UDPDataServiceOld, add
 	}
 }
 
-func (s *UDPDataProcessor) shouldProcess(portId port.PortIdentifier) bool {
+func (s *UDPEventProcessor) shouldProcess(portId port.PortIdentifier) bool {
 	switch portId {
 	case port.PiObjectList:
-		return s.UsesObjectList
+		return s.IsProcessObjectList
 	case port.PiPVR:
-		return s.UsesPVR
+		return s.IsProcessPVR
 	case port.PiStatistics:
-		return s.UsesStatistics
+		return s.IsProcessStatistics
 	case port.PiWgs84:
-		return s.UsesWgs84
+		return s.IsProcessWgs84
 	case port.PiInstruction:
-		return s.UsesInstruction
+		return s.IsProcessInstruction
 	case port.PiDiagnostics:
-		return s.UsesDiagnostics
+		return s.IsProcessDiagnostics
 	case port.PiEventTrigger:
-		return s.UsesTriggers
+		return s.IsProcessTriggers
 	default:
 		return false
 	}
 }
 
-func (s *UDPDataProcessor) logIntegrityErr(err error) {
+func (s *UDPEventProcessor) logIntegrityErr(err error) {
 	s.onError(err)
 }
 
-func (s *UDPDataProcessor) logMappingError(err error) {
+func (s *UDPEventProcessor) logMappingError(err error) {
 	s.onError(err)
 }
 
-func (s *UDPDataProcessor) logInvalidRadar(addr *net.UDPAddr) {
+func (s *UDPEventProcessor) logInvalidRadar(addr *net.UDPAddr) {
 	s.onError(errors2.Wrap(ErrInvalidRadar, addr.String()))
 }
 
-func (s *UDPDataProcessor) onError(err error) {
+func (s *UDPEventProcessor) onError(err error) {
 	if s.OnError != nil {
 		s.OnError(s, err)
 	} else {

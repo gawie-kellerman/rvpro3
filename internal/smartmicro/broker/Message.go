@@ -7,6 +7,7 @@ type Message struct {
 	MessageCode int
 	Data        [4096]byte
 	DataLen     int
+	CompleteOn  time.Time
 }
 
 func (m *Message) GetReceiveOn() time.Time {

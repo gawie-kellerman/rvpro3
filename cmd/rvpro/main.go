@@ -20,8 +20,8 @@ func main() {
 }
 
 type UdpExecutor struct {
-	aliveService service.UDPKeepAliveService
-	dataService  service.UDPDataService
+	aliveService service.UDPKeepAlive
+	dataService  service.UDPData
 	radars       portbroker.RadarChannels
 }
 
@@ -50,7 +50,7 @@ func (u *UdpExecutor) Save() {
 	}
 
 	var toSave stats
-	toSave.Udp = u.dataService.Stats
+	toSave.Udp = u.dataService.Metrics
 
 	for index, radar := range u.radars.Radar {
 		toSave.Radar[index] = radar.Stats

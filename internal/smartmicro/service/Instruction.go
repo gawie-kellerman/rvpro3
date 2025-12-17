@@ -30,14 +30,14 @@ const (
 	issAwaitReceiving
 )
 
-// InstructionService is meant to be specific to a radar
+// Instruction is meant to be specific to a radar
 // Notes:
 // 1. Only pop a message from the sendQueue if received
 // 2. Always pop a message from receive queue
-type InstructionService struct {
+type Instruction struct {
 	Context           any
 	RadarIP           utils.IP4
-	DataService       *UDPDataService
+	DataService       *UDPData
 	sequenceNo        atomic.Uint32
 	sendMutex         sync.Mutex
 	sendQueue         utils.Queue
@@ -46,25 +46,25 @@ type InstructionService struct {
 	terminate         bool
 	terminated        bool
 	status            instructionServiceStatus
-	OnIdle            func(*InstructionService) bool
-	OnResponse        func(*InstructionService, *SendQueueItem)
-	OnSequenceError   func(service *InstructionService, instruction *port.Instruction, awaiting *SendQueueItem)
-	OnAfterSendToUDP  func(*InstructionService, utils.IP4, *port.Instruction)
-	OnResend          func(*InstructionService, *SendQueueItem)
-	OnDropInstruction func(*InstructionService, *SendQueueItem) bool
+	OnIdle            func(*Instruction) bool
+	OnResponse        func(*Instruction, *SendQueueItem)
+	OnSequenceError   func(service *Instruction, instruction *port.Instruction, awaiting *SendQueueItem)
+	OnAfterSendToUDP  func(*Instruction, utils.IP4, *port.Instruction)
+	OnResend          func(*Instruction, *SendQueueItem)
+	OnDropInstruction func(*Instruction, *SendQueueItem) bool
 	IdleCooldownMs    time.Duration
 	ResendsCooldownMs time.Duration
 }
 
-func (s *InstructionService) Init() {
+func (s *Instruction) Init() {
 	s.ResendsCooldownMs = 60000
 	s.IdleCooldownMs = 1000
 }
 
 // Start the Instruction Service
 // dataService is used for writing the UDP to the radar
-func (s *InstructionService) Start(
-	dataService *UDPDataService,
+func (s *Instruction) Start(
+	dataService *UDPData,
 	radarIP utils.IP4,
 ) {
 	if s.terminate {
@@ -81,7 +81,7 @@ func (s *InstructionService) Start(
 	go s.execute()
 }
 
-func (s *InstructionService) EnqueueSend(instruction *port.Instruction, maxTries int) {
+func (s *Instruction) EnqueueSend(instruction *port.Instruction, maxTries int) {
 	now := time.Now()
 
 	sqi := &SendQueueItem{
@@ -98,13 +98,13 @@ func (s *InstructionService) EnqueueSend(instruction *port.Instruction, maxTries
 	s.sendMutex.Unlock()
 }
 
-func (s *InstructionService) EnqueueReceive(instruction *port.Instruction) {
+func (s *Instruction) EnqueueReceive(instruction *port.Instruction) {
 	s.receiveMutex.Lock()
 	s.receiveQueue.Push(instruction)
 	s.receiveMutex.Unlock()
 }
 
-func (s *InstructionService) Stop() {
+func (s *Instruction) Stop() {
 	s.terminate = true
 
 	counter := 0
@@ -117,7 +117,7 @@ func (s *InstructionService) Stop() {
 	}
 }
 
-func (s *InstructionService) execute() {
+func (s *Instruction) execute() {
 	for !s.terminate {
 		var shouldSleep bool
 		if s.status == issAwaitSending {
@@ -141,7 +141,7 @@ func (s *InstructionService) execute() {
 	s.terminated = true
 }
 
-func (s *InstructionService) processSend() bool {
+func (s *Instruction) processSend() bool {
 	s.sendMutex.Lock()
 	front, ok := s.sendQueue.Peek()
 	defer s.sendMutex.Unlock()
@@ -171,11 +171,11 @@ func (s *InstructionService) processSend() bool {
 	return true
 }
 
-func (s *InstructionService) nextSequenceNo() uint32 {
+func (s *Instruction) nextSequenceNo() uint32 {
 	return s.sequenceNo.Add(1)
 }
 
-func (s *InstructionService) processReceive() bool {
+func (s *Instruction) processReceive() bool {
 	var front interface{}
 	var ok bool
 	var ins *port.Instruction
@@ -195,7 +195,7 @@ func (s *InstructionService) processReceive() bool {
 	return true
 }
 
-func (s *InstructionService) processResend() bool {
+func (s *Instruction) processResend() bool {
 	s.sendMutex.Lock()
 	send, ok := s.sendQueue.Peek()
 	defer s.sendMutex.Unlock()
@@ -233,7 +233,7 @@ func (s *InstructionService) processResend() bool {
 	return false
 }
 
-func (s *InstructionService) processReceiveInstruction(insReceived *port.Instruction) bool {
+func (s *Instruction) processReceiveInstruction(insReceived *port.Instruction) bool {
 	s.sendMutex.Lock()
 	send, ok := s.sendQueue.Peek()
 
@@ -269,7 +269,7 @@ func (s *InstructionService) processReceiveInstruction(insReceived *port.Instruc
 	return false
 }
 
-func (s *InstructionService) handleSequenceIssue(insReceived *port.Instruction, sentItem *SendQueueItem) {
+func (s *Instruction) handleSequenceIssue(insReceived *port.Instruction, sentItem *SendQueueItem) {
 	if sentItem != nil {
 		if s.OnSequenceError != nil {
 			s.OnSequenceError(s, insReceived, sentItem)
@@ -283,7 +283,7 @@ func (s *InstructionService) handleSequenceIssue(insReceived *port.Instruction, 
 	}
 }
 
-func (s *InstructionService) shouldSleep() bool {
+func (s *Instruction) shouldSleep() bool {
 	switch s.status {
 	case issAwaitSending:
 		return s.sendQueue.IsEmpty()

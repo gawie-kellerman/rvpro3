@@ -66,8 +66,8 @@ func checkResponse() {
 	udpAlive.Init()
 	udpAlive.Start(hostIP)
 
-	udpListener := service.UDPDataService{}
-	udpListener.OnData = func(dataService *service.UDPDataService, addr net.UDPAddr, bytes []byte) {
+	udpListener := service.UDPData{}
+	udpListener.OnData = func(dataService *service.UDPData, addr net.UDPAddr, bytes []byte) {
 		//fmt.Println("Received data: ", len(bytes), addr.String())
 
 		reader := utils.NewFixedBuffer(bytes, 0, len(bytes))

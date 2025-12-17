@@ -86,9 +86,9 @@ type DynamicStatus struct {
 func (s DynamicStatus) PrintDetail() {
 	utils.Print.Detail("Dynamic Status Response", "\n")
 	utils.Print.Indent(2)
-	utils.Print.Detail("SDLC Fail Count", "%d\n", s.SdlcFailCount)
-	utils.Print.Detail("Request Count", "%d\n", s.RequestedCount)
-	utils.Print.Detail("UART Fail Count", "%d\n", s.UartFailCount)
+	utils.Print.Detail("SDLC Fail Data", "%d\n", s.SdlcFailCount)
+	utils.Print.Detail("Request Data", "%d\n", s.RequestedCount)
+	utils.Print.Detail("UART Fail Data", "%d\n", s.UartFailCount)
 	utils.Print.Detail("Since Last COMMs", "%d\n", s.SinceLastSDLCComms)
 	utils.Print.Detail("Uptime (Days)", "%d\n", s.UptimeInDays)
 	utils.Print.Detail("Uptime (mins)", "%d\n", s.UptimeIn6Mins)

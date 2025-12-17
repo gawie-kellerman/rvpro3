@@ -13,7 +13,7 @@ func (s *MessageHub) Init() {
 	for i := 0; i < len(s.Handlers); i++ {
 		h := &s.Handlers[i]
 		h.Init()
-		go h.Execute()
+		go h.execute()
 	}
 }
 

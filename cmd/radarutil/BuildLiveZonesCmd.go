@@ -16,10 +16,10 @@ import (
 type BuildLiveZonesCmd struct {
 	clientId           uint32
 	targetIP           utils.IP4
-	aliveService       service.UDPKeepAliveService
-	dataService        service.UDPDataService
+	aliveService       service.UDPKeepAlive
+	dataService        service.UDPData
 	config             LiveConfig
-	insServices        [4]service.InstructionService
+	insServices        [4]service.Instruction
 	insStarteds        [4]bool
 	waitGroup          sync.WaitGroup
 	quitStrategy       QuitStrategy
@@ -55,16 +55,16 @@ func (s *BuildLiveZonesCmd) Init(params *radarUtilParams) {
 		s.dataService.Stop()
 	}
 
-	s.aliveService.OnTerminate = func(aliveService *service.UDPKeepAliveService) {
+	s.aliveService.OnTerminate = func(aliveService *service.UDPKeepAlive) {
 		s.waitGroup.Add(-1)
 	}
 
-	s.dataService.OnTerminate = func(dataService *service.UDPDataService) {
+	s.dataService.OnTerminate = func(dataService *service.UDPData) {
 		s.waitGroup.Add(-1)
 	}
 }
 
-func (s *BuildLiveZonesCmd) onDataServiceDataCallback(ds *service.UDPDataService, addr net.UDPAddr, bytes []byte) {
+func (s *BuildLiveZonesCmd) onDataServiceDataCallback(ds *service.UDPData, addr net.UDPAddr, bytes []byte) {
 	radarIP4 := utils.IP4Builder.FromIP(addr.IP, addr.Port)
 	radarIndex := utils.RadarIndexOf(radarIP4.ToU32())
 
@@ -103,7 +103,7 @@ func (s *BuildLiveZonesCmd) onDataServiceDataCallback(ds *service.UDPDataService
 	}
 }
 
-func (s *BuildLiveZonesCmd) onInstructionResponse(insService *service.InstructionService, queueItem *service.SendQueueItem) {
+func (s *BuildLiveZonesCmd) onInstructionResponse(insService *service.Instruction, queueItem *service.SendQueueItem) {
 	response := queueItem.Response
 
 	for i := range response.Detail {

@@ -11,7 +11,7 @@ import (
 )
 
 type RadarServices struct {
-	keepAliveService service.UDPKeepAliveService
+	keepAliveService service.UDPKeepAlive
 	listenerService  service.UDPDataServiceOld
 	waitGroup        sync.WaitGroup
 }
@@ -32,7 +32,7 @@ func (s *RadarServices) Execute() {
 	//go s.keepAliveService.executeReceive()
 
 	s.waitGroup.Add(1)
-	go s.listenerService.Execute()
+	go s.listenerService.execute()
 
 	s.waitGroup.Wait()
 }

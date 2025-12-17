@@ -5,6 +5,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"rvpro3/radarvision.com/internal/smartmicro/instrumentation"
 	"rvpro3/radarvision.com/internal/smartmicro/service"
 	"rvpro3/radarvision.com/utils"
 )
@@ -16,13 +17,14 @@ type RadarChannels struct {
 
 func (rc *RadarChannels) Init() {}
 
-func (rc *RadarChannels) Start() {
+func (rc *RadarChannels) Start(workflowBuilder IWorkflowBuilder) {
 	rc.TerminateRefCount.Store(0)
 
 	for index := range rc.Radar {
 		radar := &rc.Radar[index]
+		radar.Metrics = instrumentation.GlobalRadarMetrics.ByIndex(index)
 		radar.OnTerminate = rc.OnChannelTerminate
-		radar.Start(utils.RadarIPOf(index))
+		radar.Run(utils.RadarIPOf(index), workflowBuilder)
 	}
 }
 
@@ -39,16 +41,20 @@ func (rc *RadarChannels) AwaitStop() {
 	}
 }
 
-func (rc *RadarChannels) AttachTo(udp *service.UDPDataService) {
+func (rc *RadarChannels) AttachTo(udp *service.UDPData) {
 	udp.OnData = rc.OnData
 }
 
-func (rc *RadarChannels) OnData(dataService *service.UDPDataService, addr net.UDPAddr, bytes []byte) {
+func (rc *RadarChannels) OnData(
+	dataService *service.UDPData,
+	addr net.UDPAddr,
+	bytes []byte,
+) {
 	ip4 := utils.IP4Builder.FromIP(addr.IP, addr.Port)
 	radarIndex := utils.RadarIndexOf(ip4.ToU32())
 
 	if radarIndex == -1 {
-		dataService.Stats.Register(service.UdpIncorrectRadar, time.Now())
+		dataService.CountMetric(instrumentation.UDPMetricIncorrectRadar, 1)
 		return
 	}
 

@@ -8,9 +8,30 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
+type UDPErrorContext uint8
+
+const (
+	UDPErrorOnConnect UDPErrorContext = iota
+	UDPErrorOnWriteData
+	UDPErrorOnReadData
+)
+
+func (conn *UDPErrorContext) String() string {
+	switch *conn {
+	case UDPErrorOnConnect:
+		return "connect"
+	case UDPErrorOnWriteData:
+		return "send data"
+	case UDPErrorOnReadData:
+		return "read data"
+	default:
+		return "unknown"
+	}
+}
+
 type UDPServerConnection struct {
 	Sender          any
-	OnError         func(*UDPServerConnection, error)
+	OnError         func(*UDPServerConnection, UDPErrorContext, error)
 	OnOpen          func(*UDPServerConnection)
 	OnClose         func(*UDPServerConnection)
 	address         net.UDPAddr
@@ -68,13 +89,14 @@ func (m *UDPServerConnection) Listen() bool {
 	}
 
 	m.retry.Reset()
+
 	if m.OnOpen != nil {
 		m.OnOpen(m)
 	}
 	return true
 
 errorLabel:
-	m.sendError(err)
+	m.sendError(UDPErrorOnConnect, err)
 	m.Close()
 	return false
 }
@@ -101,16 +123,16 @@ func (m *UDPServerConnection) ReceiveData(buffer []byte, now time.Time, waitMs i
 	return
 
 errorLabel:
-	m.sendError(err)
+	m.sendError(UDPErrorOnReadData, err)
 	m.Close()
 	return 0
 }
 
-func (m *UDPServerConnection) sendError(err error) {
+func (m *UDPServerConnection) sendError(context UDPErrorContext, err error) {
 	if m.OnError != nil {
-		m.OnError(m, err)
+		m.OnError(m, context, err)
 	} else {
-		log.Err(err).Msgf("UDPServerConnection")
+		log.Err(err).Str("context", context.String()).Msgf("UDPServerConnection")
 	}
 }
 
@@ -132,7 +154,7 @@ func (m *UDPServerConnection) WriteData(udpAddr net.UDPAddr, buffer []byte) {
 	var err error
 
 	if m.connection == nil {
-		m.sendError(ErrWriteToClosed)
+		m.sendError(UDPErrorOnWriteData, ErrWriteToClosed)
 		return
 	}
 
@@ -147,6 +169,6 @@ func (m *UDPServerConnection) WriteData(udpAddr net.UDPAddr, buffer []byte) {
 	return
 
 errLabel:
-	m.sendError(err)
+	m.sendError(UDPErrorOnWriteData, err)
 	return
 }

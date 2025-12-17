@@ -27,7 +27,11 @@ func (s *UDPDataServiceOld) Init() {
 	}
 }
 
-func (s *UDPDataServiceOld) Execute() {
+func (s *UDPDataServiceOld) Run() {
+	go s.execute()
+}
+
+func (s *UDPDataServiceOld) execute() {
 	s.OnStartCallback(s)
 
 	for s.Terminate = false; !s.Terminate; {
