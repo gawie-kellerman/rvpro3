@@ -149,7 +149,7 @@ func (t TransportHeaderReader) PrintFlags() {
 		utils.Print.Detail("data Identifier", "%d\n", int(t.GetDataIdentifier()))
 	}
 
-	if flags.IsSegmentation(nil) {
+	if flags.IsSegmentation() {
 		utils.Print.Detail("Segmentation", "%d\n", int(t.GetSegmentation()))
 	}
 }

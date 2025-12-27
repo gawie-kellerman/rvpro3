@@ -4,7 +4,7 @@ import (
 	"encoding/hex"
 	"time"
 
-	"rvpro3/radarvision.com/internal/sdlc"
+	"rvpro3/radarvision.com/internal/sdlc/uartsdlc"
 	"rvpro3/radarvision.com/utils"
 )
 
@@ -17,8 +17,8 @@ const StatusEveryArg = "status-every"
 
 type UARTFail struct {
 	Mixin
-	detectEnc     sdlc.SDLCRequestEncoder
-	statusEnc     sdlc.SDLCRequestEncoder
+	detectEnc     uartsdlc.SDLCRequestEncoder
+	statusEnc     uartsdlc.SDLCRequestEncoder
 	cycleCounter  int
 	action        uartFailAction
 	MaxCycles     int
@@ -28,10 +28,10 @@ type UARTFail struct {
 }
 
 func (c *UARTFail) Init() {
-	c.MaxCycles = utils.Args.Get(MaxCyclesArg).(int)
-	c.DetectEvery = utils.Args.Get(DetectEveryArg).(int)
-	c.StatusEvery = utils.Args.Get(StatusEveryArg).(int)
-	c.CycleDuration = utils.Args.Get(CycleDurationArg).(int)
+	c.MaxCycles = utils.GlobalMap.Get(MaxCyclesArg).(int)
+	c.DetectEvery = utils.GlobalMap.Get(DetectEveryArg).(int)
+	c.StatusEvery = utils.GlobalMap.Get(StatusEveryArg).(int)
+	c.CycleDuration = utils.GlobalMap.Get(CycleDurationArg).(int)
 
 	utils.Print.Ln("Running UART Fail with:")
 	utils.Print.Ln("  Max Cycles: ", c.MaxCycles)

@@ -1,9 +1,11 @@
 package sdlccase
 
-import "rvpro3/radarvision.com/internal/sdlc"
+import (
+	"rvpro3/radarvision.com/internal/sdlc/uartsdlc"
+)
 
 type ISDLCCase interface {
-	SetService(*sdlc.SDLCService)
+	SetService(*uartsdlc.SDLCService)
 
 	Init()
 	Start(func())

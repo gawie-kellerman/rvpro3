@@ -37,7 +37,19 @@ func (printClass) Detail(label string, format string, a ...any) (n int, err erro
 
 func (printClass) WarnLn(a ...any) {
 	Print.DatetimeMS(time.Now(), false)
-	_, _ = fmt.Fprintf(os.Stdout, "%*s", indent, "")
+	_, _ = fmt.Fprintf(os.Stdout, "Warn: %*s", indent, "")
+	_, _ = fmt.Fprintln(os.Stdout, a...)
+}
+
+func (printClass) ErrorLn(a ...any) {
+	Print.DatetimeMS(time.Now(), false)
+	_, _ = fmt.Fprintf(os.Stdout, "Error: %*s", indent, "")
+	_, _ = fmt.Fprintln(os.Stdout, a...)
+}
+
+func (printClass) InfoLn(a ...any) {
+	Print.DatetimeMS(time.Now(), false)
+	_, _ = fmt.Fprintf(os.Stdout, "Info: %*s", indent, "")
 	_, _ = fmt.Fprintln(os.Stdout, a...)
 }
 

@@ -5,14 +5,15 @@ type RetryGuard struct {
 	Cycles     uint32
 }
 
-func (r RetryGuard) ShouldRetry() bool {
+func (r *RetryGuard) ShouldRetry() bool {
+	res := r.Cycles%r.RetryEvery == 0
 	r.Cycles++
 	//if r.RetryEvery == 0 {
 	//	r.RetryEvery = 5
 	//}
-	return r.Cycles%r.RetryEvery == 1
+	return res
 }
 
-func (r RetryGuard) Reset() {
+func (r *RetryGuard) Reset() {
 	r.Cycles = 0
 }

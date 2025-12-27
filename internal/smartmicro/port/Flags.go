@@ -108,7 +108,7 @@ func (f FlagsType) SizeOf() uint8 {
 		result += 2
 	}
 
-	if f.IsSegmentation(nil) {
+	if f.IsSegmentation() {
 		result += 2
 	}
 

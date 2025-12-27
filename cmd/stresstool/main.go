@@ -34,7 +34,7 @@ func main() {
 }
 
 func fetchRVProCounters(cfg config.Config, msg string) ([]*hive.RVProRadarStat, error) {
-	utils.Print.Ln("Fetching RVPro Counters")
+	utils.Print.Ln("Fetching KvPairConfigProvider Counters")
 	ws := hive.RVProSocket{
 		Url: cfg.WebSocketUrl,
 	}
@@ -52,7 +52,7 @@ func fetchRVProCounters(cfg config.Config, msg string) ([]*hive.RVProRadarStat, 
 
 func runStress(configFilename string, statsFilename string) {
 	utils.Print.Ln("Radar Vision")
-	utils.Print.Ln("RVPro Stress Tool - Copyright Radar Vision 2025")
+	utils.Print.Ln("KvPairConfigProvider Stress Tool - Copyright Radar Vision 2025")
 
 	wd, err := os.Getwd()
 	utils.Debug.Panic(err)
@@ -64,7 +64,7 @@ func runStress(configFilename string, statsFilename string) {
 
 	simulators := make([]*hive.RadarSimulator, 0, 4)
 
-	counters, err := fetchRVProCounters(cfg, "Fetching Startup RVPro Counters")
+	counters, err := fetchRVProCounters(cfg, "Fetching Startup KvPairConfigProvider Counters")
 	utils.Debug.Panic(err)
 	stressStats.CountsBefore.Radar = counters
 
@@ -109,7 +109,7 @@ func runStress(configFilename string, statsFilename string) {
 
 	// Cooldown
 	time.Sleep(time.Duration(1) * time.Second)
-	counters, err = fetchRVProCounters(cfg, "Fetching Completion RVPro Counters")
+	counters, err = fetchRVProCounters(cfg, "Fetching Completion KvPairConfigProvider Counters")
 	utils.Debug.Panic(err)
 	stressStats.CountsAfter.Radar = counters
 

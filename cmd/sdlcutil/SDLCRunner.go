@@ -3,12 +3,12 @@ package main
 import (
 	"sync"
 
-	"rvpro3/radarvision.com/internal/sdlc"
+	"rvpro3/radarvision.com/internal/sdlc/uartsdlc"
 	"rvpro3/radarvision.com/utils"
 )
 
 type SDLCRequestRunner struct {
-	Service  *sdlc.SDLCService
+	Service  *uartsdlc.SDLCService
 	Repeater *RequestRepeater
 	Wg       sync.WaitGroup
 }
@@ -28,7 +28,7 @@ func (rr *SDLCRequestRunner) Await() {
 	rr.Wg.Wait()
 }
 
-func (rr *SDLCRequestRunner) onServiceTerminate(service *sdlc.SDLCService) {
+func (rr *SDLCRequestRunner) onServiceTerminate(service *uartsdlc.SDLCService) {
 	utils.Print.Ln("Service terminated")
 	rr.Wg.Done()
 }

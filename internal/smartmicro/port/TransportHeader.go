@@ -115,7 +115,7 @@ func (header *TransportHeader) Read(reader *utils.FixedBuffer) {
 		header.DataIdentifier = reader.ReadU16(binary.BigEndian)
 	}
 
-	if header.Flags.IsSegmentation(nil) {
+	if header.Flags.IsSegmentation() {
 		header.Segmentation = reader.ReadU16(binary.BigEndian)
 	}
 

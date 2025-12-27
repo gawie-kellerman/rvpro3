@@ -6,6 +6,8 @@ import (
 	"rvpro3/radarvision.com/utils"
 )
 
+// MixinDataService is deprecated to be removed once SerialDataService
+// is refactored
 type MixinDataService struct {
 	now               time.Time
 	Terminate         bool

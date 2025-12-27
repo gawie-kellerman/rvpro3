@@ -5,25 +5,38 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/rs/zerolog/log"
 	"rvpro3/radarvision.com/internal/smartmicro/instrumentation"
 	"rvpro3/radarvision.com/utils"
 )
 
 type UDPData struct {
-	Metrics           *instrumentation.Metrics
-	Connection        utils.UDPServerConnection
-	Buffer            [udpBufferSize]byte
-	BufferLen         int
-	ListenAddr        utils.IP4
-	Now               time.Time
-	OnData            func(*UDPData, net.UDPAddr, []byte)
-	OnError           func(*UDPData, error)
-	OnTerminate       func(*UDPData)
-	doneChannel       chan bool
-	writeChannel      chan UDPSendData
-	terminate         bool
-	TerminateRefCount atomic.Int32
+	MetricsAt            string
+	Connection           utils.UDPServerConnection
+	Buffer               [1500]byte
+	BufferLen            int
+	ListenAddr           utils.IP4
+	Now                  time.Time
+	OnData               func(*UDPData, net.UDPAddr, []byte)
+	OnError              func(*UDPData, error)
+	OnTerminate          func(*UDPData)
+	doneChannel          chan bool
+	writeChannel         chan UDPSendData
+	terminate            bool
+	TerminateRefCount    atomic.Int32
+	ReadTimeout          int
+	ReconnectCycle       int
+	ReconnectSleep       int
+	timeMetric           *instrumentation.Metric
+	connectErrorMetric   *instrumentation.Metric
+	writeFailMetric      *instrumentation.Metric
+	socketReadFailMetric *instrumentation.Metric
+	socketUseMetric      *instrumentation.Metric
+	dataIterationsMetric *instrumentation.Metric
+	dataBytesMetric      *instrumentation.Metric
+	noDataMetric         *instrumentation.Metric
+	socketSkipMetric     *instrumentation.Metric
+	socketOpenMetric     *instrumentation.Metric
+	utils.ErrorLoggerMixin
 }
 
 func (u *UDPData) WriteData(ip4 utils.IP4, data []byte) {
@@ -35,23 +48,49 @@ func (u *UDPData) WriteData(ip4 utils.IP4, data []byte) {
 	}
 }
 
-func (u *UDPData) Start(listenAddr utils.IP4) {
-	u.Metrics = &instrumentation.GlobalUDPMetrics
+func (u *UDPData) Init() {
+	u.ListenAddr = utils.IP4Builder.FromString("192.168.11.2:55555")
+	u.ReadTimeout = 3000
+	u.ReconnectCycle = 3
+	u.ReconnectSleep = 1000
+}
+
+func (u *UDPData) metric(m instrumentation.UDPMetric) *instrumentation.Metric {
+	return instrumentation.GlobalUDPMetrics.GetRel(int(m))
+}
+
+func (u *UDPData) InitMetrics() {
+	u.MetricsAt = "UDP.Data"
+	gm := &instrumentation.GlobalMetrics
+	u.connectErrorMetric = gm.Metric(u.MetricsAt, "Connect Error", instrumentation.MetricTypeU64)
+	u.writeFailMetric = gm.Metric(u.MetricsAt, "Write Fail", instrumentation.MetricTypeU64)
+	u.socketReadFailMetric = gm.Metric(u.MetricsAt, "Socket Read Fail", instrumentation.MetricTypeU64)
+	u.socketUseMetric = gm.Metric(u.MetricsAt, "Socket Use", instrumentation.MetricTypeU64)
+	u.dataIterationsMetric = gm.Metric(u.MetricsAt, "Data Iterations", instrumentation.MetricTypeU64)
+	u.dataBytesMetric = gm.Metric(u.MetricsAt, "Data Bytes", instrumentation.MetricTypeU64)
+	u.noDataMetric = gm.Metric(u.MetricsAt, "No Data", instrumentation.MetricTypeU64)
+	u.socketSkipMetric = gm.Metric(u.MetricsAt, "Socket Skip", instrumentation.MetricTypeU64)
+	u.socketOpenMetric = gm.Metric(u.MetricsAt, "Socket Open", instrumentation.MetricTypeU64)
+	u.timeMetric = gm.Metric(u.MetricsAt, "Time", instrumentation.MetricTypeU64)
+}
+
+func (u *UDPData) Start() {
+	u.InitMetrics()
+
 	u.TerminateRefCount.Store(2)
 	u.doneChannel = make(chan bool)
 	u.writeChannel = make(chan UDPSendData, 4)
-	u.ListenAddr = listenAddr
 
-	u.Connection.Init(u, listenAddr, 4*utils.Kilobyte, 4*utils.Kilobyte, 3)
+	u.Connection.Init(u, u.ListenAddr, 4*utils.Kilobyte, 4*utils.Kilobyte, u.ReconnectCycle)
 
 	u.Connection.OnError = func(connection *utils.UDPServerConnection, context utils.UDPErrorContext, err error) {
 		switch context {
 		case utils.UDPErrorOnConnect:
-			u.CountMetric(instrumentation.UDPMetricSocketOpenFail, 1)
+			u.connectErrorMetric.AddCount(1, u.Now)
 		case utils.UDPErrorOnWriteData:
-			u.CountMetric(instrumentation.UDPMetricSocketWriteFail, 1)
+			u.writeFailMetric.AddCount(1, u.Now)
 		case utils.UDPErrorOnReadData:
-			u.CountMetric(instrumentation.UDPMetricSocketReadFail, 1)
+			u.socketReadFailMetric.AddCount(1, u.Now)
 		}
 		u.sendError(err)
 	}
@@ -65,38 +104,36 @@ func (u *UDPData) Start(listenAddr utils.IP4) {
 func (u *UDPData) Stop() {
 	u.doneChannel <- true
 
-	for u.TerminateRefCount.Load() > 0 {
+	n := 0
+	for u.TerminateRefCount.Load() > 0 && n < 10 {
 		time.Sleep(100 * time.Millisecond)
+		n = n + 1
 	}
 }
 
 func (u *UDPData) executeReader() {
 	for !u.terminate {
 		u.Now = time.Now()
-
-		// Record the current time in milliseconds
-		u.Metrics.SetTime(
-			int(instrumentation.UDPNow),
-			u.Now,
-		)
+		u.timeMetric.SetTime(u.Now)
 
 		if u.Connection.Listen() {
-			u.CountMetric(instrumentation.UDPMetricSocketUse, 1)
+			u.ClearError()
+			u.socketUseMetric.AddCount(1, u.Now)
 
-			u.BufferLen = u.Connection.ReceiveData(u.Buffer[:], u.Now, 3000)
+			u.BufferLen = u.Connection.ReceiveData(u.Buffer[:], u.Now, u.ReadTimeout)
 			if u.BufferLen > 0 {
-				//
-				u.CountMetric(instrumentation.UDPMetricDataIterations, 1)
-				u.CountMetric(instrumentation.UDPMetricDataBytes, uint64(u.BufferLen))
+				u.dataIterationsMetric.AddCount(1, u.Now)
+				u.dataBytesMetric.AddCount(uint64(u.BufferLen), u.Now)
 
 				if u.OnData != nil {
 					u.OnData(u, u.Connection.FromAddr, u.Buffer[:u.BufferLen])
 				}
 			} else {
-				u.CountMetric(instrumentation.UDPMetricNoDataReceived, 1)
+				u.noDataMetric.AddCount(1, u.Now)
 			}
 		} else {
-			u.CountMetric(instrumentation.UDPMetricSocketSkip, 1)
+			u.socketSkipMetric.AddCount(1, u.Now)
+			time.Sleep(time.Duration(u.ReconnectSleep) * time.Millisecond)
 		}
 	}
 
@@ -108,19 +145,15 @@ func (u *UDPData) executeReader() {
 	}
 }
 
-func (u *UDPData) CountMetric(metric instrumentation.UDPMetric, count uint64) {
-	u.Metrics.AddCount(int(metric), count, u.Now)
-}
-
 func (u *UDPData) onOpenUDPSocket(connection *utils.UDPServerConnection) {
-	u.CountMetric(instrumentation.UDPMetricSocketOpen, 1)
+	u.socketOpenMetric.AddCount(1, u.Now)
 }
 
 func (u *UDPData) sendError(err error) {
 	if u.OnError != nil {
 		u.OnError(u, err)
 	} else {
-		log.Err(err).Msgf("UDPData")
+		u.LogError("UDPData", err)
 	}
 }
 

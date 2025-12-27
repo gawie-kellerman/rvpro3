@@ -2,6 +2,7 @@ package utils
 
 import (
 	"encoding/binary"
+	"encoding/json"
 	"fmt"
 	"net"
 	"strconv"
@@ -76,6 +77,12 @@ func (b ip4Builder) FromPort(port int) IP4 {
 type IP4 struct {
 	bytes [4]byte
 	Port  int
+}
+
+func (ip IP4) MarshalJSON() ([]byte, error) {
+	return json.Marshal(map[string]interface{}{
+		"IP": ip.String(),
+	})
 }
 
 func (s IP4) String() string {

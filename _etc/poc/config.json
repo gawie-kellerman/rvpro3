@@ -1,0 +1,15 @@
+{
+  "Global": {
+    "TriggerDir": "/media/SDLOGS/logs/sensor/{sensor-host}/triggers"
+  },
+  "Radars": [
+    {
+      "IP": "192.168.11.12",
+      "TriggerDir": "/media/SDLOGS/logs/sensor/{sensor-host}/triggers"
+    },
+    {
+      "IP": "192.168.11.13",
+      "TriggerDir": "/media/SDLOGS/logs/sensor/{sensor-host}/triggers"
+    }
+  ]
+}

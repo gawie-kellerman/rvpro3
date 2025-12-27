@@ -8,6 +8,8 @@ import (
 
 const serialBufferSize = 1024 * 8
 
+// SerialDataService
+// TODO: Remove MixinDataService...
 type SerialDataService struct {
 	MixinDataService
 	BaudRate  int

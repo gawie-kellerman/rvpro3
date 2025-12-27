@@ -3,17 +3,17 @@ package sdlccase
 import (
 	"time"
 
-	"rvpro3/radarvision.com/internal/sdlc"
+	"rvpro3/radarvision.com/internal/sdlc/uartsdlc"
 )
 
 type Mixin struct {
-	service     *sdlc.SDLCService
+	service     *uartsdlc.SDLCService
 	terminate   bool
 	terminated  bool
 	onTerminate func(ISDLCCase)
 }
 
-func (c *Mixin) SetService(service *sdlc.SDLCService) {
+func (c *Mixin) SetService(service *uartsdlc.SDLCService) {
 	c.service = service
 }
 

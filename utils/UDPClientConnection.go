@@ -2,8 +2,6 @@ package utils
 
 import (
 	"net"
-
-	"github.com/rs/zerolog/log"
 )
 
 type UDPClientConnection struct {
@@ -15,6 +13,7 @@ type UDPClientConnection struct {
 	OnConnect    func(*UDPClientConnection)
 	OnDisconnect func(*UDPClientConnection)
 	OnError      func(*UDPClientConnection, error)
+	ErrorLoggerMixin
 }
 
 func (s *UDPClientConnection) Init(
@@ -77,6 +76,6 @@ func (s *UDPClientConnection) HandleError(err error) {
 	if s.OnError != nil {
 		s.OnError(s, err)
 	} else {
-		log.Err(err).Msg("UDPClientConnection")
+		s.LogError("UDPClientConnection", err)
 	}
 }

@@ -5,14 +5,14 @@ import (
 	"fmt"
 	"time"
 
-	"rvpro3/radarvision.com/internal/sdlc"
+	"rvpro3/radarvision.com/internal/sdlc/uartsdlc"
 )
 
 type RequestRepeater struct {
 	RequestData []byte
 	Cooldown    time.Duration
 	Repeats     int
-	Service     *sdlc.SDLCService
+	Service     *uartsdlc.SDLCService
 	OnTerminate func(*RequestRepeater)
 }
 

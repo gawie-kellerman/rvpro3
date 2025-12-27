@@ -14,7 +14,7 @@ type UDPKeepAlive struct {
 	MulticastIPAddr  utils.IP4
 	CooldownMs       int
 	ReconnectOnCycle int
-	TimeoutMs        int
+	SendTimeout      int
 	connection       utils.UDPClientConnection
 	buffer           [34]byte
 	bufferLen        int
@@ -22,23 +22,29 @@ type UDPKeepAlive struct {
 	terminated       bool
 	now              time.Time
 	OnTerminate      func(*UDPKeepAlive)
+	utils.ErrorLoggerMixin
 }
 
 func (s *UDPKeepAlive) Init() {
 	s.CooldownMs = 1000
-	s.TimeoutMs = 1000
+	s.SendTimeout = 1000
 	s.ClientId = 0x1000001
 	s.MulticastIPAddr = utils.IP4Builder.FromString("239.144.0.0:60000")
+	s.LocalIPAddr = utils.IP4Builder.FromString("192.168.11.2:55555")
 	s.ReconnectOnCycle = 5
 }
 
-func (s *UDPKeepAlive) Start(targetIPAddr utils.IP4) {
+func (s *UDPKeepAlive) Start() {
 	s.terminate = false
 	s.terminated = false
-	s.LocalIPAddr = targetIPAddr
-	s.connection.Init(s.LocalIPAddr, s.MulticastIPAddr, s, s.ReconnectOnCycle)
+	s.connection.OnError = s.onConnectionError
+	s.connection.Init(s.LocalIPAddr.WithPort(0), s.MulticastIPAddr, s, s.ReconnectOnCycle)
 
 	go s.executeWrite()
+}
+
+func (s *UDPKeepAlive) onConnectionError(connection *utils.UDPClientConnection, err error) {
+	s.LogError("UDPKeepAlive", err)
 }
 
 func (s *UDPKeepAlive) Stop() {
@@ -93,7 +99,7 @@ func (s *UDPKeepAlive) sendAlive() {
 	}
 
 	var err error
-	timeout := s.now.Add(time.Duration(s.TimeoutMs) * time.Millisecond)
+	timeout := s.now.Add(time.Duration(s.SendTimeout) * time.Millisecond)
 	err = cnx.SetWriteDeadline(timeout)
 	if err != nil {
 		goto errLabel

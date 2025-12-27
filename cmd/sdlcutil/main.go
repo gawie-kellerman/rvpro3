@@ -9,7 +9,7 @@ import (
 
 	"go.bug.st/serial"
 	"rvpro3/radarvision.com/cmd/sdlcutil/sdlccase"
-	"rvpro3/radarvision.com/internal/sdlc"
+	"rvpro3/radarvision.com/internal/sdlc/uartsdlc"
 	"rvpro3/radarvision.com/utils"
 )
 
@@ -32,7 +32,7 @@ func main() {
 		return
 	}
 
-	service := sdlc.SDLCService{}
+	service := uartsdlc.SDLCService{}
 	service.Serial.OnConnect = onConnect
 	service.Serial.OnError = onSerialError
 	service.Serial.OnRead = onSerialRead
@@ -53,7 +53,7 @@ func main() {
 	wg.Wait()
 }
 
-func startRunner(runnerName string, service *sdlc.SDLCService, onTerminate func(sdlccase.ISDLCCase)) {
+func startRunner(runnerName string, service *uartsdlc.SDLCService, onTerminate func(sdlccase.ISDLCCase)) {
 	switch runnerName {
 	case "show-uartfail":
 		uart := new(sdlccase.UARTFail)
@@ -97,10 +97,10 @@ func readArgs() bool {
 	baudRate = *baudRateArg
 	dataBits = *dataBitsArg
 	stopBits = serial.StopBits(*stopBitsArg)
-	utils.Args.Set(sdlccase.MaxCyclesArg, *maxCyclesArg)
-	utils.Args.Set(sdlccase.DetectEveryArg, *detectEveryArg)
-	utils.Args.Set(sdlccase.StatusEveryArg, *statusEveryArg)
-	utils.Args.Set(sdlccase.CycleDurationArg, *cycleDurationArg)
+	utils.GlobalMap.Set(sdlccase.MaxCyclesArg, *maxCyclesArg)
+	utils.GlobalMap.Set(sdlccase.DetectEveryArg, *detectEveryArg)
+	utils.GlobalMap.Set(sdlccase.StatusEveryArg, *statusEveryArg)
+	utils.GlobalMap.Set(sdlccase.CycleDurationArg, *cycleDurationArg)
 
 	runnerName = strings.ToLower(*runnerArg)
 	if len(runnerName) == 0 || *helpArg || !isValidCommand(runnerName) {
@@ -116,33 +116,33 @@ func readArgs() bool {
 	return true
 }
 
-func onPopMessage(service *sdlc.SDLCService, bytes []byte) {
+func onPopMessage(service *uartsdlc.SDLCService, bytes []byte) {
 	utils.Print.Ln("Interpreted Message ", hex.EncodeToString(bytes))
 
-	response := sdlc.SDLCResponseDecoder{}
+	response := uartsdlc.SDLCResponseDecoder{}
 	utils.Debug.Panic(response.Init(bytes))
 	switch response.GetIdentifier() {
-	case sdlc.StaticStatusResponseCode:
+	case uartsdlc.StaticStatusResponseCode:
 		obj, err := response.GetStaticStatus()
 		utils.Debug.Panic(err)
 		obj.PrintDetail()
 
-	case sdlc.DynamicStatusResponseCode:
+	case uartsdlc.DynamicStatusResponseCode:
 		obj, err := response.GetDynamicStatus()
 		utils.Debug.Panic(err)
 		obj.PrintDetail()
 
-	case sdlc.BIUDiagnosticResponseCode:
+	case uartsdlc.BIUDiagnosticResponseCode:
 		obj, err := response.GetBIUDiagnostics()
 		utils.Debug.Panic(err)
 		obj.PrintDetail()
 
-	case sdlc.SDLCDiagnosticResponseCode:
+	case uartsdlc.SDLCDiagnosticResponseCode:
 		obj, err := response.GetSDLCDiagnostics()
 		utils.Debug.Panic(err)
 		obj.PrintDetail()
 
-	case sdlc.AcknowledgeResponseCode:
+	case uartsdlc.AcknowledgeResponseCode:
 		obj, err := response.GetAcknowledge()
 		utils.Debug.Panic(err)
 		utils.Print.FmtFeature(featureAcknowledge, "Acknowledged %d\n", obj)
@@ -152,11 +152,11 @@ func onPopMessage(service *sdlc.SDLCService, bytes []byte) {
 	}
 }
 
-func onSerialWrite(connection *sdlc.SerialConnection, bytes []byte) {
+func onSerialWrite(connection *uartsdlc.SerialConnection, bytes []byte) {
 	utils.Print.Ln("Serial Wrote: ", hex.EncodeToString(bytes))
 }
 
-func onSerialRead(connection *sdlc.SerialConnection, bytes []byte) {
+func onSerialRead(connection *uartsdlc.SerialConnection, bytes []byte) {
 	if len(bytes) == 0 {
 		utils.Print.WarnLn("Serial Read: [[No data was read]]")
 	} else {
@@ -164,10 +164,10 @@ func onSerialRead(connection *sdlc.SerialConnection, bytes []byte) {
 	}
 }
 
-func onSerialError(connection *sdlc.SerialConnection, err error) {
+func onSerialError(connection *uartsdlc.SerialConnection, err error) {
 	utils.Print.Ln("Serial error:", err)
 }
 
-func onConnect(connection *sdlc.SerialConnection) {
+func onConnect(connection *uartsdlc.SerialConnection) {
 	utils.Print.Ln("Serial Connected")
 }
