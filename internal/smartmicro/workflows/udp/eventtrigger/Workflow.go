@@ -3,19 +3,20 @@ package eventtrigger
 import (
 	"time"
 
+	"rvpro3/radarvision.com/internal/smartmicro/broker/udp"
+	"rvpro3/radarvision.com/internal/smartmicro/interfaces"
 	"rvpro3/radarvision.com/internal/smartmicro/port"
-	"rvpro3/radarvision.com/internal/smartmicro/workflows/udp/mixin"
 )
 
 type Workflow struct {
-	mixin.MixinWorkflow
+	interfaces.MixinWorkflow
 }
 
 func (w *Workflow) Process(time time.Time, bytes []byte) {
 	reader := port.EventTriggerReader{}
 	reader.Init(bytes)
 
-	channel := w.GetChannel()
+	channel := w.GetParent().(*udp.RadarChannel)
 	state := &channel.State
 
 	if state.Trigger.Update(time, reader.GetRelays1(), reader.GetRelays2()) {

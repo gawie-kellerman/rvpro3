@@ -37,7 +37,7 @@ func main() {
 	service.Serial.OnError = onSerialError
 	service.Serial.OnRead = onSerialRead
 	service.Serial.OnWrote = onSerialWrite
-	service.OnPopMessage = onPopMessage
+	service.OnReadMessage = onPopMessage
 	service.Serial.Init(portName, baudRate, dataBits, parity, stopBits)
 
 	wg := sync.WaitGroup{}
@@ -89,7 +89,7 @@ func readArgs() bool {
 	maxCyclesArg := flag.Int(sdlccase.MaxCyclesArg, 60, "Maximum number of cycles")
 	detectEveryArg := flag.Int(sdlccase.DetectEveryArg, 3, "Send detection every n seconds")
 	statusEveryArg := flag.Int(sdlccase.StatusEveryArg, 1, "Status every n seconds")
-	cycleDurationArg := flag.Int(sdlccase.CycleDurationArg, 1000, "Cycle duration is n milliseconds")
+	cycleDurationArg := flag.Int(sdlccase.CycleDurationArg, 1000, "Metronome duration is n milliseconds")
 
 	flag.Parse()
 

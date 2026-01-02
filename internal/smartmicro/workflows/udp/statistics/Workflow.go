@@ -3,11 +3,11 @@ package statistics
 import (
 	"time"
 
-	"rvpro3/radarvision.com/internal/smartmicro/workflows/udp/mixin"
+	"rvpro3/radarvision.com/internal/smartmicro/interfaces"
 )
 
 type Workflow struct {
-	mixin.MixinWorkflow
+	interfaces.MixinWorkflow
 }
 
 func (w *Workflow) Process(time time.Time, bytes []byte) {

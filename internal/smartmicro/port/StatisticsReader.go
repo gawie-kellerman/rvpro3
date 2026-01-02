@@ -220,7 +220,7 @@ func (s *StatisticsReader) PrintDetail() {
 	utils.Print.Detail("Timestamp", "%d\n", s.GetTimestamp())
 	utils.Print.Detail("Millitime", "%d\n", s.GetMillitime())
 	utils.Print.Detail("Output Type", "%d, %s\n", s.GetOutputType(), s.GetOutputType())
-	utils.Print.Detail("Output Format Version", "%d\n", s.GetOutputFormatVersion())
+	utils.Print.Detail("Output Template Version", "%d\n", s.GetOutputFormatVersion())
 	utils.Print.Detail("Frame Id", "%d\n", s.GetFrameId())
 	utils.Print.Detail("Fail Safe", "%b, %s\n", s.GetFailSafeStatus(), s.GetFailSafeStatus())
 	utils.Print.Detail("SRO Version", "%d\n", s.GetSROVersion())

@@ -26,3 +26,17 @@ func (f file) SaveAsHex(filename string, slice []byte) error {
 	encoded := hex.EncodeToString(slice)
 	return os.WriteFile(filename, []byte(encoded), 0644)
 }
+
+func (f file) Exists(filename string) (bool, error) {
+	_, err := os.Stat(filename)
+
+	if os.IsNotExist(err) {
+		return false, nil
+	}
+
+	if err != nil {
+		return false, err
+	}
+
+	return true, nil
+}

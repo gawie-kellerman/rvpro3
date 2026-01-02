@@ -1,4 +1,4 @@
-<mxfile host="Electron" agent="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/29.0.3 Chrome/140.0.7339.249 Electron/38.7.2 Safari/537.36" version="29.0.3" pages="3">
+<mxfile host="Electron" agent="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/29.0.3 Chrome/140.0.7339.249 Electron/38.7.2 Safari/537.36" version="29.0.3" pages="5">
   <diagram name="UDP Data Flow" id="SmXVCG86KaP07-h-vU7J">
     <mxGraphModel dx="2066" dy="1244" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
       <root>
@@ -367,6 +367,79 @@
         </mxCell>
         <mxCell id="5d-5OODCKgw7eL1kUsrS-24" value="Triggers&lt;br&gt;LE" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
           <mxGeometry x="40" y="270" width="120" height="60" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="zRe0kcedhZlUG7T1LMj9" name="Page-4">
+    <mxGraphModel dx="2066" dy="1244" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="PGPDpD-s8levQjG-mdMC-1" value="Metrics:&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;1. Variability by radar&lt;/div&gt;&lt;div&gt;2. Cost of doing it by name... not really and issue&lt;/div&gt;&lt;div&gt;3. The real issue is the cost to serialize...&amp;nbsp; as...&amp;nbsp; how do you filter &quot;painlessly&quot;&lt;/div&gt;&lt;div&gt;4. Will get rid of the Globals and the inits&lt;/div&gt;&lt;div&gt;5. Size of binary serialize&lt;/div&gt;&lt;div&gt;5. List of Map e.g.&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;GlobalMetric[RadarMetrics][&quot;Whatever&quot;]&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=left;verticalAlign=top;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="90" y="110" width="480" height="480" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="uICVMS1_wVwOTGBh-TXw" name="SDLC">
+    <mxGraphModel dx="2066" dy="1244" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="RnoR7UthSJuzYHCgbYoK-1" value="uartsdlc.SDLCService" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=26;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+          <mxGeometry x="60" y="50" width="270" height="86" as="geometry" />
+        </mxCell>
+        <mxCell id="RnoR7UthSJuzYHCgbYoK-2" value="+ OnReadMessage(*, []byte)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;whiteSpace=wrap;html=1;" parent="RnoR7UthSJuzYHCgbYoK-1" vertex="1">
+          <mxGeometry y="26" width="270" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="RnoR7UthSJuzYHCgbYoK-3" value="" style="line;strokeWidth=1;fillColor=none;align=left;verticalAlign=middle;spacingTop=-1;spacingLeft=3;spacingRight=3;rotatable=0;labelPosition=right;points=[];portConstraint=eastwest;strokeColor=inherit;" parent="RnoR7UthSJuzYHCgbYoK-1" vertex="1">
+          <mxGeometry y="52" width="270" height="8" as="geometry" />
+        </mxCell>
+        <mxCell id="RnoR7UthSJuzYHCgbYoK-4" value="+ Write(data []byte)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;whiteSpace=wrap;html=1;" parent="RnoR7UthSJuzYHCgbYoK-1" vertex="1">
+          <mxGeometry y="60" width="270" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="RnoR7UthSJuzYHCgbYoK-5" value="TODO/Log" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+          <mxGeometry x="100" y="170" width="140" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="RnoR7UthSJuzYHCgbYoK-6" value="log reads" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="RnoR7UthSJuzYHCgbYoK-5" vertex="1">
+          <mxGeometry y="30" width="140" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="RnoR7UthSJuzYHCgbYoK-7" value="log writes" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="RnoR7UthSJuzYHCgbYoK-5" vertex="1">
+          <mxGeometry y="60" width="140" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="RnoR7UthSJuzYHCgbYoK-8" value="log omits" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="RnoR7UthSJuzYHCgbYoK-5" vertex="1">
+          <mxGeometry y="90" width="140" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="RnoR7UthSJuzYHCgbYoK-9" value="TODO" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+          <mxGeometry x="290" y="170" width="140" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="RnoR7UthSJuzYHCgbYoK-10" value="Every n seconds, do Static Status Request" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="RnoR7UthSJuzYHCgbYoK-9" vertex="1">
+          <mxGeometry y="30" width="140" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="RnoR7UthSJuzYHCgbYoK-11" value="Item 2" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="RnoR7UthSJuzYHCgbYoK-9" vertex="1">
+          <mxGeometry y="60" width="140" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="RnoR7UthSJuzYHCgbYoK-12" value="Item 3" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="RnoR7UthSJuzYHCgbYoK-9" vertex="1">
+          <mxGeometry y="90" width="140" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="z0konOHtiBlB_a1YJPKD-1" value="SchedulerAcquirer&lt;div&gt;Cooldown: 200ms&lt;/div&gt;" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;align=left;" vertex="1" parent="1">
+          <mxGeometry x="130" y="410" width="30" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="z0konOHtiBlB_a1YJPKD-3" value="PIC32SDLCAcquirer&lt;div&gt;status_request_cooldown_secs: 60&lt;/div&gt;&lt;div&gt;csv_file: ...&lt;/div&gt;" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;align=left;" vertex="1" parent="1">
+          <mxGeometry x="130" y="560" width="30" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="z0konOHtiBlB_a1YJPKD-4" value="PIC32SDLCRequestActivity&lt;div&gt;instruction: 21&lt;/div&gt;&lt;div&gt;cooldown_ms: 1000&lt;/div&gt;" style="ellipse;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="110" y="730" width="140" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="z0konOHtiBlB_a1YJPKD-5" value="EventTriggerSendToUARTActivity&lt;div&gt;UART Resend On&lt;/div&gt;&lt;div&gt;CSV?&lt;/div&gt;" style="ellipse;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="100" y="840" width="140" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="z0konOHtiBlB_a1YJPKD-6" value="PIC32SDLCResponseActivity&lt;div&gt;BIU?&lt;/div&gt;&lt;div&gt;Instruction&lt;/div&gt;" style="ellipse;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="100" y="960" width="140" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="z0konOHtiBlB_a1YJPKD-12" value="&lt;ul&gt;&lt;li&gt;Every 200 ms&amp;nbsp;&lt;/li&gt;&lt;li&gt;Check for Change or Expiry&lt;/li&gt;&lt;li&gt;Send Triggers to SDLC UART&lt;/li&gt;&lt;li&gt;Send Triggers to SDLC Web&lt;/li&gt;&lt;/ul&gt;" style="text;strokeColor=none;fillColor=none;html=1;whiteSpace=wrap;verticalAlign=middle;overflow=hidden;" vertex="1" parent="1">
+          <mxGeometry x="290" y="840" width="300" height="80" as="geometry" />
         </mxCell>
       </root>
     </mxGraphModel>

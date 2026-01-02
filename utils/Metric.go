@@ -1,11 +1,9 @@
-package instrumentation
+package utils
 
 import (
 	"encoding/binary"
 	"encoding/json"
 	"time"
-
-	"rvpro3/radarvision.com/utils"
 )
 
 type MetricType uint8
@@ -33,69 +31,67 @@ func (m MetricType) String() string {
 }
 
 type Metric struct {
-	Id       int
 	DataType MetricType
 	Data     [8]byte
 	FirstOn  int64
 	LastOn   int64
 	ResetOn  int64
-	IsActive bool
+	IsSet    bool
 	Name     string
 }
 
 func (s *Metric) MarshalJSON() ([]byte, error) {
 	return json.Marshal(map[string]interface{}{
-		"Id":    s.Id,
-		"Name":  GlobalMetricName(s.Id),
 		"Type":  s.DataType.String(),
-		"First": time.UnixMilli(s.FirstOn).Format(utils.DisplayDTMS),
-		"Last":  time.UnixMilli(s.LastOn).Format(utils.DisplayDTMS),
-		"Reset": time.UnixMilli(s.ResetOn).Format(utils.DisplayDTMS),
+		"First": time.UnixMilli(s.FirstOn).Format(DisplayDateTimeMS),
+		"Last":  time.UnixMilli(s.LastOn).Format(DisplayDateTimeMS),
+		"Reset": time.UnixMilli(s.ResetOn).Format(DisplayDateTimeMS),
 		"Value": s.GetValue(),
 	})
 }
 
 func (s *Metric) AddCount(count uint64, now time.Time) bool {
+	wasActive := s.IsSet
 	current := binary.LittleEndian.Uint64(s.Data[0:8])
-	if current == 0 {
-		s.IsActive = true
+
+	if !s.IsSet {
+		s.IsSet = true
 		s.DataType = MetricTypeU64
 		s.FirstOn = now.UnixMilli()
 	}
 
 	binary.LittleEndian.PutUint64(s.Data[0:8], current+count)
 	s.LastOn = now.UnixMilli()
-	return current == 0
+	return wasActive
 }
 
 func (s *Metric) SetTime(tm time.Time) bool {
-	current := binary.LittleEndian.Uint64(s.Data[0:8])
+	wasActive := s.IsSet
 
-	if current == 0 {
-		s.IsActive = true
+	if !s.IsSet {
+		s.IsSet = true
 		s.DataType = MetricTypeTime
 		s.FirstOn = tm.UnixMilli()
 	}
 
 	binary.LittleEndian.PutUint64(s.Data[0:8], uint64(tm.UnixMilli()))
 	s.LastOn = tm.UnixMilli()
-	return current == 0
+	return wasActive
 }
 
-func (s *Metric) WriteToFixedBuffer(writer *utils.FixedBuffer) {
-	writer.WriteU16(uint16(s.Id), binary.LittleEndian)
+func (s *Metric) WriteToFixedBuffer(writer *FixedBuffer) {
+	writer.WritePascal(s.Name)
 	writer.WriteU8(uint8(s.DataType))
 	writer.WriteBytes(s.Data[0:8])
 	writer.WriteI64(s.FirstOn, binary.LittleEndian)
 	writer.WriteI64(s.LastOn, binary.LittleEndian)
 	writer.WriteI64(s.ResetOn, binary.LittleEndian)
-	writer.WriteBool(s.IsActive)
+	writer.WriteBool(s.IsSet)
 }
 
 func (s *Metric) ReplaceMaxDuration(duration int64, now time.Time) {
-
-	if !s.IsActive {
-		s.IsActive = true
+	if !s.IsSet {
+		s.IsSet = true
 		s.DataType = MetricTypeDuration
 		s.FirstOn = now.UnixMilli()
 		s.LastOn = s.FirstOn
@@ -110,8 +106,8 @@ func (s *Metric) ReplaceMaxDuration(duration int64, now time.Time) {
 }
 
 func (s *Metric) ReplaceMinDuration(duration int64, now time.Time) {
-	if !s.IsActive {
-		s.IsActive = true
+	if !s.IsSet {
+		s.IsSet = true
 		s.DataType = MetricTypeDuration
 		s.FirstOn = now.UnixMilli()
 		s.LastOn = s.FirstOn
@@ -126,8 +122,8 @@ func (s *Metric) ReplaceMinDuration(duration int64, now time.Time) {
 }
 
 func (s *Metric) SetU32(value uint32, now time.Time) {
-	if !s.IsActive {
-		s.IsActive = true
+	if !s.IsSet {
+		s.IsSet = true
 		s.FirstOn = now.UnixMilli()
 		s.DataType = MetricTypeU32
 	}
@@ -135,9 +131,13 @@ func (s *Metric) SetU32(value uint32, now time.Time) {
 	binary.LittleEndian.PutUint32(s.Data[0:4], value)
 }
 
+func (s *Metric) GetU32() uint32 {
+	return binary.LittleEndian.Uint32(s.Data[0:4])
+}
+
 func (s *Metric) SetU16(value uint16, now time.Time) {
-	if !s.IsActive {
-		s.IsActive = true
+	if !s.IsSet {
+		s.IsSet = true
 		s.FirstOn = now.UnixMilli()
 		s.DataType = MetricTypeU32
 	}
@@ -164,21 +164,18 @@ func (s *Metric) GetU64() interface{} {
 	return binary.LittleEndian.Uint64(s.Data[0:8])
 }
 
-func (s *Metric) GetU32() interface{} {
-	return binary.LittleEndian.Uint32(s.Data[0:4])
-}
-
-var MetricsHelper metricsHelper
-
-type metricsHelper struct {
-}
-
-func (metricsHelper) CountActives(stats []Metric) int {
-	res := 0
-	for _, stat := range stats {
-		if stat.IsActive {
-			res++
-		}
+func (s *Metric) Inc(now time.Time) {
+	current := binary.LittleEndian.Uint64(s.Data[0:8])
+	if !s.IsSet {
+		s.IsSet = true
+		s.DataType = MetricTypeU64
+		s.FirstOn = now.UnixMilli()
 	}
-	return res
+
+	binary.LittleEndian.PutUint64(s.Data[0:8], current+1)
+	s.LastOn = now.UnixMilli()
+}
+
+func (s *Metric) Add(count int, now time.Time) {
+	s.AddCount(uint64(count), now)
 }

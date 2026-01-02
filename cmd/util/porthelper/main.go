@@ -50,7 +50,7 @@ func getZoneWidths() *port.Instruction {
 //
 //		res := port.NewInstruction()
 //
-//		res.Th.Flags = res.Th.Flags.Set(port.FlSourceClientId)
+//		res.Th.Flags = res.Th.Flags.SetRaw(port.FlSourceClientId)
 //		res.Th.SourceClientId = 0x1000001
 //		res.Ph.Timestamp = 41062
 //		res.AddDetail(iFace.Detail(face8700.S3018.Id, face8700.S3018ZoneWidth))

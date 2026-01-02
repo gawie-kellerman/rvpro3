@@ -10,7 +10,7 @@ type ErrorLoggerMixin struct {
 	lastError       error
 	lastErrorCount  int
 	lastErrorTime   time.Time
-	LogRepeatMillis int64
+	LogRepeatMillis time.Duration
 }
 
 func (el *ErrorLoggerMixin) LogError(msg string, err error) {
@@ -37,7 +37,7 @@ func (el *ErrorLoggerMixin) LogError(msg string, err error) {
 	if el.lastError.Error() != err.Error() {
 		if el.lastErrorCount > 1 {
 			log.Err(el.lastError).
-				Str("since", Time.ToDisplayTMS(el.lastErrorTime)).
+				Str("since", el.lastErrorTime.Format(DisplayTimeMS)).
 				Int("repeat", el.lastErrorCount).
 				Msg(msg)
 		}
@@ -48,10 +48,10 @@ func (el *ErrorLoggerMixin) LogError(msg string, err error) {
 		el.lastErrorCount = 0
 		el.lastError = err
 	} else {
-		if now.Sub(el.lastErrorTime).Milliseconds() > el.LogRepeatMillis {
+		if now.Sub(el.lastErrorTime) > el.LogRepeatMillis {
 			if el.lastErrorCount > 0 {
 				log.Err(el.lastError).
-					Str("since", Time.ToDisplayTMS(el.lastErrorTime)).
+					Str("since", el.lastErrorTime.Format(DisplayTimeMS)).
 					Int("repeat", el.lastErrorCount).
 					Msg(msg)
 				el.lastErrorTime = now

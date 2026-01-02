@@ -10,18 +10,18 @@ import (
 	"rvpro3/radarvision.com/utils/bit"
 )
 
-const MetricsAt = "SDLC.WEB"
-
-type sdlcWebApi struct{}
+type sdlcWebApi struct {
+	BasePath string
+}
 
 var SDLCWebApi sdlcWebApi
 
-func (sdlcWebApi) GetStatus4(basePath string) (res Status4Response, err error) {
+func (w sdlcWebApi) GetStatus4() (res Status4Response, err error) {
 	var fullUrl string
 	var httpResponse *http.Response
 	var httpBody []byte
 
-	fullUrl, err = url.JoinPath(basePath, "/status4.xml")
+	fullUrl, err = url.JoinPath(w.BasePath, "/status4.xml")
 
 	if err != nil {
 		return res, err
@@ -47,13 +47,13 @@ func (sdlcWebApi) GetStatus4(basePath string) (res Status4Response, err error) {
 	return res, nil
 }
 
-func (sdlcWebApi) SendTS2Detect(basePath string, trigger uint64, mask uint64) (res SendDetectResponse, err error) {
+func (w sdlcWebApi) SendTS2Detect(trigger uint64, mask uint64) (res SendDetectResponse, err error) {
 	var httpBody []byte
 	var httpResponse *http.Response
 	var uri *url.URL
 	detect := SDLCWebApi.GetTS2Detect(trigger, mask)
 
-	fullUrl, err := url.JoinPath(basePath, "/dets.cgi")
+	fullUrl, err := url.JoinPath(w.BasePath, "/dets.cgi")
 
 	if err != nil {
 		return res, err

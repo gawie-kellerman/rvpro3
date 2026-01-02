@@ -19,7 +19,8 @@ type FixedBuffer struct {
 	Err         error
 }
 
-var ErrBufferOverflow = errors.New("Buffer overflow")
+var ErrBufferOverflow = errors.New("buffer overflow")
+var ErrPascalStringLength = errors.New("pascal string length error")
 
 func NewFixedBuffer(buffer []byte, readPos int, writePos int) FixedBuffer {
 	return FixedBuffer{
@@ -259,4 +260,13 @@ func (obj *FixedBuffer) ReadBuffer(value []byte) {
 func (obj *FixedBuffer) ResetTo(readPos int, writePos int) {
 	obj.ReadPos = readPos
 	obj.WritePos = writePos
+}
+
+func (obj *FixedBuffer) WritePascal(value string) {
+	if len(value) > 254 {
+		obj.Err = ErrPascalStringLength
+		return
+	}
+	obj.WriteU8(uint8(len(value)))
+	obj.WriteBytes([]byte(value))
 }

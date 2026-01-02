@@ -37,7 +37,7 @@ func (c *UARTFail) Init() {
 	utils.Print.Ln("  Max Cycles: ", c.MaxCycles)
 	utils.Print.Ln("  Detect Every: ", c.DetectEvery, "cycles")
 	utils.Print.Ln("  Status Every: ", c.StatusEvery, "cycles")
-	utils.Print.Ln("  Cycle Duration: ", c.CycleDuration, "milliseconds")
+	utils.Print.Ln("  Metronome Duration: ", c.CycleDuration, "milliseconds")
 
 }
 

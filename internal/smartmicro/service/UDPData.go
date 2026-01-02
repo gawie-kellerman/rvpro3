@@ -5,9 +5,15 @@ import (
 	"sync/atomic"
 	"time"
 
-	"rvpro3/radarvision.com/internal/smartmicro/instrumentation"
 	"rvpro3/radarvision.com/utils"
 )
+
+const UDPDataServiceName = "UDP.Data.Service"
+const udpDataEnabled = "UDP.Data.Enabled"
+const udpDataReadTimeout = "UDP.Data.ReadTimeout"
+const udpDataReconnectCycle = "UDP.Data.Reconnect.Cycle"
+const udpDataReconnectSleep = "UDP.Data.Reconnect.AwaitClick"
+const udpDataLogRepeatMillis = "UDP.Data.Log.RepeatMillis"
 
 type UDPData struct {
 	MetricsAt            string
@@ -26,17 +32,47 @@ type UDPData struct {
 	ReadTimeout          int
 	ReconnectCycle       int
 	ReconnectSleep       int
-	timeMetric           *instrumentation.Metric
-	connectErrorMetric   *instrumentation.Metric
-	writeFailMetric      *instrumentation.Metric
-	socketReadFailMetric *instrumentation.Metric
-	socketUseMetric      *instrumentation.Metric
-	dataIterationsMetric *instrumentation.Metric
-	dataBytesMetric      *instrumentation.Metric
-	noDataMetric         *instrumentation.Metric
-	socketSkipMetric     *instrumentation.Metric
-	socketOpenMetric     *instrumentation.Metric
+	timeMetric           *utils.Metric
+	sockOpenFailMetric   *utils.Metric
+	sockWriteFailMetric  *utils.Metric
+	sockReadFailMetric   *utils.Metric
+	sockReuseMetric      *utils.Metric
+	dataIterationsMetric *utils.Metric
+	dataBytesMetric      *utils.Metric
+	noDataMetric         *utils.Metric
+	socketSkipMetric     *utils.Metric
+	socketOpenMetric     *utils.Metric
 	utils.ErrorLoggerMixin
+	IncorrectRadarMetric *utils.Metric
+	isRunningMetric      *utils.Metric
+	terminated           bool
+}
+
+func (u *UDPData) SetupDefaults(config *utils.Config) {
+	config.SetSettingAsBool(udpDataEnabled, true)
+	config.SetSettingAsInt(udpDataReadTimeout, 3000)
+	config.SetSettingAsInt(udpDataReconnectCycle, 5)
+	config.SetSettingAsMillis(udpDataReconnectSleep, 1000)
+	config.SetSettingAsInt(udpDataLogRepeatMillis, 60000) // only log continuous failures once a minute
+}
+
+func (u *UDPData) SetupRunnable(state *utils.State, config *utils.Config) {
+	if !config.GetSettingAsBool(udpDataEnabled) {
+		return
+	}
+
+	u.InitFromConfig(config)
+	u.Start()
+
+	state.Set(u.GetStateName(), u)
+}
+
+func (u *UDPData) GetStateName() string {
+	return UDPDataServiceName
+}
+
+func (u *UDPData) GetStateNames() []string {
+	return nil
 }
 
 func (u *UDPData) WriteData(ip4 utils.IP4, data []byte) {
@@ -55,27 +91,28 @@ func (u *UDPData) Init() {
 	u.ReconnectSleep = 1000
 }
 
-func (u *UDPData) metric(m instrumentation.UDPMetric) *instrumentation.Metric {
-	return instrumentation.GlobalUDPMetrics.GetRel(int(m))
-}
-
 func (u *UDPData) InitMetrics() {
 	u.MetricsAt = "UDP.Data"
-	gm := &instrumentation.GlobalMetrics
-	u.connectErrorMetric = gm.Metric(u.MetricsAt, "Connect Error", instrumentation.MetricTypeU64)
-	u.writeFailMetric = gm.Metric(u.MetricsAt, "Write Fail", instrumentation.MetricTypeU64)
-	u.socketReadFailMetric = gm.Metric(u.MetricsAt, "Socket Read Fail", instrumentation.MetricTypeU64)
-	u.socketUseMetric = gm.Metric(u.MetricsAt, "Socket Use", instrumentation.MetricTypeU64)
-	u.dataIterationsMetric = gm.Metric(u.MetricsAt, "Data Iterations", instrumentation.MetricTypeU64)
-	u.dataBytesMetric = gm.Metric(u.MetricsAt, "Data Bytes", instrumentation.MetricTypeU64)
-	u.noDataMetric = gm.Metric(u.MetricsAt, "No Data", instrumentation.MetricTypeU64)
-	u.socketSkipMetric = gm.Metric(u.MetricsAt, "Socket Skip", instrumentation.MetricTypeU64)
-	u.socketOpenMetric = gm.Metric(u.MetricsAt, "Socket Open", instrumentation.MetricTypeU64)
-	u.timeMetric = gm.Metric(u.MetricsAt, "Time", instrumentation.MetricTypeU64)
+	gm := &utils.GlobalMetrics
+	u.isRunningMetric = gm.Metric(u.MetricsAt, "Is Running", utils.MetricTypeU32)
+	u.sockOpenFailMetric = gm.Metric(u.MetricsAt, "Error: Socket Open Fail", utils.MetricTypeU64)
+	u.sockWriteFailMetric = gm.Metric(u.MetricsAt, "Error: Socket Write Fail", utils.MetricTypeU64)
+	u.sockReadFailMetric = gm.Metric(u.MetricsAt, "Error: Socket Read Fail", utils.MetricTypeU64)
+	u.sockReuseMetric = gm.Metric(u.MetricsAt, "Open Socket Reused", utils.MetricTypeU64)
+	u.dataIterationsMetric = gm.Metric(u.MetricsAt, "Metric Iterations", utils.MetricTypeU64)
+	u.dataBytesMetric = gm.Metric(u.MetricsAt, "Bytes Received", utils.MetricTypeU64)
+	u.noDataMetric = gm.Metric(u.MetricsAt, "No Metric Received", utils.MetricTypeU64)
+	u.socketSkipMetric = gm.Metric(u.MetricsAt, "Skip Failed Socket", utils.MetricTypeU64)
+	u.socketOpenMetric = gm.Metric(u.MetricsAt, "Socket Opens", utils.MetricTypeU64)
+	u.IncorrectRadarMetric = gm.Metric(u.MetricsAt, "Error: Incorrect Radar", utils.MetricTypeU64)
+	u.timeMetric = gm.Metric(u.MetricsAt, "Now", utils.MetricTypeU64)
 }
 
 func (u *UDPData) Start() {
 	u.InitMetrics()
+	u.terminate = false
+	u.terminated = false
+	u.isRunningMetric.SetU32(1, time.Now())
 
 	u.TerminateRefCount.Store(2)
 	u.doneChannel = make(chan bool)
@@ -86,11 +123,11 @@ func (u *UDPData) Start() {
 	u.Connection.OnError = func(connection *utils.UDPServerConnection, context utils.UDPErrorContext, err error) {
 		switch context {
 		case utils.UDPErrorOnConnect:
-			u.connectErrorMetric.AddCount(1, u.Now)
+			u.sockOpenFailMetric.AddCount(1, u.Now)
 		case utils.UDPErrorOnWriteData:
-			u.writeFailMetric.AddCount(1, u.Now)
+			u.sockWriteFailMetric.AddCount(1, u.Now)
 		case utils.UDPErrorOnReadData:
-			u.socketReadFailMetric.AddCount(1, u.Now)
+			u.sockReadFailMetric.AddCount(1, u.Now)
 		}
 		u.sendError(err)
 	}
@@ -109,6 +146,9 @@ func (u *UDPData) Stop() {
 		time.Sleep(100 * time.Millisecond)
 		n = n + 1
 	}
+
+	u.isRunningMetric.SetU32(0, time.Now())
+	u.terminated = true
 }
 
 func (u *UDPData) executeReader() {
@@ -118,7 +158,7 @@ func (u *UDPData) executeReader() {
 
 		if u.Connection.Listen() {
 			u.ClearError()
-			u.socketUseMetric.AddCount(1, u.Now)
+			u.sockReuseMetric.AddCount(1, u.Now)
 
 			u.BufferLen = u.Connection.ReceiveData(u.Buffer[:], u.Now, u.ReadTimeout)
 			if u.BufferLen > 0 {
@@ -176,6 +216,18 @@ func (u *UDPData) executeWriter() {
 func (u *UDPData) writeData(data UDPSendData) {
 	udpAddr := data.Address.ToUDPAddr()
 	u.Connection.WriteData(udpAddr, data.Data)
+}
+
+func (u *UDPData) IsTerminated() bool {
+	return u.terminated
+}
+
+func (u *UDPData) InitFromConfig(config *utils.Config) {
+	u.ListenAddr = config.GetSettingAsIP(udpKeepAliveCallbackIP)
+	u.ReadTimeout = config.GetSettingAsInt(udpDataReadTimeout)
+	u.ReconnectCycle = config.GetSettingAsInt(udpDataReconnectCycle)
+	u.ReconnectSleep = config.GetSettingAsInt(udpDataReconnectSleep)
+	u.LogRepeatMillis = config.GetSettingAsMillis(udpDataLogRepeatMillis)
 }
 
 type UDPSendData struct {

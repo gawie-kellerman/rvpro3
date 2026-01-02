@@ -163,7 +163,7 @@ func (ih *InstructionHeader) PrintDetail() {
 	utils.Print.Detail("instruction Header", "\n")
 	utils.Print.Indent(2)
 	_, _ = utils.Print.Detail("Instructions", "%d\n", ih.NoInstructions)
-	_, _ = utils.Print.Detail("Sequence Data", "%d\n", ih.SequenceNo)
+	_, _ = utils.Print.Detail("Sequence Metric", "%d\n", ih.SequenceNo)
 	utils.Print.Indent(-2)
 }
 
@@ -262,7 +262,7 @@ func (id *InstructionDetail) PrintDetail(no int, order binary.ByteOrder) {
 	utils.Print.Detail("InstructionSection", "%d\n", id.SectionId)
 	utils.Print.Detail("Parameter", "%d\n", id.ParameterId)
 	utils.Print.Detail("DataType", "%d, %s\n", id.DataType, id.DataType.ToString())
-	utils.Print.Detail("Dim Data", "%d\n", id.DimCount)
+	utils.Print.Detail("Dim Metric", "%d\n", id.DimCount)
 	utils.Print.Detail("Element", "%d, %d\n", id.Element1, id.Element2)
 	utils.Print.Detail("Signature", "%d\n", id.Signature)
 	utils.Print.Detail("Value", "%s\n", id.ToString(order))

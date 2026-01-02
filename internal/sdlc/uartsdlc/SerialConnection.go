@@ -14,15 +14,15 @@ var errConnectionClosed = errors.New("serial connection closed")
 
 type SerialConnection struct {
 	PortName     string
+	Mode         serial.Mode
 	connection   serial.Port
-	mode         serial.Mode
 	terminate    bool
 	RetryGuard   utils.RetryGuard
-	OnConnect    func(*SerialConnection)
-	OnDisconnect func(*SerialConnection)
-	OnError      func(*SerialConnection, error)
-	OnWrote      func(*SerialConnection, []byte)
-	OnRead       func(*SerialConnection, []byte)
+	OnConnect    func(*SerialConnection)         `json:"-"`
+	OnDisconnect func(*SerialConnection)         `json:"-"`
+	OnError      func(*SerialConnection, error)  `json:"-"`
+	OnWrote      func(*SerialConnection, []byte) `json:"-"`
+	OnRead       func(*SerialConnection, []byte) `json:"-"`
 }
 
 func (s *SerialConnection) Init(
@@ -33,10 +33,10 @@ func (s *SerialConnection) Init(
 	stopBits serial.StopBits,
 ) {
 	s.PortName = portName
-	s.mode.Parity = parity
-	s.mode.StopBits = stopBits
-	s.mode.BaudRate = baudRate
-	s.mode.DataBits = dataBits
+	s.Mode.Parity = parity
+	s.Mode.StopBits = stopBits
+	s.Mode.BaudRate = baudRate
+	s.Mode.DataBits = dataBits
 	s.RetryGuard.RetryEvery = 3
 	s.terminate = false
 }
@@ -52,7 +52,7 @@ func (s *SerialConnection) Connect() bool {
 		return false
 	}
 
-	if s.connection, err = serial.Open(s.PortName, &s.mode); err != nil {
+	if s.connection, err = serial.Open(s.PortName, &s.Mode); err != nil {
 		goto errorLabel
 	}
 

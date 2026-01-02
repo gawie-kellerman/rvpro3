@@ -21,9 +21,9 @@ func (conn *UDPErrorContext) String() string {
 	case UDPErrorOnConnect:
 		return "connect"
 	case UDPErrorOnWriteData:
-		return "send Data"
+		return "send Metric"
 	case UDPErrorOnReadData:
-		return "read Data"
+		return "read Metric"
 	default:
 		return "unknown"
 	}

@@ -83,7 +83,7 @@ func (qb *QueueBuffer) PushSize(size int, force bool) PushOutcome {
 
 // PushData
 // Use force parameter to reset the Buffer if the Buffer is large enough
-// to contain the Data but does not have sufficient space left
+// to contain the Metric but does not have sufficient space left
 // Returns
 func (qb *QueueBuffer) PushData(data []byte, force bool) PushOutcome {
 	if outcome := qb.EnsureFit(len(data), force); !outcome.IsSuccess() {

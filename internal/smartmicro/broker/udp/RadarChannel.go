@@ -1,48 +1,160 @@
 package udp
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/rs/zerolog/log"
-	"rvpro3/radarvision.com/internal/smartmicro/instrumentation"
 	"rvpro3/radarvision.com/internal/smartmicro/interfaces"
 	"rvpro3/radarvision.com/internal/smartmicro/port"
 	"rvpro3/radarvision.com/utils"
 )
 
-type RadarChannel struct {
-	Metrics        *instrumentation.RadarMetrics
-	State          RadarState
-	IPAddress      utils.IP4
-	buffer         [16000]byte
-	SegmentCounter uint16
-	SegmentTotal   uint16
-	SegmentId      uint16
-	Now            time.Time
-	msgChannel     chan *RadarMessage
-	doneChannel    chan bool
-	fixed          utils.FixedBuffer
-	DataSlice      []byte
-	terminated     bool
-	OnTerminate    func(*RadarChannel)
+const radarChannelSupportedRadars = "UDP.Supported.Radars"
 
-	isDone              bool
-	DiagnosticsWorkflow interfaces.IUDPWorkflow
-	ObjectListWorkflow  interfaces.IUDPWorkflow
-	StatisticsWorkflow  interfaces.IUDPWorkflow
-	InstructionWorkflow interfaces.IUDPWorkflow
-	PvrWorkflow         interfaces.IUDPWorkflow
-	TriggersWorkflow    interfaces.IUDPWorkflow
+type RadarChannel struct {
+	MetricsAt                      string
+	State                          RadarState
+	IPAddress                      utils.IP4
+	buffer                         [16000]byte
+	SegmentCounter                 uint16
+	SegmentTotal                   uint16
+	SegmentId                      uint16
+	Now                            time.Time
+	msgChannel                     chan *RadarMessage
+	doneChannel                    chan bool
+	fixed                          utils.FixedBuffer
+	DataSlice                      []byte
+	terminated                     bool
+	OnTerminate                    func(*RadarChannel)
+	isDone                         bool
+	DiagnosticsWorkflow            interfaces.IUDPWorkflow
+	ObjectListWorkflow             interfaces.IUDPWorkflow
+	StatisticsWorkflow             interfaces.IUDPWorkflow
+	InstructionWorkflow            interfaces.IUDPWorkflow
+	PvrWorkflow                    interfaces.IUDPWorkflow
+	TriggersWorkflow               interfaces.IUDPWorkflow
+	totalMessagesProcessedMetric   *utils.Metric
+	totalMessagesDroppedMetric     *utils.Metric
+	totalBytesProcessedMetric      *utils.Metric
+	objListProcessedMetric         *utils.Metric
+	objListDroppedMetric           *utils.Metric
+	objListTotalTimeMetric         *utils.Metric
+	objListMinTimeMetric           *utils.Metric
+	objListMaxTimeMetric           *utils.Metric
+	statisticsProcessedMetric      *utils.Metric
+	statisticsDroppedMetric        *utils.Metric
+	statisticsTotalTimeMetric      *utils.Metric
+	statisticsMinTimeMetric        *utils.Metric
+	statisticsMaxTimeMetric        *utils.Metric
+	triggersProcessedMetric        *utils.Metric
+	triggersDroppedMetric          *utils.Metric
+	triggersTotalTimeMetric        *utils.Metric
+	triggersMinTimeMetric          *utils.Metric
+	triggersMaxTimeMetric          *utils.Metric
+	pvrProcessedMetric             *utils.Metric
+	pvrDroppedMetric               *utils.Metric
+	pvrTotalTimeMetric             *utils.Metric
+	pvrMinTimeMetric               *utils.Metric
+	pvrMaxTimeMetric               *utils.Metric
+	instructionsProcessedMetric    *utils.Metric
+	instructionsDroppedMetric      *utils.Metric
+	instructionsTotalTimeMetric    *utils.Metric
+	instructionsMinTimeMetric      *utils.Metric
+	instructionsMaxTimeMetric      *utils.Metric
+	diagProcessedMetric            *utils.Metric
+	diagDroppedMetric              *utils.Metric
+	diagTotalTimeMetric            *utils.Metric
+	diagMinTimeMetric              *utils.Metric
+	diagMaxTimeMetric              *utils.Metric
+	transportHeaderFormatErrMetric *utils.Metric
+	transportHeaderCrcErrMetric    *utils.Metric
+	protocolTypeErrMetric          *utils.Metric
+	discardSegmentErrMetric        *utils.Metric
+	unknownPortErrMetric           *utils.Metric
+	segmentBufferOverflowErrMetric *utils.Metric
+	portHeaderFormatErrMetric      *utils.Metric
+	unknownDroppedMetric           *utils.Metric
+}
+
+func (rc *RadarChannel) SetupDefaults(config *utils.Config) {
+}
+
+func (rc *RadarChannel) SetupRunnable(state *utils.State, config *utils.Config) {
+	//radars := config.GetSettingAsSplit(radarChannelSupportedRadars, ",")
+	//noRadars := len(radars)
+}
+
+func (rc *RadarChannel) GetServiceName() string {
+	return "Radar." + rc.IPAddress.String() + ".Service"
+}
+
+func (rc *RadarChannel) GetServiceNames() []string {
+	return nil
+}
+
+func (rc *RadarChannel) InitMetrics(ip4 utils.IP4) {
+	rc.MetricsAt = fmt.Sprintf("Radar.%s", ip4)
+	gm := &utils.GlobalMetrics
+	rc.totalMessagesProcessedMetric = gm.U64(rc.MetricsAt, "Total Messages processed")
+	rc.totalMessagesDroppedMetric = gm.U64(rc.MetricsAt, "Total Messages dropped")
+	rc.totalBytesProcessedMetric = gm.U64(rc.MetricsAt, "Total Bytes processed")
+
+	rc.objListProcessedMetric = gm.U64(rc.MetricsAt, "Object List processed")
+	rc.objListDroppedMetric = gm.U64(rc.MetricsAt, "Object List dropped")
+	rc.objListTotalTimeMetric = gm.U64(rc.MetricsAt, "Object List total time")
+	rc.objListMinTimeMetric = gm.U64(rc.MetricsAt, "Object List min time")
+	rc.objListMaxTimeMetric = gm.U64(rc.MetricsAt, "Object List max time")
+
+	rc.statisticsProcessedMetric = gm.U64(rc.MetricsAt, "Statistics processed")
+	rc.statisticsDroppedMetric = gm.U64(rc.MetricsAt, "Statistics dropped")
+	rc.statisticsTotalTimeMetric = gm.U64(rc.MetricsAt, "Statistics total time")
+	rc.statisticsMinTimeMetric = gm.U64(rc.MetricsAt, "Statistics min time")
+	rc.statisticsMaxTimeMetric = gm.U64(rc.MetricsAt, "Statistics max time")
+
+	rc.triggersProcessedMetric = gm.U64(rc.MetricsAt, "Triggers processed")
+	rc.triggersDroppedMetric = gm.U64(rc.MetricsAt, "Triggers dropped")
+	rc.triggersTotalTimeMetric = gm.U64(rc.MetricsAt, "Triggers total time")
+	rc.triggersMinTimeMetric = gm.U64(rc.MetricsAt, "Triggers min time")
+	rc.triggersMaxTimeMetric = gm.U64(rc.MetricsAt, "Triggers max time")
+
+	rc.pvrProcessedMetric = gm.U64(rc.MetricsAt, "PVR processed")
+	rc.pvrDroppedMetric = gm.U64(rc.MetricsAt, "PVR dropped")
+	rc.pvrTotalTimeMetric = gm.U64(rc.MetricsAt, "PVR total time")
+	rc.pvrMinTimeMetric = gm.U64(rc.MetricsAt, "PVR min time")
+	rc.pvrMaxTimeMetric = gm.U64(rc.MetricsAt, "PVR max time")
+
+	rc.instructionsProcessedMetric = gm.U64(rc.MetricsAt, "Instructions processed")
+	rc.instructionsDroppedMetric = gm.U64(rc.MetricsAt, "Instructions dropped")
+	rc.instructionsTotalTimeMetric = gm.U64(rc.MetricsAt, "Instructions total time")
+	rc.instructionsMinTimeMetric = gm.U64(rc.MetricsAt, "Instructions min time")
+	rc.instructionsMaxTimeMetric = gm.U64(rc.MetricsAt, "Instructions max time")
+
+	rc.diagProcessedMetric = gm.U64(rc.MetricsAt, "Diagnostics processed")
+	rc.diagDroppedMetric = gm.U64(rc.MetricsAt, "Diagnostics dropped")
+	rc.diagTotalTimeMetric = gm.U64(rc.MetricsAt, "Diagnostics total time")
+	rc.diagMinTimeMetric = gm.U64(rc.MetricsAt, "Diagnostics min time")
+	rc.diagMaxTimeMetric = gm.U64(rc.MetricsAt, "Diagnostics max time")
+
+	rc.transportHeaderFormatErrMetric = gm.U64(rc.MetricsAt, "Error: Transport header format")
+	rc.transportHeaderCrcErrMetric = gm.U64(rc.MetricsAt, "Error: Transport header crc")
+	rc.portHeaderFormatErrMetric = gm.U64(rc.MetricsAt, "Error: Port header format")
+	rc.protocolTypeErrMetric = gm.U64(rc.MetricsAt, "Error: Protocol type")
+	rc.discardSegmentErrMetric = gm.U64(rc.MetricsAt, "Error: Discard segment err")
+	rc.segmentBufferOverflowErrMetric = gm.U64(rc.MetricsAt, "Error: Segment buffer overflow")
+	rc.unknownPortErrMetric = gm.U64(rc.MetricsAt, "Error: Unknown port")
+
+	rc.unknownDroppedMetric = gm.U64(rc.MetricsAt, "Error: Unknown dropped")
 }
 
 func (rc *RadarChannel) Run(radarIP utils.IP4, workflowBuilder interfaces.IUDPWorkflowBuilder) {
+	rc.InitMetrics(radarIP)
 	rc.IPAddress = radarIP
 	rc.isDone = false
 	rc.msgChannel = make(chan *RadarMessage, 5)
 	rc.doneChannel = make(chan bool)
 	rc.fixed = utils.NewFixedBuffer(rc.buffer[:], 0, 0)
 
-	rc.Metrics.RadarIP = radarIP
 	rc.DiagnosticsWorkflow = workflowBuilder.GetDiagnosticsWorkflow(rc)
 	rc.ObjectListWorkflow = workflowBuilder.GetObjectListWorkflow(rc)
 	rc.StatisticsWorkflow = workflowBuilder.GetStatisticsWorkflow(rc)
@@ -91,8 +203,8 @@ func (rc *RadarChannel) execute() {
 
 func (rc *RadarChannel) startMsg(msg *RadarMessage) {
 	rc.Now = time.Now()
-	rc.IncCount(instrumentation.RmtTotalMessagesProcessed, 1, rc.Now)
-	rc.IncCount(instrumentation.RmtTotalBytesProcessed, uint64(msg.BufferLen), rc.Now)
+	rc.totalMessagesProcessedMetric.Inc(rc.Now)
+	rc.totalBytesProcessedMetric.Add(msg.BufferLen, rc.Now)
 
 	th := port.TransportHeaderReader{}
 	process := rc.isTransportHeader(&th, msg)
@@ -110,10 +222,6 @@ func (rc *RadarChannel) startMsg(msg *RadarMessage) {
 	messagePool.Put(msg)
 }
 
-func (rc *RadarChannel) IncCount(metric instrumentation.RadarMetricType, count uint64, time time.Time) bool {
-	return rc.Metrics.AddCount(int(metric), count, time)
-}
-
 func (rc *RadarChannel) handleSegmentation(msg *RadarMessage, th *port.TransportHeaderReader) bool {
 	// The data is segmented, so we have to check whether we are currently
 	// segmented
@@ -123,7 +231,7 @@ func (rc *RadarChannel) handleSegmentation(msg *RadarMessage, th *port.Transport
 		// Check if segment out of sequence
 		if rc.SegmentId != th.GetDataIdentifier() {
 			// The segment is out of sequence, so we have to reset
-			rc.IncCount(instrumentation.RmtDiscardedSegment, 1, rc.Now)
+			rc.discardSegmentErrMetric.Inc(rc.Now)
 			rc.SegmentCounter = 0
 			rc.fixed.Reset()
 			return false
@@ -133,7 +241,7 @@ func (rc *RadarChannel) handleSegmentation(msg *RadarMessage, th *port.Transport
 
 		if !rc.fixed.CanWrite(msg.BufferLen) {
 			// Segmentation won't fit
-			rc.IncCount(instrumentation.RmtSegmentationBufferOverflow, 1, rc.Now)
+			rc.segmentBufferOverflowErrMetric.Inc(rc.Now)
 			rc.resetSegmentation()
 			return false
 		}
@@ -164,7 +272,7 @@ func (rc *RadarChannel) consumeData(msg *RadarMessage) bool {
 	if rc.SegmentId != 0 {
 		// Currently in segmentation mode and received a msgChannel without
 		// segmentation, so we register the discarded segment
-		rc.IncCount(instrumentation.RmtDiscardedSegment, 1, rc.Now)
+		rc.discardSegmentErrMetric.Inc(rc.Now)
 	}
 	// The data is not segmented, then reset whatever segment we may have
 
@@ -206,7 +314,7 @@ func (rc *RadarChannel) process() {
 	}
 
 	if err := ph.Check(); err != nil {
-		if rc.IncCount(instrumentation.RmtHeaderFormatErr, 1, rc.Now) {
+		if rc.portHeaderFormatErrMetric.AddCount(1, rc.Now) {
 			rc.logError(err)
 			return
 		}
@@ -214,68 +322,68 @@ func (rc *RadarChannel) process() {
 
 	pid := ph.GetIdentifier()
 
-	totalMetricID := 0
-	minMetricID := 0
-	maxMetricID := 0
+	var totMetric *utils.Metric
+	var minMetric *utils.Metric
+	var maxMetric *utils.Metric
 
 	switch pid {
 	case port.PiDiagnostics:
-		rc.Metrics.AddCount(int(instrumentation.RmtDiagnosticProcessed), 1, rc.Now)
+		rc.diagProcessedMetric.Inc(rc.Now)
 		rc.DiagnosticsWorkflow.Process(rc.Now, rc.DataSlice)
-		totalMetricID = int(instrumentation.RmtDiagnosticTotalTime)
-		minMetricID = int(instrumentation.RmtDiagnosticMinTime)
-		maxMetricID = int(instrumentation.RmtDiagnosticMaxTime)
+		totMetric = rc.diagTotalTimeMetric
+		minMetric = rc.diagMinTimeMetric
+		maxMetric = rc.diagMaxTimeMetric
 
 	case port.PiObjectList:
-		rc.Metrics.AddCount(int(instrumentation.RmtObjectListProcessed), 1, rc.Now)
+		rc.objListProcessedMetric.Inc(rc.Now)
 		rc.ObjectListWorkflow.Process(rc.Now, rc.DataSlice)
-		totalMetricID = int(instrumentation.RmtObjectListTotalTime)
-		minMetricID = int(instrumentation.RmtObjectListMinTime)
-		maxMetricID = int(instrumentation.RmtObjectListMaxTime)
+		totMetric = rc.objListTotalTimeMetric
+		minMetric = rc.objListMinTimeMetric
+		maxMetric = rc.objListMaxTimeMetric
 
 	case port.PiStatistics:
-		rc.Metrics.AddCount(int(instrumentation.RmtStatisticsProcessed), 1, rc.Now)
+		rc.statisticsProcessedMetric.Inc(rc.Now)
 		rc.StatisticsWorkflow.Process(rc.Now, rc.DataSlice)
-		totalMetricID = int(instrumentation.RmtStatisticsTotalTime)
-		minMetricID = int(instrumentation.RmtStatisticsMinTime)
-		maxMetricID = int(instrumentation.RmtStatisticsMaxTime)
+		totMetric = rc.statisticsTotalTimeMetric
+		minMetric = rc.statisticsMinTimeMetric
+		maxMetric = rc.statisticsMaxTimeMetric
 
 	case port.PiEventTrigger:
-		rc.Metrics.AddCount(int(instrumentation.RmtTriggerProcessed), 1, rc.Now)
+		rc.triggersProcessedMetric.Inc(rc.Now)
 		rc.TriggersWorkflow.Process(rc.Now, rc.DataSlice)
-		totalMetricID = int(instrumentation.RmtTriggerTotalTime)
-		minMetricID = int(instrumentation.RmtTriggerMinTime)
-		maxMetricID = int(instrumentation.RmtTriggerMaxTime)
+		totMetric = rc.triggersTotalTimeMetric
+		minMetric = rc.triggersMinTimeMetric
+		maxMetric = rc.triggersMaxTimeMetric
 
 	case port.PiPVR:
-		rc.Metrics.AddCount(int(instrumentation.RmtPVRProcessed), 1, rc.Now)
+		rc.pvrProcessedMetric.Inc(rc.Now)
 		rc.PvrWorkflow.Process(rc.Now, rc.DataSlice)
-		totalMetricID = int(instrumentation.RmtPVRTotalTime)
-		minMetricID = int(instrumentation.RmtPVRMinTime)
-		maxMetricID = int(instrumentation.RmtPVRMaxTime)
+		totMetric = rc.pvrTotalTimeMetric
+		minMetric = rc.pvrMinTimeMetric
+		maxMetric = rc.pvrMaxTimeMetric
 
 	case port.PiInstruction:
-		rc.Metrics.AddCount(int(instrumentation.RmtInstructionProcessed), 1, rc.Now)
+		rc.instructionsProcessedMetric.Inc(rc.Now)
 		rc.InstructionWorkflow.Process(rc.Now, rc.DataSlice)
-		totalMetricID = int(instrumentation.RmtInstructionTotalTime)
-		minMetricID = int(instrumentation.RmtInstructionMinTime)
-		maxMetricID = int(instrumentation.RmtInstructionMaxTime)
+		totMetric = rc.instructionsTotalTimeMetric
+		minMetric = rc.instructionsMinTimeMetric
+		maxMetric = rc.instructionsMaxTimeMetric
 
 	default:
-		rc.Metrics.AddCount(int(instrumentation.RmtUnknownPortIdentifier), 1, rc.Now)
+		rc.unknownPortErrMetric.Inc(rc.Now)
 	}
 
 	// Time metric not performed for unknown port identifier
-	if totalMetricID != 0 {
+	if totMetric != nil {
 		duration := time.Since(rc.Now).Milliseconds()
-		rc.Metrics.GetRel(totalMetricID).AddCount(uint64(duration), rc.Now)
-		rc.Metrics.GetRel(minMetricID).ReplaceMinDuration(duration, rc.Now)
-		rc.Metrics.GetRel(maxMetricID).ReplaceMaxDuration(duration, rc.Now)
+		totMetric.AddCount(uint64(duration), rc.Now)
+		minMetric.ReplaceMinDuration(duration, rc.Now)
+		maxMetric.ReplaceMaxDuration(duration, rc.Now)
 	}
 }
 
 func (rc *RadarChannel) invalidTransportHeader(err error) bool {
-	if rc.Metrics.AddCount(int(instrumentation.RmtTransportHeaderFormatErr), 1, rc.Now) {
+	if rc.transportHeaderFormatErrMetric.AddCount(1, rc.Now) {
 		rc.logError(err)
 	}
 
@@ -283,7 +391,7 @@ func (rc *RadarChannel) invalidTransportHeader(err error) bool {
 }
 
 func (rc *RadarChannel) invalidHeaderCRC(err error) bool {
-	if rc.Metrics.AddCount(int(instrumentation.RmtTransportHeaderCRCErr), 1, rc.Now) {
+	if rc.transportHeaderCrcErrMetric.AddCount(1, rc.Now) {
 		rc.logError(err)
 	}
 
@@ -291,7 +399,7 @@ func (rc *RadarChannel) invalidHeaderCRC(err error) bool {
 }
 
 func (rc *RadarChannel) unsupportedProtocol() bool {
-	if rc.Metrics.AddCount(int(instrumentation.RmtProtocolTypeErr), 1, rc.Now) {
+	if rc.unknownPortErrMetric.AddCount(1, rc.Now) {
 		rc.logError(port.ErrUnsupportedProtocol)
 	}
 	return false
@@ -323,9 +431,7 @@ func (rc *RadarChannel) SendMessage(msg *RadarMessage) {
 }
 
 func (rc *RadarChannel) logDroppedMessage(msg *RadarMessage) {
-	now := time.Now()
-
-	rc.Metrics.AddCount(int(instrumentation.RmtTotalMessagesDropped), 1, now)
+	rc.totalMessagesDroppedMetric.Inc(rc.Now)
 
 	th := port.TransportHeaderReader{}
 	if !rc.isTransportHeader(&th, msg) {
@@ -333,7 +439,7 @@ func (rc *RadarChannel) logDroppedMessage(msg *RadarMessage) {
 	}
 
 	if th.GetFlags().IsSegmentation() {
-		rc.Metrics.AddCount(int(instrumentation.RmtSegmentationDropped), 1, now)
+		rc.discardSegmentErrMetric.Inc(rc.Now)
 	}
 
 	ph := port.PortHeaderReader{
@@ -344,25 +450,24 @@ func (rc *RadarChannel) logDroppedMessage(msg *RadarMessage) {
 	pid := ph.GetIdentifier()
 	switch pid {
 	case port.PiDiagnostics:
-		rc.Metrics.AddCount(int(instrumentation.RmtDiagnosticDropped), 1, now)
+		rc.diagDroppedMetric.Inc(rc.Now)
 
 	case port.PiObjectList:
-		rc.Metrics.AddCount(int(instrumentation.RmtObjectListDropped), 1, now)
+		rc.objListDroppedMetric.Inc(rc.Now)
 
 	case port.PiStatistics:
-		rc.Metrics.AddCount(int(instrumentation.RmtStatisticsDropped), 1, now)
+		rc.statisticsDroppedMetric.Inc(rc.Now)
 
 	case port.PiEventTrigger:
-		rc.Metrics.AddCount(int(instrumentation.RmtTriggerDropped), 1, now)
+		rc.triggersDroppedMetric.Inc(rc.Now)
 
 	case port.PiPVR:
-		rc.Metrics.AddCount(int(instrumentation.RmtPVRDropped), 1, now)
+		rc.pvrDroppedMetric.Inc(rc.Now)
 
 	case port.PiInstruction:
-		rc.Metrics.AddCount(int(instrumentation.RmtInstructionDropped), 1, now)
+		rc.instructionsDroppedMetric.Inc(rc.Now)
 
 	default:
-		rc.Metrics.AddCount(int(instrumentation.RmtUnknownDropped), 1, rc.Now)
+		rc.unknownPortErrMetric.Inc(rc.Now)
 	}
-
 }

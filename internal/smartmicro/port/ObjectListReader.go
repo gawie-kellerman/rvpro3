@@ -291,7 +291,7 @@ func (o *ObjectListReader) detailLen() int {
 func (o *ObjectListReader) PrintDetail() {
 	utils.Print.Detail("Object List Header", "\n")
 	utils.Print.Indent(2)
-	utils.Print.Detail("Cycle Time", "%f\n", o.GetCycleTime())
+	utils.Print.Detail("Metronome Time", "%f\n", o.GetCycleTime())
 	utils.Print.Detail("Nof Objects", "%d\n", o.GetNofObjects())
 	utils.Print.Detail("Ref Point", "%d, %s\n", o.GetRefPoint(), o.GetRefPoint())
 	utils.Print.Detail("Object Size", "%d\n", o.GetObjectSize())

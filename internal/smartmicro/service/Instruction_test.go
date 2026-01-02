@@ -58,7 +58,7 @@ func TestInstructService(t *testing.T) {
 	time.Sleep(120 * time.Second)
 	fmt.Println("Receive Success count:", successCount)
 	fmt.Println("Sequence issue count:", sequenceCount)
-	fmt.Println("Resend Data:", resendCount)
+	fmt.Println("Resend Metric:", resendCount)
 	fmt.Println("Write instruction count:", writeCount)
 	fmt.Println("Drop instruction count:", dropCount)
 	fmt.Println("Extra instruction count:", extraCount)

@@ -213,7 +213,7 @@ func (s *Instruction) processResend() bool {
 		return true
 	}
 
-	if utils.Time.IsOlderThan(sentItem.RetryOn, s.ResendsCooldownMs*time.Millisecond) {
+	if utils.Time.IsExpired(time.Now(), sentItem.RetryOn, s.ResendsCooldownMs*time.Millisecond) {
 		s.status = issAwaitSending
 		if sentItem.ShouldRetry() {
 			// By simple setting the status, the message will be resent

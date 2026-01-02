@@ -130,7 +130,7 @@ func (t TransportHeaderReader) PrintFlags() {
 	_, _ = utils.Print.Detail("Flags", "0b%b, %s\n", int(t.GetFlags()), t.GetFlags())
 
 	if flags.IsMessageCount() {
-		utils.Print.Detail("Message Data", "%d\n", int(t.GetMessageCounter()))
+		utils.Print.Detail("Message Metric", "%d\n", int(t.GetMessageCounter()))
 	}
 
 	if flags.IsTimestamp() {

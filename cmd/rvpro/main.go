@@ -4,9 +4,17 @@ import (
 	"flag"
 	"os"
 
-	"rvpro3/radarvision.com/internal/config"
-	"rvpro3/radarvision.com/internal/config/globalkey"
+	"rvpro3/radarvision.com/internal/sdlc/uartsdlc"
+	"rvpro3/radarvision.com/internal/smartmicro/broker/udp"
+	"rvpro3/radarvision.com/internal/smartmicro/workflows"
 	"rvpro3/radarvision.com/utils"
+)
+
+var (
+	version       string
+	buildDate     string
+	buildTime     string
+	buildCommitID string
 )
 
 func showHelp() bool {
@@ -19,8 +27,11 @@ func loadArgs() {
 	var dir string
 	var err error
 
-	utils.Print.InfoLn("Radar Vision Middleware (rvm) TODO Version")
-	utils.Print.InfoLn("Version")
+	gc := &utils.GlobalConfig
+
+	utils.Print.InfoLn("Radar Vision Middleware", version)
+	utils.Print.InfoLn("Build Date: ", buildDate, buildTime)
+	utils.Print.InfoLn("Build Commit: ", buildCommitID)
 
 	cfgFilename := utils.Args.GetString("--ini|-i", "ini/config.cfg")
 	isShowHelp := utils.Args.Has("--help|-h")
@@ -36,22 +47,22 @@ func loadArgs() {
 	}
 
 	if runMode == "defaults" {
-		config.RVPro.DumpTo(os.Stdout)
+		gc.DumpTo(os.Stdout)
 		os.Exit(0)
 	}
 
 	utils.Print.InfoLn("Using directory", dir)
 	utils.Print.InfoLn("Loading config", cfgFilename)
 
-	if err = config.RVPro.MergeFromFile(cfgFilename); err != nil {
+	if err = gc.MergeFromFile(cfgFilename); err != nil {
 		utils.Print.ErrorLn(err.Error())
-		os.Exit(2)
+		utils.Print.ErrorLn("Using all default settings")
 	}
 
 	overrideArgs()
 
 	if runMode == "merged-defaults" {
-		config.RVPro.DumpTo(os.Stdout)
+		gc.DumpTo(os.Stdout)
 		os.Exit(0)
 	}
 }
@@ -60,20 +71,59 @@ func overrideArgs() {
 	overrides := utils.Args.GetKVPairIndexes("--override|-o")
 
 	for _, override := range overrides {
-		config.RVPro.Set(
+		utils.GlobalConfig.SetRaw(
 			utils.Args.GetKeyName(override, "--override|-o"),
 			utils.Args.GetValue(override),
 		)
 	}
 }
 
-func main() {
-	loadArgs()
+var services []utils.IConfigService
 
-	switch config.RVPro.GlobalStr(globalkey.StartupMode) {
-	case globalkey.StartupModeDefault:
-		doUDPStartup()
-	}
+func main() {
+	registerServices()
+	registerDefaults()
+	loadArgs()
+	startServices()
+	awaitComplete()
 
 	utils.Print.InfoLn("Program completed successfully")
+}
+
+func awaitComplete() {
+	lts := utils.GlobalState.Get(LifetimeServiceName).(*LifetimeService)
+	lts.Wg.Wait()
+}
+
+func startServices() {
+	utils.Print.InfoLn("Starting services")
+	for _, service := range services {
+		utils.Print.InfoLn("Starting service", service.GetServiceName())
+		service.SetupRunnable(&utils.GlobalState, &utils.GlobalConfig)
+	}
+}
+
+func registerDefaults() {
+	utils.Print.Ln("Registering service defaults")
+	for _, service := range services {
+		service.SetupDefaults(&utils.GlobalConfig)
+	}
+}
+
+func registerServices() {
+	utils.Print.Ln("Registering services")
+
+	services = make([]utils.IConfigService, 0, 100)
+	registerService(new(LifetimeService))
+	registerService(new(LoggingService))
+	registerService(udp.NewRadarChannels(&workflows.WorkflowBuilder{}))
+	registerService(new(uartsdlc.SDLCService))
+	registerService(new(uartsdlc.SDLCExecutorService))
+	registerService(new(WebService))
+
+	//NB:  When creating RadarChannels, remember to add the WorkflowBuilder
+}
+
+func registerService(service utils.IConfigService) {
+	services = append(services, service)
 }

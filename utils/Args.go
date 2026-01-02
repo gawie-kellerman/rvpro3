@@ -19,7 +19,7 @@ func (args) GetString(names string, defValue string) string {
 
 	arg := os.Args[index]
 
-	//--file vs --file= vs --file=whatever
+	//--writer vs --writer= vs --writer=whatever
 	if len(name)+1 >= len(arg) {
 		return defValue
 	}

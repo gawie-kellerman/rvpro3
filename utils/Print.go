@@ -2,22 +2,19 @@ package utils
 
 import (
 	"fmt"
+	"io"
 	"math"
 	"os"
 	"time"
 )
 
-var labelWidth int
 var Print printClass
-var Features uint64
-var PrintDate bool
-var indent int
 
-func init() {
-	Features = math.MaxUint64
-	PrintDate = true
-	labelWidth = 25
-}
+var labelWidth int = 25
+var Features uint64 = math.MaxUint64
+var PrintDate bool = true
+var indent int
+var out io.Writer = os.Stdout
 
 type printClass struct{}
 
@@ -30,54 +27,54 @@ func (printClass) Indent(spaces int) {
 
 func (printClass) Detail(label string, format string, a ...any) (n int, err error) {
 	Print.DatetimeMS(time.Now(), false)
-	_, _ = fmt.Fprintf(os.Stdout, "%*s", indent, "")
-	_, _ = fmt.Fprintf(os.Stdout, "%-*s", labelWidth-2, label+": ")
-	return fmt.Fprintf(os.Stdout, format, a...)
+	_, _ = fmt.Fprintf(out, "%*s", indent, "")
+	_, _ = fmt.Fprintf(out, "%-*s", labelWidth-2, label+": ")
+	return fmt.Fprintf(out, format, a...)
 }
 
 func (printClass) WarnLn(a ...any) {
 	Print.DatetimeMS(time.Now(), false)
-	_, _ = fmt.Fprintf(os.Stdout, "Warn: %*s", indent, "")
-	_, _ = fmt.Fprintln(os.Stdout, a...)
+	_, _ = fmt.Fprintf(out, "Warn: %*s", indent, "")
+	_, _ = fmt.Fprintln(out, a...)
 }
 
 func (printClass) ErrorLn(a ...any) {
 	Print.DatetimeMS(time.Now(), false)
-	_, _ = fmt.Fprintf(os.Stdout, "Error: %*s", indent, "")
-	_, _ = fmt.Fprintln(os.Stdout, a...)
+	_, _ = fmt.Fprintf(out, "Error: %*s", indent, "")
+	_, _ = fmt.Fprintln(out, a...)
 }
 
 func (printClass) InfoLn(a ...any) {
 	Print.DatetimeMS(time.Now(), false)
-	_, _ = fmt.Fprintf(os.Stdout, "Info: %*s", indent, "")
-	_, _ = fmt.Fprintln(os.Stdout, a...)
+	_, _ = fmt.Fprintf(out, "Info: %*s", indent, "")
+	_, _ = fmt.Fprintln(out, a...)
 }
 
 func (printClass) Ln(a ...any) {
 	Print.DatetimeMS(time.Now(), false)
-	fmt.Println(a...)
+	_, _ = fmt.Fprintln(out, a...)
 }
 
 func (printClass) RawLn(a ...any) {
-	fmt.Println(a...)
+	_, _ = fmt.Fprintln(out, a...)
 }
 
 func (printClass) Fmt(format string, a ...any) {
 	Print.DatetimeMS(time.Now(), false)
-	fmt.Printf(format, a...)
+	_, _ = fmt.Fprintf(out, format, a...)
 }
 
 func (printClass) Feature(feature int, a ...any) {
 	if Print.IsFeature(feature) {
 		Print.DatetimeMS(time.Now(), false)
-		fmt.Print(a...)
+		_, _ = fmt.Fprint(out, a...)
 	}
 }
 
 func (printClass) FmtFeature(feature int, format string, a ...any) {
 	if Print.IsFeature(feature) {
 		Print.DatetimeMS(time.Now(), false)
-		fmt.Printf(format, a...)
+		_, _ = fmt.Fprintf(out, format, a...)
 	}
 }
 
@@ -95,6 +92,6 @@ func (printClass) ClearFeature(feature int) {
 
 func (printClass) DatetimeMS(now time.Time, forcePrint bool) {
 	if PrintDate || forcePrint {
-		fmt.Print(Time.ToDisplayDTMS(now), " ")
+		_, _ = fmt.Fprint(out, now.Format(DisplayDateTimeMS), " ")
 	}
 }

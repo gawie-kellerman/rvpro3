@@ -3,6 +3,7 @@ package uartsdlc
 import (
 	"encoding/binary"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -10,25 +11,54 @@ import (
 	"rvpro3/radarvision.com/utils"
 )
 
+type StaticStatusMode uint32
+
+func (s StaticStatusMode) IsATC() bool {
+	return s&0x1 == 0x1
+}
+
+func (s StaticStatusMode) IsTS2() bool {
+	return s&0x1 == 0x0
+}
+
+func (s StaticStatusMode) IsNormal() bool {
+	return s&0x2 == 0x2
+}
+
+func (s StaticStatusMode) IsSafe() bool {
+	return s&0x2 == 0x00
+}
+
+func (s StaticStatusMode) IsWdT() bool {
+	return s&(1<<8) != 0
+}
+
+func (s StaticStatusMode) String() string {
+	str := strings.Builder{}
+
+	str.WriteString(fmt.Sprintf("%08b, %d", int(s), int(s)))
+
+	if s.IsATC() {
+		str.WriteString(",ATC")
+	} else {
+		str.WriteString(",TS2")
+	}
+
+	if s.IsNormal() {
+		str.WriteString(",Normal")
+	} else {
+		str.WriteString(",Safe")
+	}
+
+	if s.IsWdT() {
+		str.WriteString(",WDT")
+	}
+	return str.String()
+}
+
 type SDLCResponseDecoder struct {
 	rawData [256]byte
 	slice   []byte
-}
-
-type CMUMode uint8
-
-const CmuModeTS2 CMUMode = 1
-const CmuModeATC CMUMode = 2
-
-func (c CMUMode) String() string {
-	switch c {
-	case CmuModeTS2:
-		return "TS2"
-	case CmuModeATC:
-		return "ATC"
-	default:
-		return "Unknown"
-	}
 }
 
 type BIUDiagnostics struct {
@@ -86,9 +116,9 @@ type DynamicStatus struct {
 func (s DynamicStatus) PrintDetail() {
 	utils.Print.Detail("Dynamic Status Response", "\n")
 	utils.Print.Indent(2)
-	utils.Print.Detail("SDLC Fail Data", "%d\n", s.SdlcFailCount)
-	utils.Print.Detail("Request Data", "%d\n", s.RequestedCount)
-	utils.Print.Detail("UART Fail Data", "%d\n", s.UartFailCount)
+	utils.Print.Detail("SDLC Fail Metric", "%d\n", s.SdlcFailCount)
+	utils.Print.Detail("Request Metric", "%d\n", s.RequestedCount)
+	utils.Print.Detail("UART Fail Metric", "%d\n", s.UartFailCount)
 	utils.Print.Detail("Since Last COMMs", "%d\n", s.SinceLastSDLCComms)
 	utils.Print.Detail("Uptime (Days)", "%d\n", s.UptimeInDays)
 	utils.Print.Detail("Uptime (mins)", "%d\n", s.UptimeIn6Mins)
@@ -121,11 +151,22 @@ type StaticStatus struct {
 	MinorVersion    byte
 	Serial          uint64
 	ProtocolVersion byte
-	Mode            CMUMode
+	Mode            StaticStatusMode
 	IsModeMapped    bool
 }
 
-func (s StaticStatus) PrintDetail() {
+func (s *StaticStatus) MarshalJSON() ([]byte, error) {
+	return json.Marshal(map[string]interface{}{
+		"BIU":             s.BIU,
+		"MajorVersion":    s.MajorVersion,
+		"MinorVersion":    s.MinorVersion,
+		"Serial":          s.Serial,
+		"ProtocolVersion": s.ProtocolVersion,
+		"Mode":            s.Mode.String(),
+	})
+}
+
+func (s *StaticStatus) PrintDetail() {
 	utils.Print.Detail("SDLC Static Status", "\n")
 	utils.Print.Indent(2)
 	utils.Print.Detail("SDLC Version", "%d.%d\n", int(s.MajorVersion), int(s.MinorVersion))
@@ -137,7 +178,7 @@ func (s StaticStatus) PrintDetail() {
 }
 
 type CMUFrame struct {
-	Mode     CMUMode
+	Mode     StaticStatusMode
 	Green    uint32
 	Yellow   uint32
 	Red      uint32
@@ -145,7 +186,7 @@ type CMUFrame struct {
 }
 
 func (c *CMUFrame) String() string {
-	if c.Mode == CmuModeTS2 {
+	if c.Mode.IsTS2() {
 		return fmt.Sprintf("Mode: %s, Green: %04x, Yellow: %04x, Red: %04x", c.Mode, c.Green, c.Yellow, c.Red)
 	}
 	return fmt.Sprintf("Mode: %s, Green: %08x, Yellow: %08x, Red: %08x", c.Mode, c.Green, c.Yellow, c.Red)
@@ -185,22 +226,18 @@ func (s *SDLCResponseDecoder) GetCMUFrame() (CMUFrame, error) {
 	fb := utils.FixedBuffer{Buffer: s.slice, WritePos: len(s.slice), ReadPos: 2}
 
 	res := CMUFrame{}
-	res.Mode = CMUMode(fb.ReadU8())
+	res.Mode = StaticStatusMode(fb.ReadU8())
 
-	switch res.Mode {
-	case CmuModeTS2:
+	if res.Mode.IsTS2() {
 		res.Green = uint32(fb.ReadU16(binary.BigEndian))
 		res.Yellow = uint32(fb.ReadU16(binary.BigEndian))
 		res.Red = uint32(fb.ReadU16(binary.BigEndian))
 		res.BitCount = 16
-
-	case CmuModeATC:
+	} else {
 		res.Green = fb.ReadU32(binary.BigEndian)
 		res.Yellow = fb.ReadU32(binary.BigEndian)
 		res.Red = fb.ReadU32(binary.BigEndian)
 		res.BitCount = 32
-
-	default:
 	}
 
 	return res, fb.Err
@@ -297,7 +334,7 @@ func (s *SDLCResponseDecoder) GetStaticStatus() (StaticStatus, error) {
 		MinorVersion:    fb.ReadU8(),
 		Serial:          fb.ReadU64(binary.LittleEndian),
 		ProtocolVersion: fb.ReadU8(),
-		Mode:            CMUMode(fb.ReadU8()),
+		Mode:            StaticStatusMode(fb.ReadU8()),
 		IsModeMapped:    Codec.GetDataLen(s.slice) == 14,
 	}, fb.Err
 }
