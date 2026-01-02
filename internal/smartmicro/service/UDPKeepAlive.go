@@ -10,7 +10,7 @@ import (
 const UDPKeepAliveServiceName = "UDP.KeepAlive.Service"
 
 const udpKeepAliveEnabled = "UDP.KeepAlive.Enabled"
-const udpKeepAliveCallbackIP = "UDP.KeepAlive.IP"
+const udpKeepAliveCallbackIP = "UDP.KeepAlive.RadarIP"
 const udpKeepAliveCastIP = "UDP.KeepAlive.CastIP"
 const udpKeepAliveCooldown = "UDP.KeepAlive.Cooldown"
 const udpKeepAliveSendTimeout = "UDP.KeepAlive.Timeout"

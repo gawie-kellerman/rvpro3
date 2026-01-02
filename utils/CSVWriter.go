@@ -58,7 +58,7 @@ func (c *CSVWriter) CreateOrOpen(filename string) error {
 func (c *CSVWriter) Close() {
 	if c.writer != nil {
 		if c.lineWrites > 0 {
-			c.WriteLn()
+			c.WriteNL()
 		}
 
 		_ = c.Flush()
@@ -70,7 +70,12 @@ func (c *CSVWriter) Close() {
 	}
 }
 
-func (c *CSVWriter) WriteLn() {
+func (c *CSVWriter) WriteLn(value string) {
+	c.WriteCol(value)
+	c.WriteNL()
+}
+
+func (c *CSVWriter) WriteNL() {
 	_, c.Err = c.writer.Write(newLine)
 	c.lineWrites = 0
 }
@@ -83,18 +88,23 @@ func (c *CSVWriter) WriteCol(value string) {
 	c.lineWrites += 1
 }
 
+func (c *CSVWriter) WriteColNL(value string) {
+	c.WriteCol(value)
+	c.WriteNL()
+}
+
 func (c *CSVWriter) WriteCols(values ...string) {
 	for _, value := range values {
 		c.WriteCol(value)
 	}
 }
 
-func (c *CSVWriter) WriteColsLn(values ...string) {
+func (c *CSVWriter) WriteColsNL(values ...string) {
 	for _, value := range values {
 		c.WriteCol(value)
 	}
 
-	c.WriteLn()
+	c.WriteNL()
 }
 
 func (c *CSVWriter) WriteF64(value float64, precision int) {

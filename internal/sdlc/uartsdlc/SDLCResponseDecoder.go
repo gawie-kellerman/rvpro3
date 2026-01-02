@@ -146,7 +146,7 @@ func (d SDLCDiagnostics) PrintDetail() {
 }
 
 type StaticStatus struct {
-	BIU             byte
+	BIU             BIUFlags
 	MajorVersion    byte
 	MinorVersion    byte
 	Serial          uint64
@@ -158,9 +158,10 @@ type StaticStatus struct {
 func (s *StaticStatus) MarshalJSON() ([]byte, error) {
 	return json.Marshal(map[string]interface{}{
 		"BIU":             s.BIU,
+		"BIUMaskHO":       s.BIU.String(),
 		"MajorVersion":    s.MajorVersion,
 		"MinorVersion":    s.MinorVersion,
-		"Serial":          s.Serial,
+		"Serial":          fmt.Sprintf("%016x", s.Serial),
 		"ProtocolVersion": s.ProtocolVersion,
 		"Mode":            s.Mode.String(),
 	})
@@ -329,7 +330,7 @@ func (s *SDLCResponseDecoder) GetStaticStatus() (StaticStatus, error) {
 	fb := utils.FixedBuffer{Buffer: s.slice, WritePos: len(s.slice), ReadPos: 2}
 
 	return StaticStatus{
-		BIU:             fb.ReadU8(),
+		BIU:             BIUFlags(fb.ReadU8()),
 		MajorVersion:    fb.ReadU8(),
 		MinorVersion:    fb.ReadU8(),
 		Serial:          fb.ReadU64(binary.LittleEndian),

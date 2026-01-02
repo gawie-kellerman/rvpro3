@@ -7,64 +7,64 @@ import (
 )
 
 type ErrorLoggerMixin struct {
-	lastError       error
-	lastErrorCount  int
-	lastErrorTime   time.Time
+	LastError       error
+	LastErrorCount  int
+	LastErrorTime   time.Time
 	LogRepeatMillis time.Duration
 }
 
 func (el *ErrorLoggerMixin) LogError(msg string, err error) {
 	now := time.Now()
 
-	if el.lastError == nil {
+	if el.LastError == nil {
 		if err == nil {
-			el.lastErrorCount = 0
+			el.LastErrorCount = 0
 			return
 		}
 
-		el.lastErrorCount = 0
-		el.lastError = err
-		el.lastErrorTime = now
+		el.LastErrorCount = 0
+		el.LastError = err
+		el.LastErrorTime = now
 		log.Error().Err(err).Msg(msg)
 		return
 	}
 	if err == nil {
-		el.lastErrorCount = 0
-		el.lastError = err
+		el.LastErrorCount = 0
+		el.LastError = err
 		return
 	}
 
-	if el.lastError.Error() != err.Error() {
-		if el.lastErrorCount > 1 {
-			log.Err(el.lastError).
-				Str("since", el.lastErrorTime.Format(DisplayTimeMS)).
-				Int("repeat", el.lastErrorCount).
+	if el.LastError.Error() != err.Error() {
+		if el.LastErrorCount > 1 {
+			log.Err(el.LastError).
+				Str("since", el.LastErrorTime.Format(DisplayTimeMS)).
+				Int("repeat", el.LastErrorCount).
 				Msg(msg)
 		}
 
 		log.Err(err).Msg(msg)
 
-		el.lastErrorTime = now
-		el.lastErrorCount = 0
-		el.lastError = err
+		el.LastErrorTime = now
+		el.LastErrorCount = 0
+		el.LastError = err
 	} else {
-		if now.Sub(el.lastErrorTime) > el.LogRepeatMillis {
-			if el.lastErrorCount > 0 {
-				log.Err(el.lastError).
-					Str("since", el.lastErrorTime.Format(DisplayTimeMS)).
-					Int("repeat", el.lastErrorCount).
+		if now.Sub(el.LastErrorTime) > el.LogRepeatMillis {
+			if el.LastErrorCount > 0 {
+				log.Err(el.LastError).
+					Str("since", el.LastErrorTime.Format(DisplayTimeMS)).
+					Int("repeat", el.LastErrorCount).
 					Msg(msg)
-				el.lastErrorTime = now
-				el.lastErrorCount = 0
+				el.LastErrorTime = now
+				el.LastErrorCount = 0
 			}
 		} else {
 			// Same error
-			el.lastErrorCount += 1
+			el.LastErrorCount += 1
 		}
 	}
 }
 
 func (el *ErrorLoggerMixin) ClearError() {
-	el.lastError = nil
-	el.lastErrorCount = 0
+	el.LastError = nil
+	el.LastErrorCount = 0
 }

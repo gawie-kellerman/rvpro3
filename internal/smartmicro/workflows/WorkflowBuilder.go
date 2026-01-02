@@ -22,7 +22,7 @@ func (w WorkflowBuilder) checkType(parent any) {
 	}
 }
 
-func (w WorkflowBuilder) GetDiagnosticsWorkflow(parent any) interfaces.IUDPWorkflow {
+func (w WorkflowBuilder) GetDiagnosticsWorkflow(parent interfaces.IUDPWorkflowParent) interfaces.IUDPWorkflow {
 	w.checkType(parent)
 
 	res := new(diagnostics.Workflow)
@@ -30,7 +30,7 @@ func (w WorkflowBuilder) GetDiagnosticsWorkflow(parent any) interfaces.IUDPWorkf
 	return res
 }
 
-func (w WorkflowBuilder) GetInstructionWorkflow(parent any) interfaces.IUDPWorkflow {
+func (w WorkflowBuilder) GetInstructionWorkflow(parent interfaces.IUDPWorkflowParent) interfaces.IUDPWorkflow {
 	w.checkType(parent)
 
 	res := new(instruction.Workflow)
@@ -38,7 +38,7 @@ func (w WorkflowBuilder) GetInstructionWorkflow(parent any) interfaces.IUDPWorkf
 	return res
 }
 
-func (w WorkflowBuilder) GetPVRWorkflow(parent any) interfaces.IUDPWorkflow {
+func (w WorkflowBuilder) GetPVRWorkflow(parent interfaces.IUDPWorkflowParent) interfaces.IUDPWorkflow {
 	w.checkType(parent)
 
 	res := new(pvr.Workflow)
@@ -46,7 +46,7 @@ func (w WorkflowBuilder) GetPVRWorkflow(parent any) interfaces.IUDPWorkflow {
 	return res
 }
 
-func (w WorkflowBuilder) GetTriggerWorkflow(parent any) interfaces.IUDPWorkflow {
+func (w WorkflowBuilder) GetTriggerWorkflow(parent interfaces.IUDPWorkflowParent) interfaces.IUDPWorkflow {
 	w.checkType(parent)
 
 	res := new(eventtrigger.Workflow)
@@ -54,7 +54,7 @@ func (w WorkflowBuilder) GetTriggerWorkflow(parent any) interfaces.IUDPWorkflow 
 	return res
 }
 
-func (w WorkflowBuilder) GetObjectListWorkflow(parent any) interfaces.IUDPWorkflow {
+func (w WorkflowBuilder) GetObjectListWorkflow(parent interfaces.IUDPWorkflowParent) interfaces.IUDPWorkflow {
 	w.checkType(parent)
 
 	res := new(objectlist.Workflow)
@@ -62,7 +62,7 @@ func (w WorkflowBuilder) GetObjectListWorkflow(parent any) interfaces.IUDPWorkfl
 	return res
 }
 
-func (w WorkflowBuilder) GetStatisticsWorkflow(parent any) interfaces.IUDPWorkflow {
+func (w WorkflowBuilder) GetStatisticsWorkflow(parent interfaces.IUDPWorkflowParent) interfaces.IUDPWorkflow {
 	w.checkType(parent)
 
 	res := new(statistics.Workflow)

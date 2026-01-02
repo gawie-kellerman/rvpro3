@@ -6,6 +6,7 @@ import (
 
 	"rvpro3/radarvision.com/internal/sdlc/uartsdlc"
 	"rvpro3/radarvision.com/internal/smartmicro/broker/udp"
+	"rvpro3/radarvision.com/internal/smartmicro/service"
 	"rvpro3/radarvision.com/internal/smartmicro/workflows"
 	"rvpro3/radarvision.com/utils"
 )
@@ -97,16 +98,16 @@ func awaitComplete() {
 
 func startServices() {
 	utils.Print.InfoLn("Starting services")
-	for _, service := range services {
-		utils.Print.InfoLn("Starting service", service.GetServiceName())
-		service.SetupRunnable(&utils.GlobalState, &utils.GlobalConfig)
+	for _, svc := range services {
+		utils.Print.InfoLn("Starting svc", svc.GetServiceName())
+		svc.SetupRunnable(&utils.GlobalState, &utils.GlobalConfig)
 	}
 }
 
 func registerDefaults() {
-	utils.Print.Ln("Registering service defaults")
-	for _, service := range services {
-		service.SetupDefaults(&utils.GlobalConfig)
+	utils.Print.Ln("Registering svc defaults")
+	for _, svc := range services {
+		svc.SetupDefaults(&utils.GlobalConfig)
 	}
 }
 
@@ -116,6 +117,8 @@ func registerServices() {
 	services = make([]utils.IConfigService, 0, 100)
 	registerService(new(LifetimeService))
 	registerService(new(LoggingService))
+	registerService(new(service.UDPKeepAlive))
+	registerService(new(service.UDPData))
 	registerService(udp.NewRadarChannels(&workflows.WorkflowBuilder{}))
 	registerService(new(uartsdlc.SDLCService))
 	registerService(new(uartsdlc.SDLCExecutorService))

@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/rs/zerolog/log"
 	"rvpro3/radarvision.com/utils"
 )
 
@@ -37,11 +38,14 @@ func (w *WebService) SetupRunnable(state *utils.State, config *utils.Config) {
 	//router.PUT("/executor/radars/start", putStartRadars)
 	//router.GET("/executor/radars/status", getRadarsStatus)
 
-	err := router.Run(host)
+	go func() {
+		if err := router.Run(host); err != nil {
+			// Handle the error if the server fails to start
+			utils.Debug.Panic(err)
+		}
+	}()
 
-	if err != nil {
-		utils.Debug.Panic(err)
-	}
+	log.Info().Msgf("Web service listening on %s", host)
 
 	state.Set(WebServiceName, host)
 }

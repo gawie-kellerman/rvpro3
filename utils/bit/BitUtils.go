@@ -7,6 +7,12 @@ import (
 	"golang.org/x/exp/constraints"
 )
 
+func CombineU32(hi uint32, lo uint32) uint64 {
+	res := uint64(hi) << 32
+	res |= uint64(lo)
+	return res
+}
+
 func IsSet[T constraints.Integer](value T, bit int) bool {
 	flags := T(1 << bit)
 	return value&flags == flags

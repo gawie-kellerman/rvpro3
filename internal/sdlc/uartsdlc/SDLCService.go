@@ -8,6 +8,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog/log"
 	"go.bug.st/serial"
+	"rvpro3/radarvision.com/internal/branding"
 	"rvpro3/radarvision.com/utils"
 )
 
@@ -284,8 +285,7 @@ func (s *SDLCService) logMessage(data []byte, action string, omitMetric *utils.M
 
 		writer.WriteCol(now.Format(utils.DisplayDateTimeMS))
 		writer.WriteCol(action)
-		writer.WriteCol(hex.EncodeToString(data))
-		writer.WriteLn()
+		writer.WriteColNL(hex.EncodeToString(data))
 	}
 }
 
@@ -295,10 +295,9 @@ func (s *SDLCService) WriteLogHeader(
 	_ string,
 	_ string,
 ) {
-	writer.WriteColsLn("SDLC Action Data", "101")
-	writer.WriteColsLn("Radar Vision", "https://radarvision.ai")
-	writer.WriteColsLn()
-	writer.WriteColsLn("TIMESTAMP", "ACTION", "DATA")
+	branding.CSVBranding.WriteTitle(writer, "SDLC Action Data", "101")
+	branding.CSVBranding.WriteFeaturesNL(writer)
+	writer.WriteColsNL("TIMESTAMP", "ACTION", "DATA")
 }
 
 func (s *SDLCService) logError(errObj error) {
@@ -314,7 +313,6 @@ func (s *SDLCService) logError(errObj error) {
 
 		writer.WriteCol(now.Format(utils.DisplayDateTimeMS))
 		writer.WriteCol(errorAction)
-		writer.WriteCol(errObj.Error())
-		writer.WriteLn()
+		writer.WriteColNL(errObj.Error())
 	}
 }

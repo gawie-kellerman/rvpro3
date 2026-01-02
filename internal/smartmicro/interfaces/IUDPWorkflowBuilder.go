@@ -1,10 +1,10 @@
 package interfaces
 
 type IUDPWorkflowBuilder interface {
-	GetDiagnosticsWorkflow(parent any) IUDPWorkflow
-	GetInstructionWorkflow(parent any) IUDPWorkflow
-	GetPVRWorkflow(parent any) IUDPWorkflow
-	GetTriggerWorkflow(parent any) IUDPWorkflow
-	GetObjectListWorkflow(parent any) IUDPWorkflow
-	GetStatisticsWorkflow(parent any) IUDPWorkflow
+	GetDiagnosticsWorkflow(parent IUDPWorkflowParent) IUDPWorkflow
+	GetInstructionWorkflow(parent IUDPWorkflowParent) IUDPWorkflow
+	GetPVRWorkflow(parent IUDPWorkflowParent) IUDPWorkflow
+	GetTriggerWorkflow(parent IUDPWorkflowParent) IUDPWorkflow
+	GetObjectListWorkflow(parent IUDPWorkflowParent) IUDPWorkflow
+	GetStatisticsWorkflow(parent IUDPWorkflowParent) IUDPWorkflow
 }

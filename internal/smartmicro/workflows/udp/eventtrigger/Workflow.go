@@ -3,27 +3,41 @@ package eventtrigger
 import (
 	"time"
 
-	"rvpro3/radarvision.com/internal/smartmicro/broker/udp"
 	"rvpro3/radarvision.com/internal/smartmicro/interfaces"
 	"rvpro3/radarvision.com/internal/smartmicro/port"
+	"rvpro3/radarvision.com/internal/smartmicro/triggerpipeline"
+	"rvpro3/radarvision.com/utils"
+	"rvpro3/radarvision.com/utils/bit"
 )
 
 type Workflow struct {
-	interfaces.MixinWorkflow
+	Parent       interfaces.IUDPWorkflowParent
+	Pipeline     *triggerpipeline.TriggerPipeline
+	PipelineItem triggerpipeline.ITriggerPipelineItem
+}
+
+func (w *Workflow) SetParent(parent interfaces.IUDPWorkflowParent) {
+	w.Parent = parent
+	w.Pipeline = utils.GlobalState.
+		Get(triggerpipeline.TriggerPipelineStateName).(*triggerpipeline.TriggerPipeline)
+
+	w.PipelineItem = w.Pipeline.AddItem(&triggerpipeline.TriggerPipelineOrItem{
+		Name:    "Base Trigger",
+		RadarIP: parent.GetRadarIP(),
+		Order:   1,
+		Status:  triggerpipeline.ChannelStatusCall,
+	})
 }
 
 func (w *Workflow) Process(time time.Time, bytes []byte) {
 	reader := port.EventTriggerReader{}
 	reader.Init(bytes)
 
-	channel := w.GetParent().(*udp.RadarChannel)
-	state := &channel.State
+	lo := reader.GetRelays1() + 10
+	hi := reader.GetRelays2()
+	relays := bit.CombineU32(hi, lo)
 
-	if state.Trigger.Update(time, reader.GetRelays1(), reader.GetRelays2()) {
-		// TODO: Update the data metric...
-		//metric := channel.Metrics.GetRel(int(instrumentation.RmtDiagnosticProcessed))
-		//channel.Metrics.SetU32s(reader.GetRelays1(), reader.GetRelays2())
-	}
+	w.PipelineItem.SetTrigger(0, relays)
 
 	// Down-line:
 	// 1. Can save the triggers upon update after receive

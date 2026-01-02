@@ -8,14 +8,15 @@ import (
 	"github.com/rs/zerolog/log"
 	"rvpro3/radarvision.com/internal/smartmicro/interfaces"
 	"rvpro3/radarvision.com/internal/smartmicro/service"
+	"rvpro3/radarvision.com/internal/smartmicro/triggerpipeline"
 	"rvpro3/radarvision.com/utils"
 )
 
-const RadarChannelsServiceName = "RadarChannelsService"
+const RadarChannelsServiceName = "Radar.Channels.Service"
 
-const defaultTriggerPath = "Channel.TriggerPath"
-const defaultStatisticsPath = "Channel.StatisticsPath"
-const defaultObjectListPath = "Channel.ObjectListPath"
+const defaultTriggerPath = "ChannelStatus.TriggerPath"
+const defaultStatisticsPath = "ChannelStatus.StatisticsPath"
+const defaultObjectListPath = "ChannelStatus.ObjectListPath"
 
 type RadarChannels struct {
 	Radar             []RadarChannel
@@ -38,7 +39,6 @@ func (rc *RadarChannels) SetupDefaults(config *utils.Config) {
 	utils.GlobalConfig.SetDefault(defaultTriggerPath, "/media/SDLOGS/logs/sensor/{sensor-host}/trigger/trigger-{datetime}.csv")
 	utils.GlobalConfig.SetDefault(defaultStatisticsPath, "")
 	utils.GlobalConfig.SetDefault(defaultObjectListPath, "")
-
 }
 
 func (rc *RadarChannels) SetupRunnable(state *utils.State, config *utils.Config) {
@@ -59,6 +59,12 @@ func (rc *RadarChannels) SetupRunnable(state *utils.State, config *utils.Config)
 		ip := utils.IP4Builder.FromString(radarIP)
 		rc.Radar[index].IPAddress = ip
 	}
+
+	// Setup Trigger Pipeline State
+	state.Set(
+		triggerpipeline.TriggerPipelineStateName,
+		new(triggerpipeline.TriggerPipeline),
+	)
 
 	rc.Start()
 }

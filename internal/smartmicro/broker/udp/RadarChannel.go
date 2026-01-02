@@ -147,6 +147,10 @@ func (rc *RadarChannel) InitMetrics(ip4 utils.IP4) {
 	rc.unknownDroppedMetric = gm.U64(rc.MetricsAt, "Error: Unknown dropped")
 }
 
+func (rc *RadarChannel) GetRadarIP() utils.IP4 {
+	return rc.IPAddress
+}
+
 func (rc *RadarChannel) Run(radarIP utils.IP4, workflowBuilder interfaces.IUDPWorkflowBuilder) {
 	rc.InitMetrics(radarIP)
 	rc.IPAddress = radarIP

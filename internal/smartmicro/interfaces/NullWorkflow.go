@@ -5,9 +5,13 @@ import (
 )
 
 type NullWorkflow struct {
-	MixinWorkflow
+	Parent IUDPWorkflowParent
 }
 
-func (n *NullWorkflow) Process(time time.Time, bytes []byte) {
+func (w *NullWorkflow) SetParent(p IUDPWorkflowParent) {
+	w.Parent = p
+}
+
+func (w *NullWorkflow) Process(time time.Time, bytes []byte) {
 	// Simply does nothing
 }

@@ -7,7 +7,11 @@ import (
 )
 
 type Workflow struct {
-	interfaces.MixinWorkflow
+	Parent interfaces.IUDPWorkflowParent
+}
+
+func (w *Workflow) SetParent(p interfaces.IUDPWorkflowParent) {
+	w.Parent = p
 }
 
 func (w *Workflow) Process(time time.Time, bytes []byte) {

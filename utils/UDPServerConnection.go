@@ -30,10 +30,10 @@ func (conn *UDPErrorContext) String() string {
 }
 
 type UDPServerConnection struct {
-	Sender          any
-	OnError         func(*UDPServerConnection, UDPErrorContext, error)
-	OnOpen          func(*UDPServerConnection)
-	OnClose         func(*UDPServerConnection)
+	Sender          any                                                `json:"-"`
+	OnError         func(*UDPServerConnection, UDPErrorContext, error) `json:"-"`
+	OnOpen          func(*UDPServerConnection)                         `json:"-"`
+	OnClose         func(*UDPServerConnection)                         `json:"-"`
 	address         net.UDPAddr
 	connection      *net.UDPConn
 	retry           RetryGuard

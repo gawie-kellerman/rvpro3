@@ -79,96 +79,97 @@ type IP4 struct {
 	Port  int
 }
 
-func (ip IP4) MarshalJSON() ([]byte, error) {
+func (i IP4) MarshalJSON() ([]byte, error) {
 	return json.Marshal(map[string]interface{}{
-		"IP": ip.String(),
+		"RadarIP": i.String(),
+		"Port":    i.Port,
 	})
 }
 
-func (s IP4) String() string {
+func (i IP4) String() string {
 	res := strings.Builder{}
 	res.Grow(20)
 
 	res.WriteString(fmt.Sprintf(
 		"%d.%d.%d.%d:%d",
-		s.bytes[0],
-		s.bytes[1],
-		s.bytes[2],
-		s.bytes[3],
-		s.Port,
+		i.bytes[0],
+		i.bytes[1],
+		i.bytes[2],
+		i.bytes[3],
+		i.Port,
 	))
 	return res.String()
 }
 
-func (s IP4) ToUDPAddr() net.UDPAddr {
+func (i IP4) ToUDPAddr() net.UDPAddr {
 	res := net.UDPAddr{
-		IP:   net.IPv4(s.bytes[0], s.bytes[1], s.bytes[2], s.bytes[3]),
-		Port: s.Port,
+		IP:   net.IPv4(i.bytes[0], i.bytes[1], i.bytes[2], i.bytes[3]),
+		Port: i.Port,
 	}
 
 	return res
 }
 
-func (s IP4) ToU32() uint32 {
-	return binary.BigEndian.Uint32(s.bytes[:])
+func (i IP4) ToU32() uint32 {
+	return binary.BigEndian.Uint32(i.bytes[:])
 }
 
-func (s IP4) WithUDPPort(port int) net.UDPAddr {
+func (i IP4) WithUDPPort(port int) net.UDPAddr {
 	res := net.UDPAddr{
-		IP:   net.IPv4(s.bytes[0], s.bytes[1], s.bytes[2], s.bytes[3]),
+		IP:   net.IPv4(i.bytes[0], i.bytes[1], i.bytes[2], i.bytes[3]),
 		Port: port,
 	}
 
 	return res
 }
 
-func (s IP4) WithPort(port int) IP4 {
+func (i IP4) WithPort(port int) IP4 {
 	return IP4{
-		bytes: s.bytes,
+		bytes: i.bytes,
 		Port:  port,
 	}
 }
 
-func (s IP4) RelativeTo(baseIP uint32) int {
-	return int(s.ToU32()) - int(baseIP)
+func (i IP4) RelativeTo(baseIP uint32) int {
+	return int(i.ToU32()) - int(baseIP)
 }
 
-func (s IP4) ToTCPAddr() net.TCPAddr {
+func (i IP4) ToTCPAddr() net.TCPAddr {
 	res := net.TCPAddr{
-		IP:   net.IPv4(s.bytes[0], s.bytes[1], s.bytes[2], s.bytes[3]),
-		Port: s.Port,
+		IP:   net.IPv4(i.bytes[0], i.bytes[1], i.bytes[2], i.bytes[3]),
+		Port: i.Port,
 	}
 
 	return res
 }
 
-func (s IP4) DistanceTo(ip4 uint32) int {
-	return int(ip4) - int(s.ToU32())
+func (i IP4) DistanceTo(ip4 uint32) int {
+	return int(ip4) - int(i.ToU32())
 }
 
-func (s IP4) WithHost8(host int) IP4 {
-	s.bytes[3] = byte(host)
-	return s
+func (i IP4) WithHost8(host int) IP4 {
+	i.bytes[3] = byte(host)
+	return i
 }
 
-func (s IP4) ToIPString() string {
+func (i IP4) ToIPString() string {
 	res := strings.Builder{}
 	res.Grow(20)
 
 	res.WriteString(fmt.Sprintf(
 		"%d.%d.%d.%d",
-		s.bytes[0],
-		s.bytes[1],
-		s.bytes[2],
-		s.bytes[3],
+		i.bytes[0],
+		i.bytes[1],
+		i.bytes[2],
+		i.bytes[3],
 	))
 	return res.String()
 
 }
 
-func (s IP4) WriteToFixedBuffer(writer *FixedBuffer) {
-	writer.WriteBytes(s.bytes[:])
-	writer.WriteU16(uint16(s.Port), binary.BigEndian)
+func (i IP4) WriteToFixedBuffer(writer *FixedBuffer) {
+	writer.WriteBytes(i.bytes[:])
+	writer.WriteU16(uint16(i.Port), binary.BigEndian)
 }
 
 func getPortFromString(addr string) int {
