@@ -2,15 +2,26 @@ package bit
 
 type U64Bits uint64
 
-// ForEachU64Bit loops with filtering over the bits of a uint64.
+// ForEachBit loops with filtering over the bits of a uint64.
 // It assumes that chances are that only a few bits are used and that looping over
 // the whole array will result in very few true callbacks.
-func (source U64Bits) ForEachU64Bit(callback func(index int, isSet bool)) {
+func (source U64Bits) ForEachBit(callback func(index int, isSet bool)) {
 	// loop over 8 bytes of source
 	for n := 0; n < 8; n++ {
 		// Check if a byte has bits set
 		if source.HasBits(n) {
 			source.For(n*8, ((n+1)*8)-1, callback)
+		}
+	}
+}
+
+func (source U64Bits) ForNotSet(callback func(index int, isSet bool)) {
+	loop := U64Bits(^uint64(source))
+	// loop over 8 bytes of source
+	for n := 0; n < 8; n++ {
+		// Check if a byte has bits set
+		if loop.HasBits(n) {
+			loop.For(n*8, ((n+1)*8)-1, callback)
 		}
 	}
 }

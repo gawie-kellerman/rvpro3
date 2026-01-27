@@ -27,7 +27,7 @@ type writeStats struct {
 	/// When the packet size too big for the writeCache.  Packet is skipped
 	OverflowCount uint64
 
-	/// ServerConnection Connection Write failure... which closes the connection
+	/// ServerConnection Connection WritePacket failure... which closes the connection
 	WriteErrCount uint64
 
 	/// ServerConnection Connection Written only partially... does not close the connection

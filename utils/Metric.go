@@ -79,6 +79,11 @@ func (s *Metric) SetTime(tm time.Time) bool {
 	return wasActive
 }
 
+func (s *Metric) GetTime() time.Time {
+	iValue := int64(binary.LittleEndian.Uint64(s.Data[0:8]))
+	return time.UnixMilli(iValue)
+}
+
 func (s *Metric) WriteToFixedBuffer(writer *FixedBuffer) {
 	writer.WritePascal(s.Name)
 	writer.WriteU8(uint8(s.DataType))
@@ -178,4 +183,18 @@ func (s *Metric) Inc(now time.Time) {
 
 func (s *Metric) Add(count int, now time.Time) {
 	s.AddCount(uint64(count), now)
+}
+
+func (s *Metric) IncRes(now time.Time) uint64 {
+	current := binary.LittleEndian.Uint64(s.Data[0:8])
+	if !s.IsSet {
+		s.IsSet = true
+		s.DataType = MetricTypeU64
+		s.FirstOn = now.UnixMilli()
+	}
+
+	binary.LittleEndian.PutUint64(s.Data[0:8], current+1)
+	s.LastOn = now.UnixMilli()
+
+	return current + 1
 }

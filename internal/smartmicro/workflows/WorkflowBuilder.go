@@ -26,7 +26,7 @@ func (w WorkflowBuilder) GetDiagnosticsWorkflow(parent interfaces.IUDPWorkflowPa
 	w.checkType(parent)
 
 	res := new(diagnostics.Workflow)
-	res.SetParent(parent)
+	res.Init(parent)
 	return res
 }
 
@@ -34,7 +34,7 @@ func (w WorkflowBuilder) GetInstructionWorkflow(parent interfaces.IUDPWorkflowPa
 	w.checkType(parent)
 
 	res := new(instruction.Workflow)
-	res.SetParent(parent)
+	res.Init(parent)
 	return res
 }
 
@@ -42,7 +42,7 @@ func (w WorkflowBuilder) GetPVRWorkflow(parent interfaces.IUDPWorkflowParent) in
 	w.checkType(parent)
 
 	res := new(pvr.Workflow)
-	res.SetParent(parent)
+	res.Init(parent)
 	return res
 }
 
@@ -50,7 +50,7 @@ func (w WorkflowBuilder) GetTriggerWorkflow(parent interfaces.IUDPWorkflowParent
 	w.checkType(parent)
 
 	res := new(eventtrigger.Workflow)
-	res.SetParent(parent)
+	res.Init(parent)
 	return res
 }
 
@@ -58,7 +58,7 @@ func (w WorkflowBuilder) GetObjectListWorkflow(parent interfaces.IUDPWorkflowPar
 	w.checkType(parent)
 
 	res := new(objectlist.Workflow)
-	res.SetParent(parent)
+	res.Init(parent)
 	return res
 }
 
@@ -66,6 +66,6 @@ func (w WorkflowBuilder) GetStatisticsWorkflow(parent interfaces.IUDPWorkflowPar
 	w.checkType(parent)
 
 	res := new(statistics.Workflow)
-	res.SetParent(parent)
+	res.Init(parent)
 	return res
 }

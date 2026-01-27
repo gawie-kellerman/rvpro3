@@ -1,0 +1,62 @@
+{
+  "SiteName": "",
+  "DistanceUnit": "ft",
+  "SpeedUnit": "mph",
+  "Radars": [
+    {
+      "RadarIP": "192.168.11.12",
+      "RadarName": "Radar 1",
+      "StopBarDistance": "0.00",
+      "FailSafeTime": "50",
+      "Channels": [
+        {
+          "Channel": 1,
+          "Phase": 1,
+          "MaxHold": "0",
+          "Extend": "1",
+          "FailSafe": "set",
+          "ChannelSource": "forceSet",
+          "Zones": [
+            {
+              "zone": 1,
+              "fromSpeed": 4.470272686633884,
+              "toSpeed": 8.940545373267769,
+              "fromDistance": 3.047999902464003,
+              "toDistance": 6.095999804928006,
+              "lanes": [
+                0,
+                1,
+                2
+              ],
+              "classes": [
+                0,
+                1
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "RadarIP": "192.168.11.13",
+      "RadarName": "Radar 2",
+      "StopBarDistance": "0.00",
+      "FailSafeTime": "0",
+      "Channels": []
+    },
+    {
+      "RadarIP": "192.168.11.14",
+      "RadarName": "Radar 3",
+      "StopBarDistance": "0.00",
+      "FailSafeTime": "0",
+      "Channels": []
+    },
+    {
+      "RadarIP": "192.168.11.15",
+      "RadarName": "Radar 4",
+      "StopBarDistance": "0.00",
+      "FailSafeTime": "0",
+      "Channels": []
+    }
+  ]
+}

@@ -5,6 +5,6 @@ import (
 )
 
 type IUDPWorkflow interface {
-	SetParent(IUDPWorkflowParent)
+	Init(IUDPWorkflowParent)
 	Process(time.Time, []byte)
 }

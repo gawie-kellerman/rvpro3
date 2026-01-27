@@ -10,7 +10,7 @@ type Workflow struct {
 	Parent interfaces.IUDPWorkflowParent
 }
 
-func (w *Workflow) SetParent(p interfaces.IUDPWorkflowParent) {
+func (w *Workflow) Init(p interfaces.IUDPWorkflowParent) {
 	w.Parent = p
 }
 

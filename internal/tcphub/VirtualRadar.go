@@ -57,18 +57,16 @@ func (s *VirtualRadar) executeRead() {
 	var err error
 	for !s.terminate {
 
-		if s.udpServer.Listen() {
-			if cnx := s.udpServer.GetConnection(); cnx != nil {
-				if s.bufferLen, err = cnx.Read(s.buffer[:]); err != nil {
-					if s.OnReadError != nil {
-						s.OnReadError(s, err)
-					}
-					s.udpServer.Close()
-				} else {
-					packet := NewPacket(s.buffer[:s.bufferLen])
-					packet.SetTarget(s.udpServer.GetConnection().LocalAddr().(*net.UDPAddr))
-					s.host.WriteToHub(packet)
+		if cnx := s.udpServer.Listen(); cnx != nil {
+			if s.bufferLen, err = cnx.Read(s.buffer[:]); err != nil {
+				if s.OnReadError != nil {
+					s.OnReadError(s, err)
 				}
+				s.udpServer.Close()
+			} else {
+				packet := NewPacket(s.buffer[:s.bufferLen])
+				packet.SetTarget(s.udpServer.GetConnection().LocalAddr().(*net.UDPAddr))
+				s.host.WriteToHub(packet)
 			}
 		} else {
 			time.Sleep(1 * time.Second)

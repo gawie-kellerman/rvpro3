@@ -49,9 +49,9 @@ func (p *Packet) GetDataSize() int {
 
 func NewPacket(data []byte) Packet {
 	res := Packet{
-		Delimiter:  startDelimiter,
-		Version:    1,
-		Date:       utils.Time.ToLocalMillis(time.Now()),
+		Delimiter: startDelimiter,
+		Version:   1,
+		//Date:       utils.Time.ToLocalMillis(time.Now()),
 		Type:       PtUdpForward,
 		Size:       uint16(len(data) + headerSize),
 		TargetIP4:  0,
@@ -67,7 +67,7 @@ func (s *packetBuilder) Serialize(now time.Time, packetType PacketType, ip4 util
 
 	writer.WriteU32(startDelimiter, binary.LittleEndian)
 	writer.WriteU16(1, binary.LittleEndian) //version
-	writer.WriteI64(utils.Time.ToLocalMillis(now), binary.LittleEndian)
+	//writer.WriteI64(utils.Time.ToLocalMillis(now), binary.LittleEndian)
 	writer.WriteU16(uint16(size), binary.LittleEndian)
 	writer.WriteU8(uint8(packetType))
 	writer.WriteU32(ip4.ToU32(), binary.LittleEndian)

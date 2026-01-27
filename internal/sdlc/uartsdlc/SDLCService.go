@@ -138,17 +138,17 @@ func (s *SDLCService) initMetrics() {
 	s.PopBytesMetric = gm.U64(SDLCServiceMetricsAt, "Pop Bytes")
 
 	s.WriteEnqueuedMetric = gm.U64(SDLCServiceMetricsAt, "Enqueued Writes")
-	s.WriteEnqueuedBytesMetric = gm.U64(SDLCServiceMetricsAt, "Enqueued Write Bytes")
+	s.WriteEnqueuedBytesMetric = gm.U64(SDLCServiceMetricsAt, "Enqueued WritePacket Bytes")
 	s.WriteDequeuedMetric = gm.U64(SDLCServiceMetricsAt, "Dequeued Writes")
-	s.WriteDequeuedBytesMetric = gm.U64(SDLCServiceMetricsAt, "Dequeued Write Bytes")
+	s.WriteDequeuedBytesMetric = gm.U64(SDLCServiceMetricsAt, "Dequeued WritePacket Bytes")
 	s.WriteQueueFullMetric = gm.U64(SDLCServiceMetricsAt, "Error: Queue Full Writes rejected")
-	s.WriteQueueFullBytesMetric = gm.U64(SDLCServiceMetricsAt, "Error: Queue Full Write Bytes rejected")
+	s.WriteQueueFullBytesMetric = gm.U64(SDLCServiceMetricsAt, "Error: Queue Full WritePacket Bytes rejected")
 	s.WriteSuccessMetric = gm.U64(SDLCServiceMetricsAt, "Success Writes")
-	s.WriteSuccessBytesMetric = gm.U64(SDLCServiceMetricsAt, "Success Write Bytes")
+	s.WriteSuccessBytesMetric = gm.U64(SDLCServiceMetricsAt, "Success WritePacket Bytes")
 	s.WriteErrorMetric = gm.U64(SDLCServiceMetricsAt, "Error: Writes")
-	s.WriteErrorBytesMetric = gm.U64(SDLCServiceMetricsAt, "Error: Write Bytes")
+	s.WriteErrorBytesMetric = gm.U64(SDLCServiceMetricsAt, "Error: WritePacket Bytes")
 	s.WriteOmitMetric = gm.U64(SDLCServiceMetricsAt, "Omit Writes")
-	s.WriteOmitBytesMetric = gm.U64(SDLCServiceMetricsAt, "Omit Write Bytes")
+	s.WriteOmitBytesMetric = gm.U64(SDLCServiceMetricsAt, "Omit WritePacket Bytes")
 	s.OmitLogWritesMetric = gm.U64(SDLCServiceMetricsAt, "Omit Log Writes")
 	s.OmitLogReadsMetric = gm.U64(SDLCServiceMetricsAt, "Omit Log Reads")
 	s.IsWriteEnabledMetric = gm.U32(SDLCServiceMetricsAt, "IsWriteEnabled")
@@ -264,7 +264,7 @@ func (s *SDLCService) Write(data []byte) {
 			s.WriteEnqueuedMetric.AddCount(1, now)
 			s.WriteEnqueuedBytesMetric.AddCount(uint64(len(buffer)), now)
 		} else {
-			// Write Queue Full
+			// WritePacket Queue Full
 			s.WritePool.Release(data)
 			log.Err(errWriteMessageDiscarded).Str("msg", hex.EncodeToString(data))
 			s.WriteQueueFullMetric.AddCount(1, now)

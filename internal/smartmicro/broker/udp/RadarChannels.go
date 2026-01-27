@@ -60,13 +60,20 @@ func (rc *RadarChannels) SetupRunnable(state *utils.State, config *utils.Config)
 		rc.Radar[index].IPAddress = ip
 	}
 
-	// Setup Trigger Pipeline State
+	rc.SetupStates(state)
+
+	rc.Start()
+}
+
+func (rc *RadarChannels) SetupStates(state *utils.State) {
+	// Setup Global Trigger Pipeline State
 	state.Set(
 		triggerpipeline.TriggerPipelineStateName,
 		new(triggerpipeline.TriggerPipeline),
 	)
 
-	rc.Start()
+	// Setup Global Phase Sate
+	state.Set(interfaces.PhaseStateName, new(interfaces.PhaseState))
 }
 
 func (rc *RadarChannels) GetServiceName() string { return RadarChannelsServiceName }

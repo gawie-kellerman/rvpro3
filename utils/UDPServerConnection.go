@@ -1,28 +1,30 @@
 package utils
 
 import (
+	"fmt"
 	"net"
+	"os"
 	"time"
 
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog/log"
 )
 
-type UDPErrorContext uint8
+type IPErrorContext uint8
 
 const (
-	UDPErrorOnConnect UDPErrorContext = iota
-	UDPErrorOnWriteData
-	UDPErrorOnReadData
+	IPErrorOnConnect IPErrorContext = iota
+	IPErrorOnWriteData
+	IPErrorOnReadData
 )
 
-func (conn *UDPErrorContext) String() string {
+func (conn *IPErrorContext) String() string {
 	switch *conn {
-	case UDPErrorOnConnect:
+	case IPErrorOnConnect:
 		return "connect"
-	case UDPErrorOnWriteData:
+	case IPErrorOnWriteData:
 		return "send Metric"
-	case UDPErrorOnReadData:
+	case IPErrorOnReadData:
 		return "read Metric"
 	default:
 		return "unknown"
@@ -30,10 +32,10 @@ func (conn *UDPErrorContext) String() string {
 }
 
 type UDPServerConnection struct {
-	Sender          any                                                `json:"-"`
-	OnError         func(*UDPServerConnection, UDPErrorContext, error) `json:"-"`
-	OnOpen          func(*UDPServerConnection)                         `json:"-"`
-	OnClose         func(*UDPServerConnection)                         `json:"-"`
+	Sender          any                                               `json:"-"`
+	OnError         func(*UDPServerConnection, IPErrorContext, error) `json:"-"`
+	OnOpen          func(*UDPServerConnection)                        `json:"-"`
+	OnClose         func(*UDPServerConnection)                        `json:"-"`
 	address         net.UDPAddr
 	connection      *net.UDPConn
 	retry           RetryGuard
@@ -59,21 +61,21 @@ func (m *UDPServerConnection) Init(
 	m.Sender = sender
 	m.connection = nil
 	m.readBufferSize = readBufferSize
-	m.writeBufferSize = writeBufferSize
 	m.retry = RetryGuard{
 		RetryEvery: uint32(reconnectOnCycle),
 	}
+	m.writeBufferSize = writeBufferSize
 }
 
-func (m *UDPServerConnection) Listen() bool {
+func (m *UDPServerConnection) Listen() *net.UDPConn {
 	var err error
 
 	if m.connection != nil {
-		return true
+		return m.connection
 	}
 
 	if !m.retry.ShouldRetry() {
-		return false
+		return nil
 	}
 
 	if m.connection, err = net.ListenUDP("udp4", &m.address); err != nil {
@@ -93,12 +95,12 @@ func (m *UDPServerConnection) Listen() bool {
 	if m.OnOpen != nil {
 		m.OnOpen(m)
 	}
-	return true
+	return m.connection
 
 errorLabel:
-	m.sendError(UDPErrorOnConnect, err)
+	m.sendError(IPErrorOnConnect, err)
 	m.Close()
-	return false
+	return m.connection
 }
 
 func (m *UDPServerConnection) ReceiveData(buffer []byte, now time.Time, waitMs int) (bufferLen int) {
@@ -123,12 +125,45 @@ func (m *UDPServerConnection) ReceiveData(buffer []byte, now time.Time, waitMs i
 	return
 
 errorLabel:
-	m.sendError(UDPErrorOnReadData, err)
+	m.sendError(IPErrorOnReadData, err)
 	m.Close()
 	return 0
 }
 
-func (m *UDPServerConnection) sendError(context UDPErrorContext, err error) {
+func (m *UDPServerConnection) Read(buffer []byte, now time.Time, waitMs int) (bufferLen int, fromAddr IP4) {
+	cnx := m.Listen()
+
+	if cnx == nil {
+		return 0, fromAddr
+	}
+
+	var err error
+	var udpAddr *net.UDPAddr
+
+	deadline := now.Add(time.Duration(waitMs) * time.Millisecond)
+
+	if err = cnx.SetReadDeadline(deadline); err != nil {
+		goto errorLabel
+	}
+
+	if bufferLen, udpAddr, err = cnx.ReadFromUDP(buffer); err != nil {
+		// If no data received then handle it gracefully
+		if errors.Is(err, os.ErrDeadlineExceeded) {
+			return 0, fromAddr
+		}
+		goto errorLabel
+	}
+	fromAddr = IP4Builder.FromAddr(udpAddr)
+
+	return bufferLen, fromAddr
+
+errorLabel:
+	m.sendError(IPErrorOnReadData, err)
+	m.Close()
+	return 0, fromAddr
+}
+
+func (m *UDPServerConnection) sendError(context IPErrorContext, err error) {
 	if m.OnError != nil {
 		m.OnError(m, context, err)
 	} else {
@@ -147,28 +182,32 @@ func (m *UDPServerConnection) Close() {
 }
 
 func (m *UDPServerConnection) GetConnection() *net.UDPConn {
+	m.Listen()
 	return m.connection
 }
 
-func (m *UDPServerConnection) WriteData(udpAddr net.UDPAddr, buffer []byte) {
+func (m *UDPServerConnection) WriteData(udpAddr net.UDPAddr, buffer []byte) error {
 	var err error
 
-	if m.connection == nil {
-		m.sendError(UDPErrorOnWriteData, ErrWriteToClosed)
-		return
-	}
+	cnx := m.GetConnection()
 
-	if err = m.connection.SetWriteDeadline(time.Now().Add(3 * time.Second)); err != nil {
+	if cnx == nil {
+		err = ErrWriteToClosed
 		goto errLabel
 	}
 
-	if _, err = m.connection.WriteToUDP(buffer, &udpAddr); err != nil {
+	if err = cnx.SetWriteDeadline(time.Now().Add(3 * time.Second)); err != nil {
 		goto errLabel
 	}
 
-	return
+	fmt.Println("Writing from", cnx.LocalAddr(), "to", udpAddr.String(), len(buffer), "bytes")
+	if _, err = cnx.WriteToUDP(buffer, &udpAddr); err != nil {
+		goto errLabel
+	}
+
+	return nil
 
 errLabel:
-	m.sendError(UDPErrorOnWriteData, err)
-	return
+	m.sendError(IPErrorOnWriteData, err)
+	return err
 }

@@ -95,7 +95,7 @@ func (u *UDPData) InitMetrics() {
 	sn := u.GetServiceName()
 	u.IsRunningMetric = gm.Metric(sn, "Is Running", utils.MetricTypeU32)
 	u.SockOpenFailMetric = gm.Metric(sn, "Error: Socket Open Fail", utils.MetricTypeU64)
-	u.SockWriteFailMetric = gm.Metric(sn, "Error: Socket Write Fail", utils.MetricTypeU64)
+	u.SockWriteFailMetric = gm.Metric(sn, "Error: Socket WritePacket Fail", utils.MetricTypeU64)
 	u.SockReadFailMetric = gm.Metric(sn, "Error: Socket Read Fail", utils.MetricTypeU64)
 	u.SockReuseMetric = gm.Metric(sn, "Open Socket Reused", utils.MetricTypeU64)
 	u.DataIterationsMetric = gm.Metric(sn, "Metric Iterations", utils.MetricTypeU64)
@@ -119,13 +119,13 @@ func (u *UDPData) Start() {
 
 	u.Connection.Init(u, u.ListenAddr, 4*utils.Kilobyte, 4*utils.Kilobyte, u.ReconnectCycle)
 
-	u.Connection.OnError = func(connection *utils.UDPServerConnection, context utils.UDPErrorContext, err error) {
+	u.Connection.OnError = func(connection *utils.UDPServerConnection, context utils.IPErrorContext, err error) {
 		switch context {
-		case utils.UDPErrorOnConnect:
+		case utils.IPErrorOnConnect:
 			u.SockOpenFailMetric.AddCount(1, u.Now)
-		case utils.UDPErrorOnWriteData:
+		case utils.IPErrorOnWriteData:
 			u.SockWriteFailMetric.AddCount(1, u.Now)
-		case utils.UDPErrorOnReadData:
+		case utils.IPErrorOnReadData:
 			u.SockReadFailMetric.AddCount(1, u.Now)
 		}
 		u.sendError(err)
@@ -155,7 +155,7 @@ func (u *UDPData) executeReader() {
 		u.Now = time.Now()
 		u.TimeMetric.SetTime(u.Now)
 
-		if u.Connection.Listen() {
+		if cnx := u.Connection.Listen(); cnx != nil {
 			u.ClearError()
 			u.SockReuseMetric.AddCount(1, u.Now)
 

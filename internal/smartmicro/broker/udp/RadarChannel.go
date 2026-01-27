@@ -1,12 +1,12 @@
 package udp
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/rs/zerolog/log"
 	"rvpro3/radarvision.com/internal/smartmicro/interfaces"
 	"rvpro3/radarvision.com/internal/smartmicro/port"
+	"rvpro3/radarvision.com/internal/smartmicro/triggerpipeline"
 	"rvpro3/radarvision.com/utils"
 )
 
@@ -37,36 +37,12 @@ type RadarChannel struct {
 	totalMessagesProcessedMetric   *utils.Metric
 	totalMessagesDroppedMetric     *utils.Metric
 	totalBytesProcessedMetric      *utils.Metric
-	objListProcessedMetric         *utils.Metric
-	objListDroppedMetric           *utils.Metric
-	objListTotalTimeMetric         *utils.Metric
-	objListMinTimeMetric           *utils.Metric
-	objListMaxTimeMetric           *utils.Metric
-	statisticsProcessedMetric      *utils.Metric
-	statisticsDroppedMetric        *utils.Metric
-	statisticsTotalTimeMetric      *utils.Metric
-	statisticsMinTimeMetric        *utils.Metric
-	statisticsMaxTimeMetric        *utils.Metric
-	triggersProcessedMetric        *utils.Metric
-	triggersDroppedMetric          *utils.Metric
-	triggersTotalTimeMetric        *utils.Metric
-	triggersMinTimeMetric          *utils.Metric
-	triggersMaxTimeMetric          *utils.Metric
-	pvrProcessedMetric             *utils.Metric
-	pvrDroppedMetric               *utils.Metric
-	pvrTotalTimeMetric             *utils.Metric
-	pvrMinTimeMetric               *utils.Metric
-	pvrMaxTimeMetric               *utils.Metric
-	instructionsProcessedMetric    *utils.Metric
-	instructionsDroppedMetric      *utils.Metric
-	instructionsTotalTimeMetric    *utils.Metric
-	instructionsMinTimeMetric      *utils.Metric
-	instructionsMaxTimeMetric      *utils.Metric
-	diagProcessedMetric            *utils.Metric
-	diagDroppedMetric              *utils.Metric
-	diagTotalTimeMetric            *utils.Metric
-	diagMinTimeMetric              *utils.Metric
-	diagMaxTimeMetric              *utils.Metric
+	objListMetric                  messageMetric
+	statisticsMetric               messageMetric
+	triggersMetric                 messageMetric
+	pvrMetric                      messageMetric
+	instructionMetric              messageMetric
+	diagMetric                     messageMetric
 	transportHeaderFormatErrMetric *utils.Metric
 	transportHeaderCrcErrMetric    *utils.Metric
 	protocolTypeErrMetric          *utils.Metric
@@ -75,6 +51,16 @@ type RadarChannel struct {
 	segmentBufferOverflowErrMetric *utils.Metric
 	portHeaderFormatErrMetric      *utils.Metric
 	unknownDroppedMetric           *utils.Metric
+	messageProcessedMetric         *utils.Metric
+	FailSafePipeline               triggerpipeline.RadarFailsafeItem
+}
+
+type messageMetric struct {
+	processed *utils.Metric
+	dropped   *utils.Metric
+	totalTime *utils.Metric
+	minTime   *utils.Metric
+	maxTime   *utils.Metric
 }
 
 func (rc *RadarChannel) SetupDefaults(config *utils.Config) {
@@ -94,47 +80,47 @@ func (rc *RadarChannel) GetServiceNames() []string {
 }
 
 func (rc *RadarChannel) InitMetrics(ip4 utils.IP4) {
-	rc.MetricsAt = fmt.Sprintf("Radar.%s", ip4)
+	rc.MetricsAt = interfaces.MetricName.GetUDPRadarMetric(ip4)
 	gm := &utils.GlobalMetrics
 	rc.totalMessagesProcessedMetric = gm.U64(rc.MetricsAt, "Total Messages processed")
 	rc.totalMessagesDroppedMetric = gm.U64(rc.MetricsAt, "Total Messages dropped")
 	rc.totalBytesProcessedMetric = gm.U64(rc.MetricsAt, "Total Bytes processed")
 
-	rc.objListProcessedMetric = gm.U64(rc.MetricsAt, "Object List processed")
-	rc.objListDroppedMetric = gm.U64(rc.MetricsAt, "Object List dropped")
-	rc.objListTotalTimeMetric = gm.U64(rc.MetricsAt, "Object List total time")
-	rc.objListMinTimeMetric = gm.U64(rc.MetricsAt, "Object List min time")
-	rc.objListMaxTimeMetric = gm.U64(rc.MetricsAt, "Object List max time")
+	rc.objListMetric.processed = gm.U64(rc.MetricsAt, "Object List processed")
+	rc.objListMetric.dropped = gm.U64(rc.MetricsAt, "Object List dropped")
+	rc.objListMetric.totalTime = gm.U64(rc.MetricsAt, "Object List totalTime")
+	rc.objListMetric.minTime = gm.U64(rc.MetricsAt, "Object List min time")
+	rc.objListMetric.maxTime = gm.U64(rc.MetricsAt, "Object List max time")
 
-	rc.statisticsProcessedMetric = gm.U64(rc.MetricsAt, "Statistics processed")
-	rc.statisticsDroppedMetric = gm.U64(rc.MetricsAt, "Statistics dropped")
-	rc.statisticsTotalTimeMetric = gm.U64(rc.MetricsAt, "Statistics total time")
-	rc.statisticsMinTimeMetric = gm.U64(rc.MetricsAt, "Statistics min time")
-	rc.statisticsMaxTimeMetric = gm.U64(rc.MetricsAt, "Statistics max time")
+	rc.statisticsMetric.processed = gm.U64(rc.MetricsAt, "Statistics processed")
+	rc.statisticsMetric.dropped = gm.U64(rc.MetricsAt, "Statistics dropped")
+	rc.statisticsMetric.totalTime = gm.U64(rc.MetricsAt, "Statistics total time")
+	rc.statisticsMetric.minTime = gm.U64(rc.MetricsAt, "Statistics min time")
+	rc.statisticsMetric.maxTime = gm.U64(rc.MetricsAt, "Statistics max time")
 
-	rc.triggersProcessedMetric = gm.U64(rc.MetricsAt, "Triggers processed")
-	rc.triggersDroppedMetric = gm.U64(rc.MetricsAt, "Triggers dropped")
-	rc.triggersTotalTimeMetric = gm.U64(rc.MetricsAt, "Triggers total time")
-	rc.triggersMinTimeMetric = gm.U64(rc.MetricsAt, "Triggers min time")
-	rc.triggersMaxTimeMetric = gm.U64(rc.MetricsAt, "Triggers max time")
+	rc.triggersMetric.processed = gm.U64(rc.MetricsAt, "Triggers processed")
+	rc.triggersMetric.dropped = gm.U64(rc.MetricsAt, "Triggers dropped")
+	rc.triggersMetric.totalTime = gm.U64(rc.MetricsAt, "Triggers total time")
+	rc.triggersMetric.minTime = gm.U64(rc.MetricsAt, "Triggers min time")
+	rc.triggersMetric.maxTime = gm.U64(rc.MetricsAt, "Triggers max time")
 
-	rc.pvrProcessedMetric = gm.U64(rc.MetricsAt, "PVR processed")
-	rc.pvrDroppedMetric = gm.U64(rc.MetricsAt, "PVR dropped")
-	rc.pvrTotalTimeMetric = gm.U64(rc.MetricsAt, "PVR total time")
-	rc.pvrMinTimeMetric = gm.U64(rc.MetricsAt, "PVR min time")
-	rc.pvrMaxTimeMetric = gm.U64(rc.MetricsAt, "PVR max time")
+	rc.pvrMetric.processed = gm.U64(rc.MetricsAt, "PVR processed")
+	rc.pvrMetric.dropped = gm.U64(rc.MetricsAt, "PVR dropped")
+	rc.pvrMetric.totalTime = gm.U64(rc.MetricsAt, "PVR total time")
+	rc.pvrMetric.minTime = gm.U64(rc.MetricsAt, "PVR min time")
+	rc.pvrMetric.maxTime = gm.U64(rc.MetricsAt, "PVR max time")
 
-	rc.instructionsProcessedMetric = gm.U64(rc.MetricsAt, "Instructions processed")
-	rc.instructionsDroppedMetric = gm.U64(rc.MetricsAt, "Instructions dropped")
-	rc.instructionsTotalTimeMetric = gm.U64(rc.MetricsAt, "Instructions total time")
-	rc.instructionsMinTimeMetric = gm.U64(rc.MetricsAt, "Instructions min time")
-	rc.instructionsMaxTimeMetric = gm.U64(rc.MetricsAt, "Instructions max time")
+	rc.instructionMetric.processed = gm.U64(rc.MetricsAt, "Instructions processed")
+	rc.instructionMetric.dropped = gm.U64(rc.MetricsAt, "Instructions dropped")
+	rc.instructionMetric.totalTime = gm.U64(rc.MetricsAt, "Instructions total time")
+	rc.instructionMetric.minTime = gm.U64(rc.MetricsAt, "Instructions min time")
+	rc.instructionMetric.maxTime = gm.U64(rc.MetricsAt, "Instructions max time")
 
-	rc.diagProcessedMetric = gm.U64(rc.MetricsAt, "Diagnostics processed")
-	rc.diagDroppedMetric = gm.U64(rc.MetricsAt, "Diagnostics dropped")
-	rc.diagTotalTimeMetric = gm.U64(rc.MetricsAt, "Diagnostics total time")
-	rc.diagMinTimeMetric = gm.U64(rc.MetricsAt, "Diagnostics min time")
-	rc.diagMaxTimeMetric = gm.U64(rc.MetricsAt, "Diagnostics max time")
+	rc.diagMetric.processed = gm.U64(rc.MetricsAt, "Diagnostics processed")
+	rc.diagMetric.dropped = gm.U64(rc.MetricsAt, "Diagnostics dropped")
+	rc.diagMetric.totalTime = gm.U64(rc.MetricsAt, "Diagnostics total time")
+	rc.diagMetric.minTime = gm.U64(rc.MetricsAt, "Diagnostics min time")
+	rc.diagMetric.maxTime = gm.U64(rc.MetricsAt, "Diagnostics max time")
 
 	rc.transportHeaderFormatErrMetric = gm.U64(rc.MetricsAt, "Error: Transport header format")
 	rc.transportHeaderCrcErrMetric = gm.U64(rc.MetricsAt, "Error: Transport header crc")
@@ -145,6 +131,7 @@ func (rc *RadarChannel) InitMetrics(ip4 utils.IP4) {
 	rc.unknownPortErrMetric = gm.U64(rc.MetricsAt, "Error: Unknown port")
 
 	rc.unknownDroppedMetric = gm.U64(rc.MetricsAt, "Error: Unknown dropped")
+	rc.messageProcessedMetric = gm.U64(rc.MetricsAt, interfaces.MessageProcessedOnMetricName)
 }
 
 func (rc *RadarChannel) GetRadarIP() utils.IP4 {
@@ -166,12 +153,14 @@ func (rc *RadarChannel) Run(radarIP utils.IP4, workflowBuilder interfaces.IUDPWo
 	rc.PvrWorkflow = workflowBuilder.GetPVRWorkflow(rc)
 	rc.TriggersWorkflow = workflowBuilder.GetTriggerWorkflow(rc)
 
-	rc.DiagnosticsWorkflow.SetParent(rc)
-	rc.ObjectListWorkflow.SetParent(rc)
-	rc.StatisticsWorkflow.SetParent(rc)
-	rc.InstructionWorkflow.SetParent(rc)
-	rc.PvrWorkflow.SetParent(rc)
-	rc.TriggersWorkflow.SetParent(rc)
+	rc.DiagnosticsWorkflow.Init(rc)
+	rc.ObjectListWorkflow.Init(rc)
+	rc.StatisticsWorkflow.Init(rc)
+	rc.InstructionWorkflow.Init(rc)
+	rc.PvrWorkflow.Init(rc)
+	rc.TriggersWorkflow.Init(rc)
+
+	rc.SetupFailSafe()
 
 	go rc.execute()
 }
@@ -324,65 +313,47 @@ func (rc *RadarChannel) process() {
 		}
 	}
 
-	pid := ph.GetIdentifier()
+	rc.messageProcessedMetric.SetTime(rc.Now)
 
-	var totMetric *utils.Metric
-	var minMetric *utils.Metric
-	var maxMetric *utils.Metric
+	pid := ph.GetIdentifier()
+	var msgMetric *messageMetric
 
 	switch pid {
 	case port.PiDiagnostics:
-		rc.diagProcessedMetric.Inc(rc.Now)
 		rc.DiagnosticsWorkflow.Process(rc.Now, rc.DataSlice)
-		totMetric = rc.diagTotalTimeMetric
-		minMetric = rc.diagMinTimeMetric
-		maxMetric = rc.diagMaxTimeMetric
+		msgMetric = &rc.diagMetric
 
 	case port.PiObjectList:
-		rc.objListProcessedMetric.Inc(rc.Now)
 		rc.ObjectListWorkflow.Process(rc.Now, rc.DataSlice)
-		totMetric = rc.objListTotalTimeMetric
-		minMetric = rc.objListMinTimeMetric
-		maxMetric = rc.objListMaxTimeMetric
+		msgMetric = &rc.objListMetric
 
 	case port.PiStatistics:
-		rc.statisticsProcessedMetric.Inc(rc.Now)
 		rc.StatisticsWorkflow.Process(rc.Now, rc.DataSlice)
-		totMetric = rc.statisticsTotalTimeMetric
-		minMetric = rc.statisticsMinTimeMetric
-		maxMetric = rc.statisticsMaxTimeMetric
+		msgMetric = &rc.statisticsMetric
 
 	case port.PiEventTrigger:
-		rc.triggersProcessedMetric.Inc(rc.Now)
 		rc.TriggersWorkflow.Process(rc.Now, rc.DataSlice)
-		totMetric = rc.triggersTotalTimeMetric
-		minMetric = rc.triggersMinTimeMetric
-		maxMetric = rc.triggersMaxTimeMetric
+		msgMetric = &rc.triggersMetric
 
 	case port.PiPVR:
-		rc.pvrProcessedMetric.Inc(rc.Now)
 		rc.PvrWorkflow.Process(rc.Now, rc.DataSlice)
-		totMetric = rc.pvrTotalTimeMetric
-		minMetric = rc.pvrMinTimeMetric
-		maxMetric = rc.pvrMaxTimeMetric
+		msgMetric = &rc.pvrMetric
 
 	case port.PiInstruction:
-		rc.instructionsProcessedMetric.Inc(rc.Now)
 		rc.InstructionWorkflow.Process(rc.Now, rc.DataSlice)
-		totMetric = rc.instructionsTotalTimeMetric
-		minMetric = rc.instructionsMinTimeMetric
-		maxMetric = rc.instructionsMaxTimeMetric
+		msgMetric = &rc.instructionMetric
 
 	default:
 		rc.unknownPortErrMetric.Inc(rc.Now)
 	}
 
 	// Time metric not performed for unknown port identifier
-	if totMetric != nil {
+	if msgMetric != nil {
 		duration := time.Since(rc.Now).Milliseconds()
-		totMetric.AddCount(uint64(duration), rc.Now)
-		minMetric.ReplaceMinDuration(duration, rc.Now)
-		maxMetric.ReplaceMaxDuration(duration, rc.Now)
+		msgMetric.processed.Inc(rc.Now)
+		msgMetric.totalTime.AddCount(uint64(duration), rc.Now)
+		msgMetric.minTime.ReplaceMinDuration(duration, rc.Now)
+		msgMetric.maxTime.ReplaceMaxDuration(duration, rc.Now)
 	}
 }
 
@@ -454,24 +425,29 @@ func (rc *RadarChannel) logDroppedMessage(msg *RadarMessage) {
 	pid := ph.GetIdentifier()
 	switch pid {
 	case port.PiDiagnostics:
-		rc.diagDroppedMetric.Inc(rc.Now)
+		rc.diagMetric.dropped.Inc(rc.Now)
 
 	case port.PiObjectList:
-		rc.objListDroppedMetric.Inc(rc.Now)
+		rc.objListMetric.dropped.Inc(rc.Now)
 
 	case port.PiStatistics:
-		rc.statisticsDroppedMetric.Inc(rc.Now)
+		rc.statisticsMetric.dropped.Inc(rc.Now)
 
 	case port.PiEventTrigger:
-		rc.triggersDroppedMetric.Inc(rc.Now)
+		rc.triggersMetric.dropped.Inc(rc.Now)
 
 	case port.PiPVR:
-		rc.pvrDroppedMetric.Inc(rc.Now)
+		rc.pvrMetric.dropped.Inc(rc.Now)
 
 	case port.PiInstruction:
-		rc.instructionsDroppedMetric.Inc(rc.Now)
+		rc.instructionMetric.dropped.Inc(rc.Now)
 
 	default:
 		rc.unknownPortErrMetric.Inc(rc.Now)
 	}
+}
+
+func (rc *RadarChannel) SetupFailSafe() {
+	pipeline := triggerpipeline.GetTriggerPipeline()
+	rc.FailSafePipeline.SetChannels.Lo = 15
 }

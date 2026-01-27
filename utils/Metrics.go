@@ -28,6 +28,10 @@ func (m *Metrics) GetOrPut(name string, dataType MetricType) *Metric {
 	return metric
 }
 
+func (m *Metrics) Get(name string) *Metric {
+	return m.Metric[name]
+}
+
 //func (s *Metrics) MarshalJSON() ([]byte, error) {
 //	dataPointers := make([]*GetOrPut, 0, len(s.Metric))
 //

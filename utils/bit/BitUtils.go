@@ -30,6 +30,13 @@ func Clear[T constraints.Integer](value T, bit int) T {
 	return value
 }
 
+func SetOnOrOff[T constraints.Integer](value T, bit int, on bool) T {
+	if on {
+		return Set(value, bit)
+	}
+	return Clear(value, bit)
+}
+
 func ToBuilder[T constraints.Integer](bld *strings.Builder, value T) {
 	bits := binary.Size(value) * 8
 	bld.Grow(bits)

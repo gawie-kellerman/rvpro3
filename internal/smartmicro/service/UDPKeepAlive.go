@@ -87,7 +87,7 @@ func (s *UDPKeepAlive) InitMetrics() {
 	s.isRunningMetric = gm.Metric(sn, "Is Running", utils.MetricTypeU32)
 	s.connectUDPErrMetric = gm.Metric(sn, "Error: UDP Connect", utils.MetricTypeU32)
 	s.deadlineErrMetric = gm.U64(sn, "Error: SetRaw UDP Deadline")
-	s.writeUDPErrMetric = gm.U64(sn, "Error: UDP Write")
+	s.writeUDPErrMetric = gm.U64(sn, "Error: UDP WritePacket")
 	s.sendAliveMetric = gm.U64(sn, "Send Alive")
 	s.connectUDPSuccessMetric = gm.U64(sn, "UDP Connect Success")
 }

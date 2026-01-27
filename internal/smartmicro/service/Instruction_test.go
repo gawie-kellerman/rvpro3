@@ -49,7 +49,7 @@ func TestInstructService(t *testing.T) {
 
 	service.OnAfterSendToUDP = func(service *Instruction, ip4 utils.IP4, instruction *port.Instruction) {
 		writeCount++
-		fmt.Println("Write ", instruction.Header.SequenceNo)
+		fmt.Println("WritePacket ", instruction.Header.SequenceNo)
 	}
 
 	go enqueueSends(&service)
@@ -59,7 +59,7 @@ func TestInstructService(t *testing.T) {
 	fmt.Println("Receive Success count:", successCount)
 	fmt.Println("Sequence issue count:", sequenceCount)
 	fmt.Println("Resend Metric:", resendCount)
-	fmt.Println("Write instruction count:", writeCount)
+	fmt.Println("WritePacket instruction count:", writeCount)
 	fmt.Println("Drop instruction count:", dropCount)
 	fmt.Println("Extra instruction count:", extraCount)
 	fmt.Println("Send Queue Depth:", service.sendQueue.Len())

@@ -57,17 +57,15 @@ func (hd *HubDispatcher) writePacket(packet Packet) {
 		hd.stats.RegisterError(packetLen)
 		hd.onError(err)
 		return
-	} else {
-		defer conn.Close()
-
-		if _, err = conn.Write(packet.Data); err != nil {
-			hd.stats.RegisterError(packetLen)
-			hd.onError(err)
-			return
-		} else {
-			hd.stats.RegisterWrite(packetLen)
-		}
 	}
+	defer conn.Close()
+
+	if _, err = conn.Write(packet.Data); err != nil {
+		hd.stats.RegisterError(packetLen)
+		hd.onError(err)
+		return
+	}
+	hd.stats.RegisterWrite(packetLen)
 }
 
 func (hd *HubDispatcher) onError(err error) {

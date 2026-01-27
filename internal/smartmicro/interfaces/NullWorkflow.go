@@ -8,7 +8,7 @@ type NullWorkflow struct {
 	Parent IUDPWorkflowParent
 }
 
-func (w *NullWorkflow) SetParent(p IUDPWorkflowParent) {
+func (w *NullWorkflow) Init(p IUDPWorkflowParent) {
 	w.Parent = p
 }
 

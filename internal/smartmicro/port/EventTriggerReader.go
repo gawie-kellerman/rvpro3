@@ -1,6 +1,9 @@
 package port
 
-import "rvpro3/radarvision.com/utils"
+import (
+	"rvpro3/radarvision.com/utils"
+	"rvpro3/radarvision.com/utils/bit"
+)
 
 type EventTriggerReader struct {
 	readerMixin
@@ -77,4 +80,10 @@ func (r *EventTriggerReader) PrintDetail() {
 
 func (r *EventTriggerReader) TotalSize() int {
 	return r.StartOffset + 12
+}
+
+func (r *EventTriggerReader) GetRelays() uint64 {
+	lo := r.GetRelays1()
+	hi := r.GetRelays2()
+	return bit.CombineU32(hi, lo)
 }

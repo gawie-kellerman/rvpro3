@@ -11,7 +11,7 @@ import (
 	"rvpro3/radarvision.com/utils"
 )
 
-type StaticStatusMode uint32
+type StaticStatusMode byte
 
 func (s StaticStatusMode) IsATC() bool {
 	return s&0x1 == 0x1
@@ -29,8 +29,8 @@ func (s StaticStatusMode) IsSafe() bool {
 	return s&0x2 == 0x00
 }
 
-func (s StaticStatusMode) IsWdT() bool {
-	return s&(1<<8) != 0
+func (s StaticStatusMode) IsWdt() bool {
+	return s&(1<<7) != 0
 }
 
 func (s StaticStatusMode) String() string {
@@ -50,7 +50,7 @@ func (s StaticStatusMode) String() string {
 		str.WriteString(",Safe")
 	}
 
-	if s.IsWdT() {
+	if s.IsWdt() {
 		str.WriteString(",WDT")
 	}
 	return str.String()
