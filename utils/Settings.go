@@ -14,32 +14,30 @@ import (
 const defaultDot = "Default."
 const settingDot = "Setting."
 
-type Config struct {
+type Settings struct {
 	data        map[string]string
 	indexedName string
 }
 
-func (r *Config) Init() {
+func (r *Settings) Init() {
 	r.data = make(map[string]string, 100)
 }
 
-func (r *Config) SetDefault(key string, value string) {
+func (r *Settings) SetDefault(key string, value string) {
 	fullKey := defaultDot + key
 	r.data[fullKey] = value
 }
 
-func (r *Config) SetSetting(key string, value string) {
+func (r *Settings) SetSetting(key string, value string) {
 	fullKey := settingDot + key
 	r.data[fullKey] = value
 }
 
-func (r *Config) Merge(source map[string]string) {
-	for key, value := range source {
-		r.data[key] = value
-	}
+func (r *Settings) Merge(source map[string]string) {
+	maps.Copy(r.data, source)
 }
 
-func (r *Config) GetSettingAsStr(key string) string {
+func (r *Settings) GetSettingAsStr(key string) string {
 	globalKey := r.getSettingKey(key)
 	if res, ok := r.data[globalKey]; ok {
 		return res
@@ -47,7 +45,7 @@ func (r *Config) GetSettingAsStr(key string) string {
 	panic(fmt.Sprintf("data not found for key %s.", key))
 }
 
-func (r *Config) GetIndexedAsStr(entityName string, entityIndex string, configKey string) string {
+func (r *Settings) GetIndexedAsStr(entityName string, entityIndex string, configKey string) string {
 	radarKey := r.getIndexedKey(entityName, entityIndex, configKey)
 	if res, ok := r.data[radarKey]; ok {
 		return res
@@ -61,17 +59,17 @@ func (r *Config) GetIndexedAsStr(entityName string, entityIndex string, configKe
 	panic(fmt.Sprintf("data not found for entityIndex %s, configKey %s.", entityIndex, configKey))
 }
 
-func (r *Config) GetIndexedAsInt(entityName string, entityIndex string, configKey string) int {
+func (r *Settings) GetIndexedAsInt(entityName string, entityIndex string, configKey string) int {
 	value := r.GetIndexedAsStr(entityName, entityIndex, configKey)
 
-	res, err := ParseInt[int](value, 0)
+	res, err := ParseInt(value, 0)
 	if err != nil {
 		r.handleErr(r.getIndexedKey(entityName, entityIndex, configKey), err)
 	}
 	return res
 }
 
-func (r *Config) GetIndexedAsFloat(entityName string, entityIndex string, configKey string) float64 {
+func (r *Settings) GetIndexedAsFloat(entityName string, entityIndex string, configKey string) float64 {
 	value := r.GetIndexedAsStr(entityName, entityIndex, configKey)
 	res, err := ParseFloat[float64](value, 0)
 	if err != nil {
@@ -80,7 +78,7 @@ func (r *Config) GetIndexedAsFloat(entityName string, entityIndex string, config
 	return res
 }
 
-func (r *Config) GetIndexedAsBool(entityName string, entityIndex string, configKey string) bool {
+func (r *Settings) GetIndexedAsBool(entityName string, entityIndex string, configKey string) bool {
 	var res bool
 	var err error
 
@@ -93,26 +91,26 @@ func (r *Config) GetIndexedAsBool(entityName string, entityIndex string, configK
 	return res
 }
 
-func (r *Config) getIndexedKey(entityName string, entityIndex string, configKey string) string {
+func (r *Settings) getIndexedKey(entityName string, entityIndex string, configKey string) string {
 	radarKey := entityName + "." + entityIndex + "." + configKey
 	return radarKey
 }
 
-func (r *Config) getDefaultKey(key string) string {
+func (r *Settings) getDefaultKey(key string) string {
 	defaultKey := defaultDot + key
 	return defaultKey
 }
 
-func (r *Config) getSettingKey(key string) string {
+func (r *Settings) getSettingKey(key string) string {
 	defaultKey := settingDot + key
 	return defaultKey
 }
 
-func (r *Config) SaveToFile(filename string) error {
+func (r *Settings) SaveToFile(filename string) error {
 	return MapSerializer.Save(r.data, filename)
 }
 
-func (r *Config) MergeFromFile(filename string) error {
+func (r *Settings) MergeFromFile(filename string) error {
 	source, err := MapSerializer.Load(filename)
 	if err != nil {
 		return err
@@ -122,7 +120,7 @@ func (r *Config) MergeFromFile(filename string) error {
 	return nil
 }
 
-func (r *Config) DumpTo(stdout *os.File) {
+func (r *Settings) DumpTo(stdout *os.File) {
 	keys := maps.Keys(r.data)
 
 	res := slices.SortedFunc(keys, func(a string, b string) int {
@@ -134,34 +132,34 @@ func (r *Config) DumpTo(stdout *os.File) {
 	}
 }
 
-func (r *Config) GetSettingAsIP(key string) IP4 {
+func (r *Settings) GetSettingAsIP(key string) IP4 {
 	value := r.GetSettingAsStr(key)
 
 	return IP4Builder.FromString(value)
 }
 
-func (r *Config) handleErr(key string, err error) {
+func (r *Settings) handleErr(key string, err error) {
 	if err != nil {
 		log.Fatalf("error %s while parsing key %s", err, key)
 	}
 }
 
-func (r *Config) GetSettingAsSplit(key string, delimiter string) []string {
+func (r *Settings) GetSettingAsSplit(key string, delimiter string) []string {
 	value := r.GetSettingAsStr(key)
 
 	return strings.Split(value, delimiter)
 }
 
-func (r *Config) SetRaw(name string, value string) {
+func (r *Settings) SetRaw(name string, value string) {
 	r.data[name] = value
 }
 
-func (r *Config) SetSettingAsBool(key string, value bool) {
+func (r *Settings) SetSettingAsBool(key string, value bool) {
 	strValue := strconv.FormatBool(value)
 	r.SetSetting(key, strValue)
 }
 
-func (r *Config) GetSettingAsBool(key string) bool {
+func (r *Settings) GetSettingAsBool(key string) bool {
 	value := r.GetSettingAsStr(key)
 
 	res, err := strconv.ParseBool(value)
@@ -171,29 +169,61 @@ func (r *Config) GetSettingAsBool(key string) bool {
 	return res
 }
 
-func (r *Config) SetSettingAsStr(key string, value string) {
+func (r *Settings) GetOrPutBool(key string, defValue bool) bool {
+	globalKey := r.getSettingKey(key)
+
+	setting, ok := r.data[globalKey]
+	if !ok {
+		r.data[globalKey] = strconv.FormatBool(defValue)
+		return defValue
+	}
+
+	res, err := strconv.ParseBool(setting)
+	if err != nil {
+		r.handleErr(r.getSettingKey("key"), err)
+	}
+	return res
+}
+
+func (r *Settings) GetOrPutStr(key string, defValue string) string {
+	globalKey := r.getSettingKey(key)
+
+	value, ok := r.data[globalKey]
+	if !ok {
+		r.data[globalKey] = defValue
+		return defValue
+	}
+
+	return value
+}
+
+func (r *Settings) SetSettingAsStr(key string, value string) {
 	r.SetSetting(key, value)
 }
 
-func (r *Config) GetSettingAsInt(key string) int {
+func (r *Settings) GetSettingAsInt(key string) int {
 	value := r.GetSettingAsStr(key)
 
-	res, err := ParseInt[int](value, 0)
+	res, err := ParseInt(value, 0)
 	r.handleErr(r.getSettingKey(key), err)
 	return res
 }
 
-func (r *Config) SetSettingAsInt(key string, value int) {
+func (r *Settings) SetSettingAsInt(key string, value int) {
 	strValue := strconv.Itoa(value)
 	r.SetSetting(key, strValue)
 }
 
-func (r *Config) SetSettingAsMillis(key string, milliseconds int) {
+func (r *Settings) SetSettingAsMillis(key string, milliseconds int) {
 	strValue := strconv.Itoa(milliseconds)
 	r.SetSetting(key, strValue)
 }
 
-func (r *Config) GetSettingAsMillis(key string) time.Duration {
+func (r *Settings) GetSettingAsMillis(key string) time.Duration {
 	value := r.GetSettingAsInt(key)
 	return time.Duration(value) * time.Millisecond
+}
+
+func (r *Settings) MergeFromSettings(settings *Settings) {
+	r.Merge(settings.data)
 }

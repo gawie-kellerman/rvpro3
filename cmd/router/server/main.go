@@ -13,7 +13,7 @@ import (
 	"rvpro3/radarvision.com/utils"
 )
 
-var config utils.Config
+var config utils.Settings
 
 func main() {
 	config.Init()
@@ -47,7 +47,7 @@ func (m *mainType) WritePacket(packetData []byte) error {
 
 func (m *mainType) Start(hubIP utils.IP4) {
 	m.KeepAlive.SetupDefaults(&config)
-	m.KeepAlive.InitFromConfig(&config)
+	m.KeepAlive.InitFromSettings(&config)
 
 	m.Data.SetupDefaults(&config)
 	m.Data.InitFromConfig(&config)

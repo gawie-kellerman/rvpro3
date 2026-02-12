@@ -2,9 +2,15 @@ package interfaces
 
 import (
 	"time"
+
+	"rvpro3/radarvision.com/utils"
 )
 
 type IUDPWorkflow interface {
-	Init(IUDPWorkflowParent)
+	GetRadarIP() utils.IP4
+	GetPortIdentifier() uint32
+
+	Init(ip utils.IP4, portIdentifier uint32)
 	Process(time.Time, []byte)
+	Drop(time.Time, []byte)
 }

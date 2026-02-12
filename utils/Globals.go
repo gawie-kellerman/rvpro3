@@ -1,9 +1,9 @@
 package utils
 
-var GlobalConfig Config
+var GlobalSettings Settings
 var GlobalMetrics globalMetrics
 
 func init() {
-	GlobalConfig.Init()
+	GlobalSettings.Init()
 	GlobalMetrics.Init()
 }

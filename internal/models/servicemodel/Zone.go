@@ -1,4 +1,4 @@
-package site
+package servicemodel
 
 type Zone struct {
 	Zone         int     `json:"zone"`

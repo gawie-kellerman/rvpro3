@@ -15,10 +15,10 @@ type LifetimeService struct {
 	Wg         sync.WaitGroup
 }
 
-func (l *LifetimeService) SetupDefaults(config *utils.Config) {
+func (l *LifetimeService) SetupDefaults(config *utils.Settings) {
 }
 
-func (l *LifetimeService) SetupRunnable(state *utils.State, config *utils.Config) {
+func (l *LifetimeService) SetupAndStart(state *utils.State, config *utils.Settings) {
 	l.Wg.Add(1)
 	state.Set(l.GetServiceName(), l)
 

@@ -68,7 +68,7 @@ type SDLCService struct {
 	PopBytesMetric            *utils.Metric
 }
 
-func (s *SDLCService) SetupDefaults(config *utils.Config) {
+func (s *SDLCService) SetupDefaults(config *utils.Settings) {
 	s.init()
 	config.SetSettingAsBool(sdlcUARTEnabled, true)
 	config.SetSettingAsStr(sdlcUARTPortName, "/dev/ttymxc2")
@@ -81,7 +81,7 @@ func (s *SDLCService) SetupDefaults(config *utils.Config) {
 	config.SetSettingAsStr(sdlcUARTCSVFilePathFormat, "20060102")
 }
 
-func (s *SDLCService) SetupRunnable(state *utils.State, config *utils.Config) {
+func (s *SDLCService) SetupAndStart(state *utils.State, config *utils.Settings) {
 	if !config.GetSettingAsBool(sdlcUARTEnabled) {
 		log.Info().Msg("SDLC UART is disabled")
 		return
@@ -93,7 +93,7 @@ func (s *SDLCService) SetupRunnable(state *utils.State, config *utils.Config) {
 	state.Set(SDLCServiceName, s)
 }
 
-func (s *SDLCService) InitFromConfig(config *utils.Config) {
+func (s *SDLCService) InitFromConfig(config *utils.Settings) {
 	s.Serial.PortName = config.GetSettingAsStr(sdlcUARTPortName)
 	s.Serial.Mode.BaudRate = config.GetSettingAsInt(sdlcUARTBaudRate)
 	s.Serial.Mode.DataBits = config.GetSettingAsInt(sdlcUARTDataBits)

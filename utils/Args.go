@@ -58,7 +58,7 @@ func (args) IndexOfName(name string) int {
 	return -1
 }
 
-func (a args) GetKVPairIndexes(pipedNames string) (res []int) {
+func (args) GetKVPairIndexes(pipedNames string) (res []int) {
 	names := Args.SplitNames(pipedNames)
 
 	for index, value := range os.Args[1:] {
@@ -72,13 +72,33 @@ func (a args) GetKVPairIndexes(pipedNames string) (res []int) {
 	return res
 }
 
-func (a args) GetKeyName(index int, pipedNames string) string {
+func (args) GetPair(pipedNames string, keyName string) (string, string) {
+	names := Args.SplitNames(pipedNames)
+
+	for _, value := range os.Args[1:] {
+		for _, name := range names {
+			if strings.HasPrefix(value, name) {
+				rest := strings.TrimPrefix(value, name)[1:]
+				pairs := strings.SplitN(rest, "=", 2)
+
+				if len(pairs) == 2 {
+					if pairs[0] == keyName {
+						return pairs[0], pairs[1]
+					}
+				}
+			}
+		}
+	}
+	return "", ""
+}
+
+func (args) GetKeyName(index int, pipedNames string) string {
 	source := os.Args[index]
 	names := Args.SplitNames(pipedNames)
 
 	for _, name := range names {
 		if strings.HasPrefix(source, name) {
-			interim := source[len(name):]
+			interim := source[len(name)+1:]
 			eqIndex := strings.Index(interim, "=")
 			if eqIndex != -1 {
 				return interim[:eqIndex]

@@ -172,6 +172,14 @@ func (i IP4) WriteToFixedBuffer(writer *FixedBuffer) {
 	writer.WriteU16(uint16(i.Port), binary.BigEndian)
 }
 
+func (i IP4) Equals(other IP4) bool {
+	return other.ToU32() == i.ToU32() && other.Port == i.Port
+}
+
+func (i IP4) IsEqualIP(other IP4) bool {
+	return other.ToU32() == i.ToU32()
+}
+
 func getPortFromString(addr string) int {
 	port, err := strconv.Atoi(getPortPart(addr))
 	if err != nil {

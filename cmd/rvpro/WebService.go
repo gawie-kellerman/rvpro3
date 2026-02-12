@@ -15,12 +15,12 @@ const WebServiceName = "Web.Service"
 type WebService struct {
 }
 
-func (w *WebService) SetupDefaults(config *utils.Config) {
+func (w *WebService) SetupDefaults(config *utils.Settings) {
 	config.SetSettingAsStr(webHost, "0.0.0.0:8080")
 	config.SetSettingAsBool(webEnabled, true)
 }
 
-func (w *WebService) SetupRunnable(state *utils.State, config *utils.Config) {
+func (w *WebService) SetupAndStart(state *utils.State, config *utils.Settings) {
 	if !config.GetSettingAsBool(webEnabled) {
 		return
 	}

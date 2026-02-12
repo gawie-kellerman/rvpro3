@@ -34,8 +34,11 @@ func (s *BuildLiveZonesCmd) Init(params *radarUtilParams) {
 	s.liveConfigFilename = params.GetLiveConfigFilename()
 	s.liveConfig.Init()
 
+	s.dataService.Init()
+
 	s.waitGroup.Add(2)
-	s.aliveService.Init()
+	s.aliveService.SetupDefaults(&utils.GlobalSettings)
+	s.aliveService.InitFromSettings(&utils.GlobalSettings)
 
 	for i := range s.insServices {
 		insService := &s.insServices[i]
@@ -202,11 +205,11 @@ func (s *BuildLiveZonesCmd) Execute() {
 	Terminal.Indent(2)
 	Terminal.PrintfLnKv("Target RVProIP", "%s", s.targetIP.String())
 	Terminal.PrintfLnKv("Client ID", "0x%x", s.clientId)
-	s.aliveService.Start(s.targetIP)
+	s.aliveService.Start()
 
 	Terminal.Indent(-2)
 	Terminal.Println("Starting data Service")
-	s.dataService.Start(s.targetIP)
+	s.dataService.Start()
 
 	Terminal.Indent(2)
 	Terminal.PrintfLnKv("Listening on", "%s", s.dataService.ListenAddr.String())

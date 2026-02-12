@@ -10,7 +10,7 @@ import (
 const UDPKeepAliveServiceName = "UDP.KeepAlive.Service"
 
 const udpKeepAliveEnabled = "UDP.KeepAlive.Enabled"
-const udpKeepAliveCallbackIP = "UDP.KeepAlive.RadarIP"
+const udpKeepAliveCallbackIP = "UDP.KeepAlive.CallbackIP"
 const udpKeepAliveCastIP = "UDP.KeepAlive.CastIP"
 const udpKeepAliveCooldown = "UDP.KeepAlive.Cooldown"
 const udpKeepAliveSendTimeout = "UDP.KeepAlive.Timeout"
@@ -20,29 +20,44 @@ const udpKeepAliveLogRepeatMillis = "UDP.KeepAlive.RepeatMillis"
 
 // UDPKeepAlive to keep the radar alive
 type UDPKeepAlive struct {
-	ClientId            uint32
-	LocalIPAddr         utils.IP4
-	MulticastIPAddr     utils.IP4
-	CooldownMs          int
-	ReconnectOnCycle    int
-	SendTimeout         int
-	connection          utils.UDPClientConnection
-	buffer              [34]byte
-	bufferLen           int
-	terminate           bool
-	terminated          bool
-	now                 time.Time
-	OnTerminate         func(*UDPKeepAlive)
-	isRunningMetric     *utils.Metric
-	deadlineErrMetric   *utils.Metric
-	writeUDPErrMetric   *utils.Metric
-	sendAliveMetric     *utils.Metric
-	connectUDPErrMetric *utils.Metric
+	ClientId         uint32
+	LocalIPAddr      utils.IP4
+	MulticastIPAddr  utils.IP4
+	CooldownMs       int
+	ReconnectOnCycle int
+	SendTimeout      int
+	connection       utils.UDPClientConnection
+	buffer           [34]byte
+	bufferLen        int
+	terminate        bool
+	terminated       bool
+	now              time.Time
+	Metrics          udpKeepAliveMatrics
+	OnTerminate      func(*UDPKeepAlive)
 	utils.ErrorLoggerMixin
-	connectUDPSuccessMetric *utils.Metric
 }
 
-func (s *UDPKeepAlive) SetupDefaults(config *utils.Config) {
+type udpKeepAliveMatrics struct {
+	IsRunningMetric         *utils.Metric
+	DeadlineErrMetric       *utils.Metric
+	WriteUDPErrMetric       *utils.Metric
+	SendAliveMetric         *utils.Metric
+	ConnectUDPErrMetric     *utils.Metric
+	ConnectUDPSuccessMetric *utils.Metric
+}
+
+func (s *udpKeepAliveMatrics) InitMetrics(serviceName string) {
+	gm := &utils.GlobalMetrics
+	sn := serviceName
+	s.IsRunningMetric = gm.Metric(sn, "Is Running", utils.MetricTypeU32)
+	s.ConnectUDPErrMetric = gm.Metric(sn, "Error: UDP Connect", utils.MetricTypeU32)
+	s.DeadlineErrMetric = gm.U64(sn, "Error: SetRaw UDP Deadline")
+	s.WriteUDPErrMetric = gm.U64(sn, "Error: UDP WritePacket")
+	s.SendAliveMetric = gm.U64(sn, "Send Alive")
+	s.ConnectUDPSuccessMetric = gm.U64(sn, "UDP Connect Success")
+}
+
+func (s *UDPKeepAlive) SetupDefaults(config *utils.Settings) {
 	config.SetSettingAsBool(udpKeepAliveEnabled, true)
 	config.SetSettingAsInt(udpKeepAliveClientID, 0x1000001)
 	config.SetSettingAsInt(udpKeepAliveLogRepeatMillis, 60000)
@@ -53,17 +68,17 @@ func (s *UDPKeepAlive) SetupDefaults(config *utils.Config) {
 	config.SetSettingAsStr(udpKeepAliveCastIP, "239.144.0.0:60000")
 }
 
-func (s *UDPKeepAlive) SetupRunnable(state *utils.State, config *utils.Config) {
+func (s *UDPKeepAlive) SetupAndStart(state *utils.State, config *utils.Settings) {
 	if !config.GetSettingAsBool(udpKeepAliveEnabled) {
 		return
 	}
 
-	s.InitFromConfig(config)
+	s.InitFromSettings(config)
 	s.Start()
 	state.Set(s.GetServiceName(), s)
 }
 
-func (s *UDPKeepAlive) InitFromConfig(config *utils.Config) {
+func (s *UDPKeepAlive) InitFromSettings(config *utils.Settings) {
 	s.LocalIPAddr = config.GetSettingAsIP(udpKeepAliveCallbackIP)
 	s.MulticastIPAddr = config.GetSettingAsIP(udpKeepAliveCastIP)
 	s.CooldownMs = config.GetSettingAsInt(udpKeepAliveCooldown)
@@ -81,19 +96,8 @@ func (s *UDPKeepAlive) GetServiceNames() []string {
 	return nil
 }
 
-func (s *UDPKeepAlive) InitMetrics() {
-	gm := &utils.GlobalMetrics
-	sn := s.GetServiceName()
-	s.isRunningMetric = gm.Metric(sn, "Is Running", utils.MetricTypeU32)
-	s.connectUDPErrMetric = gm.Metric(sn, "Error: UDP Connect", utils.MetricTypeU32)
-	s.deadlineErrMetric = gm.U64(sn, "Error: SetRaw UDP Deadline")
-	s.writeUDPErrMetric = gm.U64(sn, "Error: UDP WritePacket")
-	s.sendAliveMetric = gm.U64(sn, "Send Alive")
-	s.connectUDPSuccessMetric = gm.U64(sn, "UDP Connect Success")
-}
-
 func (s *UDPKeepAlive) Start() {
-	s.InitMetrics()
+	s.Metrics.InitMetrics(s.GetServiceName())
 	s.terminate = false
 	s.terminated = false
 	s.connection.OnError = s.onConnectionError
@@ -105,7 +109,7 @@ func (s *UDPKeepAlive) Start() {
 
 func (s *UDPKeepAlive) onConnectionError(connection *utils.UDPClientConnection, err error) {
 	s.LogError("UDPKeepAlive", err)
-	s.connectUDPErrMetric.Inc(s.now)
+	s.Metrics.ConnectUDPErrMetric.Inc(s.now)
 }
 
 func (s *UDPKeepAlive) Stop() {
@@ -120,7 +124,7 @@ func (s *UDPKeepAlive) Run() {
 }
 
 func (s *UDPKeepAlive) executeWrite() {
-	s.isRunningMetric.SetU32(1, time.Now())
+	s.Metrics.IsRunningMetric.SetU32(1, time.Now())
 	s.initBuffer()
 
 	for !s.terminate {
@@ -139,7 +143,7 @@ func (s *UDPKeepAlive) executeWrite() {
 		s.OnTerminate(s)
 	}
 
-	s.isRunningMetric.SetU32(0, time.Now())
+	s.Metrics.IsRunningMetric.SetU32(0, time.Now())
 	s.terminated = true
 }
 
@@ -166,25 +170,24 @@ func (s *UDPKeepAlive) sendAlive() {
 	timeout := s.now.Add(time.Duration(s.SendTimeout) * time.Millisecond)
 	err = cnx.SetWriteDeadline(timeout)
 	if err != nil {
-		s.deadlineErrMetric.Inc(s.now)
+		s.Metrics.DeadlineErrMetric.Inc(s.now)
 		goto errLabel
 	}
 	if _, err = cnx.Write(s.buffer[:s.bufferLen]); err != nil {
-		s.writeUDPErrMetric.Inc(s.now)
+		s.Metrics.WriteUDPErrMetric.Inc(s.now)
 		goto errLabel
 	}
 
-	s.sendAliveMetric.Inc(s.now)
+	s.Metrics.SendAliveMetric.Inc(s.now)
 	return
 
 errLabel:
 	s.connection.HandleError(err)
 	s.connection.Disconnect()
-	return
 }
 
 func (s *UDPKeepAlive) onConnectSuccess(connection *utils.UDPClientConnection) {
-	s.connectUDPSuccessMetric.Inc(s.now)
+	s.Metrics.ConnectUDPSuccessMetric.Inc(s.now)
 }
 
 func (s *UDPKeepAlive) IsTerminated() bool {

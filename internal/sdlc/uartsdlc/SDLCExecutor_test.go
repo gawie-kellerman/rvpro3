@@ -8,6 +8,6 @@ import (
 )
 
 func TestSdlcExecutorSettings_Setup(t *testing.T) {
-	exec := SDLCExecutorSettings.SetupNew(&utils.GlobalConfig)
+	exec := SDLCExecutorSettings.SetupNew(&utils.GlobalSettings)
 	fmt.Println(exec)
 }

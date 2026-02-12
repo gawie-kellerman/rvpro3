@@ -36,11 +36,11 @@ type SDLCExecutorService struct {
 	StaticStatusRequestEvery time.Duration
 }
 
-func (s *SDLCExecutorService) SetupDefaults(config *utils.Config) {
+func (s *SDLCExecutorService) SetupDefaults(config *utils.Settings) {
 	config.SetSettingAsMillis(sdlcUARTStaticStatusRequestEvery, 5000)
 }
 
-func (s *SDLCExecutorService) SetupRunnable(state *utils.State, config *utils.Config) {
+func (s *SDLCExecutorService) SetupAndStart(state *utils.State, config *utils.Settings) {
 	// Don't start the service if the SDLC UART is not enabled
 	if !config.GetSettingAsBool(sdlcUARTEnabled) {
 		return
@@ -53,7 +53,7 @@ func (s *SDLCExecutorService) SetupRunnable(state *utils.State, config *utils.Co
 	state.Set(SDLCExecutorServiceStateName, service)
 }
 
-func (s *SDLCExecutorService) InitFromConfig(config *utils.Config) {
+func (s *SDLCExecutorService) InitFromConfig(config *utils.Settings) {
 	s.StaticStatusRequestEvery = config.GetSettingAsMillis(sdlcUARTStaticStatusRequestEvery)
 }
 

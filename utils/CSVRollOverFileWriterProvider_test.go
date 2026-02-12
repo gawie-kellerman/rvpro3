@@ -16,5 +16,5 @@ func TestCSVWriterForRollOver_GetWriter(t *testing.T) {
 func SampleHeaderCallback(_ *CSVRollOverFileWriterProvider, writer *CSVWriter, ofn string, nfn string) {
 	writer.WriteCol(ofn)
 	writer.WriteCol(nfn)
-	writer.WriteLn()
+	writer.WriteLn("")
 }

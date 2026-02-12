@@ -13,8 +13,8 @@ func TestReverse64(t *testing.T) {
 }
 
 func TestString(t *testing.T) {
-	assert.Equal(t, "00000011", AsString(byte(3), false))
-	assert.Equal(t, "0b00000100", AsString(byte(4), true))
+	assert.Equal(t, "00000011", AsString(byte(3)))
+	assert.Equal(t, "00000100", AsString(byte(4)))
 }
 
 func TestClear(t *testing.T) {

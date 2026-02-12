@@ -24,11 +24,11 @@ func TestDelimitBuffer_Optimize(t *testing.T) {
 		EndDelim:   endDelim,
 	}
 
-	for i := 0; i < 10; i++ {
+	for range 10 {
 		db.Push([]byte(abc))
 	}
 
-	for i := 0; i < 9; i++ {
+	for range 9 {
 		assert.Equal(t, abc, string(db.Pop()))
 	}
 
@@ -47,7 +47,7 @@ func TestDelimitBuffer_PushOverflow(t *testing.T) {
 		Buffer: make([]byte, 100),
 	}
 
-	for i := 0; i < 10; i++ {
+	for range 10 {
 		db.Push([]byte("abcdefghij"))
 	}
 
@@ -61,10 +61,10 @@ func TestDelimitBuffer_Pop(t *testing.T) {
 		EndDelim:   endDelim,
 	}
 
-	for i := 0; i < 10; i++ {
+	for range 10 {
 		db.Push([]byte(abc))
 	}
-	for i := 0; i < 10; i++ {
+	for range 10 {
 		assert.Equal(t, db.Pop(), abc)
 	}
 
@@ -73,7 +73,7 @@ func TestDelimitBuffer_Pop(t *testing.T) {
 	assert.Equal(t, db.WritePos, 0)
 }
 
-func testString(t *testing.T, source string, startDelim byte, endDelim byte, expect string, readPos int, writePos int) {
+func testString(t *testing.T, source string, _ byte, _ byte, expect string, readPos int, writePos int) {
 	var buffer [256]byte
 
 	db := SerialBuffer{

@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/rs/zerolog/log"
+	"rvpro3/radarvision.com/internal/models/servicemodel"
 	"rvpro3/radarvision.com/internal/smartmicro/interfaces"
 	"rvpro3/radarvision.com/internal/smartmicro/service"
 	"rvpro3/radarvision.com/internal/smartmicro/triggerpipeline"
@@ -14,37 +15,24 @@ import (
 
 const RadarChannelsServiceName = "Radar.Channels.Service"
 
-const defaultTriggerPath = "ChannelStatus.TriggerPath"
-const defaultStatisticsPath = "ChannelStatus.StatisticsPath"
-const defaultObjectListPath = "ChannelStatus.ObjectListPath"
-
 type RadarChannels struct {
 	Radar             []RadarChannel
 	TerminateRefCount atomic.Uint32
 	workflowBuilder   interfaces.IUDPWorkflowBuilder
 }
 
-func NewRadarChannels(workflow interfaces.IUDPWorkflowBuilder) *RadarChannels {
-	return &RadarChannels{
-		workflowBuilder: workflow,
+func (rc *RadarChannels) SetupDefaults(config *utils.Settings) {
+}
+
+func (rc *RadarChannels) getChannelConfig() *servicemodel.Config {
+	res, ok := utils.GlobalState.Get(servicemodel.StateName).(*servicemodel.Config)
+	if !ok {
+		panic("func (rc *RadarChannels) getChannelConfig() *servicemodel.Config")
 	}
+	return res
 }
 
-func (rc *RadarChannels) SetupDefaults(config *utils.Config) {
-	config.SetSettingAsStr(
-		radarChannelSupportedRadars,
-		"192.168.11.12:55555,192.168.11.13:55555,192.168.11.14:55555,192.168.11.15:55555",
-	)
-
-	utils.GlobalConfig.SetDefault(defaultTriggerPath, "/media/SDLOGS/logs/sensor/{sensor-host}/trigger/trigger-{datetime}.csv")
-	utils.GlobalConfig.SetDefault(defaultStatisticsPath, "")
-	utils.GlobalConfig.SetDefault(defaultObjectListPath, "")
-}
-
-func (rc *RadarChannels) SetupRunnable(state *utils.State, config *utils.Config) {
-	radars := config.GetSettingAsSplit(radarChannelSupportedRadars, ",")
-	noRadars := len(radars)
-
+func (rc *RadarChannels) SetupAndStart(state *utils.State, _ *utils.Settings) {
 	dataService, ok := state.Get(service.UDPDataServiceName).(*service.UDPData)
 
 	if !ok {
@@ -52,12 +40,14 @@ func (rc *RadarChannels) SetupRunnable(state *utils.State, config *utils.Config)
 		return
 	}
 
-	rc.InitNoRadars(noRadars)
+	serviceCfg := rc.getChannelConfig()
+	rc.InitNoRadars(len(serviceCfg.Radars))
 	rc.AttachTo(dataService)
 
-	for index, radarIP := range radars {
-		ip := utils.IP4Builder.FromString(radarIP)
-		rc.Radar[index].IPAddress = ip
+	for index, radarCfg := range serviceCfg.Radars {
+		channel := &rc.Radar[index]
+		channel.InitMetrics(radarCfg.GetRadarIP())
+		channel.SetupWorkflow(channel, serviceCfg, radarCfg)
 	}
 
 	rc.SetupStates(state)
@@ -92,7 +82,7 @@ func (rc *RadarChannels) Start() {
 	for index := range rc.Radar {
 		radar := &rc.Radar[index]
 		radar.OnTerminate = rc.OnChannelTerminate
-		radar.Run(utils.RadarIPOf(index), rc.workflowBuilder)
+		radar.Run(radar.GetRadarIP())
 	}
 }
 
@@ -119,10 +109,10 @@ func (rc *RadarChannels) OnData(
 	bytes []byte,
 ) {
 	ip4 := utils.IP4Builder.FromIP(addr.IP, addr.Port)
-	radarIndex := utils.RadarIndexOf(ip4.ToU32())
+	radarIndex := rc.getChannelConfig().GetRadarIndex(ip4)
 
 	if radarIndex == -1 {
-		dataService.IncorrectRadarMetric.Inc(time.Now())
+		dataService.Metrics.UnmappedRadarPacket.Inc(time.Now())
 		return
 	}
 

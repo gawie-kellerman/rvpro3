@@ -26,10 +26,12 @@ func (d *SerialBuffer) Pop() []byte {
 	for n := rp; n < wp; n++ {
 		ch := d.Buffer[n]
 
-		if ch == d.StartDelim {
+		switch ch {
+		case d.StartDelim:
 			isFound = true
 			d.ReadPos = n
-		} else if ch == d.EndDelim {
+
+		case d.EndDelim:
 			if isFound {
 				res := d.Buffer[d.ReadPos : n+1]
 				d.ReadPos = n + 1
@@ -39,12 +41,12 @@ func (d *SerialBuffer) Pop() []byte {
 				}
 				return res
 			}
-		} else {
+
+		default:
 			if !isFound {
 				d.ReadPos = n
 			}
 		}
-
 	}
 
 	return nil

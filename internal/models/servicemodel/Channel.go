@@ -1,4 +1,4 @@
-package site
+package servicemodel
 
 type Channel struct {
 	Channel       int    `json:"Channel"`

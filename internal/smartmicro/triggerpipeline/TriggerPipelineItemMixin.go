@@ -49,7 +49,7 @@ func (t *TriggerPipelineItemMixin) SetTrigger(now time.Time, hi uint64, lo uint6
 
 	if t.Triggers.Hi != hi || t.Triggers.Lo != lo {
 		t.UpdateOn = now
-		t.Triggers.Set(hi, lo)
+		t.Triggers = utils.Uint128{Lo: lo, Hi: hi}
 		return true
 	}
 	return false

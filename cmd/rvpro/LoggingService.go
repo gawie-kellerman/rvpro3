@@ -22,7 +22,7 @@ const logFileMaxBackups = "Log.File.MaxBackups"
 type LoggingService struct {
 }
 
-func (l *LoggingService) SetupDefaults(config *utils.Config) {
+func (l *LoggingService) SetupDefaults(config *utils.Settings) {
 	config.SetSettingAsStr(logLevel, "info")
 	config.SetSettingAsBool(logToConsole, false)
 	config.SetSettingAsStr(logFileDir, "/media/SDLOGS/logs/system")
@@ -32,7 +32,7 @@ func (l *LoggingService) SetupDefaults(config *utils.Config) {
 	config.SetSettingAsInt(logFileMaxBackups, 10)
 }
 
-func (l *LoggingService) SetupRunnable(state *utils.State, config *utils.Config) {
+func (l *LoggingService) SetupAndStart(state *utils.State, config *utils.Settings) {
 	var writers []io.Writer
 	zerolog.TimeFieldFormat = utils.DisplayDateTimeMS
 
@@ -61,11 +61,11 @@ func (l *LoggingService) SetupRunnable(state *utils.State, config *utils.Config)
 	log.Info().Msg("Logging initialized")
 }
 
-func (l *LoggingService) rollingAppender(config *utils.Config) io.Writer {
+func (l *LoggingService) rollingAppender(config *utils.Settings) io.Writer {
 	fileDir := config.GetSettingAsStr(logFileDir)
 	fileName := config.GetSettingAsStr(logFileName)
 
-	gc := &utils.GlobalConfig
+	gc := &utils.GlobalSettings
 
 	if err := os.MkdirAll(fileDir, 0744); err != nil {
 		log.Error().
