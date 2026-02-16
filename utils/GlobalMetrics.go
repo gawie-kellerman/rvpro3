@@ -2,6 +2,7 @@ package utils
 
 import (
 	"maps"
+	"regexp"
 	"strings"
 	"sync"
 )
@@ -40,14 +41,6 @@ func (g *globalMetrics) Section(name string) *Metrics {
 
 func (g *globalMetrics) Metric(sectionName string, metricName string, dataType MetricType) *Metric {
 	return g.Section(sectionName).GetOrPut(metricName, dataType)
-}
-
-func (g *globalMetrics) U64(sectionName string, metricName string) *Metric {
-	return g.Section(sectionName).GetOrPut(metricName, MetricTypeU64)
-}
-
-func (g *globalMetrics) U32(sectionName string, metricName string) *Metric {
-	return g.Section(sectionName).GetOrPut(metricName, MetricTypeU32)
 }
 
 func (g *globalMetrics) StartsWith(sectionName string) []string {
@@ -96,4 +89,15 @@ func (g *globalMetrics) FindOrNil(name string) *Metrics {
 		return metric
 	}
 	return nil
+}
+
+func (g *globalMetrics) MergeRegEx(res map[string]*Metrics, regEx string) {
+	g.mutex.RLock()
+	defer g.mutex.RUnlock()
+
+	for metricName, metric := range g.section {
+		if matched, _ := regexp.MatchString(regEx, metricName); matched {
+			res[metricName] = metric
+		}
+	}
 }

@@ -13,4 +13,7 @@ type IUDPWorkflow interface {
 	Init(ip utils.IP4, portIdentifier uint32)
 	Process(time.Time, []byte)
 	Drop(time.Time, []byte)
+
+	AddActivity(activity IUDPActivity)
+	NextActivityId() int
 }

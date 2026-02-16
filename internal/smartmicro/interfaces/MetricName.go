@@ -6,13 +6,6 @@ import (
 	"rvpro3/radarvision.com/utils"
 )
 
-const MessageProcessedOnMetricName = "Message Processed On"
-
-type metricName struct {
-}
-
-var MetricName metricName
-
-func (metricName) GetUDPRadarMetric(radarIP4 utils.IP4) string {
-	return fmt.Sprintf("Radar.%s", radarIP4.String())
+func GetUDPRadarMetric(radarIP4 utils.IP4) string {
+	return fmt.Sprintf("UDP.Broker.[%s]", radarIP4)
 }

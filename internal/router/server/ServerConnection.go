@@ -14,7 +14,7 @@ import (
 	"rvpro3/radarvision.com/utils"
 )
 
-const hsc = "Hub.Server.Connection"
+const rsc = "Router.Server.Connection"
 
 type HubServerConnection struct {
 	connection   *net.TCPConn
@@ -24,12 +24,12 @@ type HubServerConnection struct {
 	writeChannel chan []byte
 	doneChannel  chan bool
 	packetQueue  utils.QueueBuffer
-	Metrics      hubServerConnectionMetrics
+	Metrics      HubServerConnectionMetrics
 	OnPropagate  func(*HubServerConnection, []byte)
 	OnError      func(*HubServerConnection, error)
 }
 
-type hubServerConnectionMetrics struct {
+type HubServerConnectionMetrics struct {
 	ReadOverflowErrors        *utils.Metric
 	ReadEmptyIterations       *utils.Metric
 	ReadContEmptyIterations   *utils.Metric
@@ -44,28 +44,11 @@ type hubServerConnectionMetrics struct {
 	WriteTerminatedIterations *utils.Metric
 	WriteDequeueIterations    *utils.Metric
 	WriteDequeueBytes         *utils.Metric
-}
-
-func (h *hubServerConnectionMetrics) init() {
-	gm := &utils.GlobalMetrics
-	h.ReadContEmptyIterations = gm.U64(hsc, "Read.ContEmpty.Iterations")
-	h.ReadOverflowErrors = gm.U64(hsc, "Read.Overflow.Errors")
-	h.ReadEmptyIterations = gm.U64(hsc, "Read.Empty.Iterations")
-	h.ReadCorruptErrors = gm.U64(hsc, "Read.Corrupt.Errors")
-	h.ReadStarvedIterations = gm.U64(hsc, "Read.Starved.Iterations")
-	h.ReadPopErrors = gm.U64(hsc, "Read.Pop.Errors")
-	h.TcpWriteErrors = gm.U64(hsc, "TCP.WritePacket.Errors")
-	h.TcpWriteIterations = gm.U64(hsc, "TCP.WritePacket.Iterations")
-	h.TcpWriteBytes = gm.U64(hsc, "TCP.WritePacket.Bytes")
-	h.WriteIncompleteError = gm.U64(hsc, "WritePacket.Incomplete.Errors")
-	h.WriteTerminatedBytes = gm.U64(hsc, "WritePacket.Terminated.Bytes")
-	h.WriteTerminatedIterations = gm.U64(hsc, "WritePacket.Terminated.Iterations")
-	h.WriteDequeueIterations = gm.U64(hsc, "WritePacket.Dequeue.Iterations")
-	h.WriteDequeueBytes = gm.U64(hsc, "WritePacket.Dequeue.Bytes")
+	utils.MetricsInitMixin
 }
 
 func (h *HubServerConnection) Start(connection *net.TCPConn) {
-	h.Metrics.init()
+	h.Metrics.InitMetrics(rsc, &h.Metrics)
 	h.connection = connection
 	h.Terminate = false
 	h.refCount.Store(2)
@@ -119,12 +102,12 @@ func (h *HubServerConnection) executeRead() {
 				h.Stop()
 				break
 			} else {
-				h.Metrics.ReadEmptyIterations.Inc(now)
-				h.Metrics.ReadContEmptyIterations.Inc(now)
+				h.Metrics.ReadEmptyIterations.IncAt(1, now)
+				h.Metrics.ReadContEmptyIterations.IncAt(1, now)
 			}
 		} else {
 			if h.packetQueue.GetTotalAvail() < bytesRead {
-				h.Metrics.ReadOverflowErrors.Inc(now)
+				h.Metrics.ReadOverflowErrors.IncAt(1, now)
 				h.packetQueue.Reset()
 				continue
 			}
@@ -136,13 +119,13 @@ func (h *HubServerConnection) executeRead() {
 
 			for packet.IsParseableLength() {
 				if !packet.IsValidStart() {
-					h.Metrics.ReadCorruptErrors.Inc(now)
+					h.Metrics.ReadCorruptErrors.IncAt(1, now)
 					h.packetQueue.Reset()
 					break
 				}
 
 				if !packet.IsComplete() {
-					h.Metrics.ReadStarvedIterations.Inc(now)
+					h.Metrics.ReadStarvedIterations.IncAt(1, now)
 					break
 				}
 
@@ -153,7 +136,7 @@ func (h *HubServerConnection) executeRead() {
 				h.onPropagate(packetBytes)
 
 				if err := h.packetQueue.PopSize(packet.GetPacketSize()); err != nil {
-					h.Metrics.ReadPopErrors.Inc(now)
+					h.Metrics.ReadPopErrors.IncAt(1, now)
 					h.packetQueue.Reset()
 					break
 				}
@@ -201,10 +184,10 @@ func (h *HubServerConnection) writeData(packetData []byte) {
 	if err != nil {
 		h.onError(err)
 		h.Stop()
-		h.Metrics.TcpWriteErrors.Inc(now)
+		h.Metrics.TcpWriteErrors.IncAt(1, now)
 	} else {
-		h.Metrics.TcpWriteIterations.Inc(now)
-		h.Metrics.TcpWriteBytes.Add(packet.GetPacketSize(), now)
+		h.Metrics.TcpWriteIterations.IncAt(1, now)
+		h.Metrics.TcpWriteBytes.IncAt(int64(packet.GetPacketSize()), now)
 		//packet.Dump("Server")
 	}
 
@@ -219,19 +202,19 @@ func (h *HubServerConnection) Write(packetData []byte) {
 	}
 
 	if !packet.IsComplete() {
-		h.Metrics.WriteIncompleteError.Inc(now)
+		h.Metrics.WriteIncompleteError.IncAt(1, now)
 		return
 	}
 
 	if h.Terminate {
-		h.Metrics.WriteTerminatedBytes.Add(packet.GetPacketSize(), now)
-		h.Metrics.WriteTerminatedIterations.Inc(now)
+		h.Metrics.WriteTerminatedBytes.IncAt(int64(packet.GetPacketSize()), now)
+		h.Metrics.WriteTerminatedIterations.IncAt(1, now)
 		return
 	}
 
 	if len(h.writeChannel)+1 >= cap(h.writeChannel) {
-		h.Metrics.WriteDequeueIterations.Inc(now)
-		h.Metrics.WriteDequeueBytes.Add(packet.GetPacketSize(), now)
+		h.Metrics.WriteDequeueIterations.IncAt(1, now)
+		h.Metrics.WriteDequeueBytes.IncAt(int64(packet.GetPacketSize()), now)
 		return
 	}
 

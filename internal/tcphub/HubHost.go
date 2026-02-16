@@ -23,35 +23,25 @@ type HubHost struct {
 	OnAcceptConnection func(*HubHost, *net.TCPConn) `json:"-"`
 	doneChan           chan bool                    `json:"-"`
 	dispatcher         HubDispatcher                `json:"-"`
-	metrics            metrics
+	Metrics            HubHostMetrics
 }
 
 const hubHostMetrics = "Hub.Host"
 
-type metrics struct {
-	totalConnects    *utils.Metric
-	totalDisconnects *utils.Metric
-	totalRejects     *utils.Metric
-	writeToClients   *utils.Metric
-	writeBytes       *utils.Metric
-	skipToClients    *utils.Metric
-	skipBytes        *utils.Metric
-	errors           *utils.Metric
-}
-
-func (m *metrics) init() {
-	gm := &utils.GlobalMetrics
-	m.totalConnects = gm.U64(hubHostMetrics, "Total Connects")
-	m.totalDisconnects = gm.U64(hubHostMetrics, "Total Disconnects")
-	m.totalRejects = gm.U64(hubHostMetrics, "Total Connection Rejects")
-	m.writeToClients = gm.U64(hubHostMetrics, "WritePacket to Clients")
-	m.writeBytes = gm.U64(hubHostMetrics, "WritePacket bytes")
-	m.skipToClients = gm.U64(hubHostMetrics, "Skip to Clients")
-	m.errors = gm.U64(hubHostMetrics, "Errors")
+type HubHostMetrics struct {
+	TotalConnects    *utils.Metric
+	TotalDisconnects *utils.Metric
+	TotalRejects     *utils.Metric
+	WriteToClients   *utils.Metric
+	WriteBytes       *utils.Metric
+	SkipToClients    *utils.Metric
+	SkipBytes        *utils.Metric
+	Errors           *utils.Metric
+	utils.MetricsInitMixin
 }
 
 func (h *HubHost) Start(listenAddr utils.IP4) {
-	h.metrics.init()
+	h.Metrics.InitMetrics(hubHostMetrics, &h.Metrics)
 
 	if !h.IsRunning() {
 		h.Terminate = false
@@ -64,10 +54,10 @@ func (h *HubHost) Start(listenAddr utils.IP4) {
 			client.Init(h)
 			client.OnConnect = func(hub *HubClient) {
 				h.ClientsLen++
-				h.metrics.totalConnects.Inc(time.Now())
+				h.Metrics.TotalConnects.Inc(1)
 			}
 			client.OnDisconnect = func(hub *HubClient) {
-				h.metrics.totalDisconnects.Inc(time.Now())
+				h.Metrics.TotalDisconnects.Inc(1)
 				h.ClientsLen--
 			}
 		}
@@ -140,7 +130,7 @@ func (h *HubHost) executeListen() {
 }
 
 func (h *HubHost) onError(err error) {
-	h.metrics.errors.Inc(time.Now())
+	h.Metrics.Errors.Inc(1)
 
 	if h.OnError != nil {
 		h.OnError(h, err)
@@ -160,7 +150,7 @@ func (h *HubHost) GetFreeSlot() int {
 }
 
 func (h *HubHost) onRejectConnection(client *net.TCPConn) {
-	h.metrics.totalRejects.Inc(time.Now())
+	h.Metrics.TotalRejects.Inc(1)
 
 	if h.OnRejectConnection != nil {
 		h.OnRejectConnection(h, client)
@@ -176,15 +166,15 @@ func (h *HubHost) onAcceptConnection(client *net.TCPConn) {
 func (h *HubHost) WriteToClients(packet Packet) {
 	now := time.Now()
 	if h.ClientsLen > 0 {
-		h.metrics.writeToClients.Inc(now)
-		h.metrics.writeBytes.Inc(now)
+		h.Metrics.WriteToClients.IncAt(1, now)
+		h.Metrics.WriteBytes.IncAt(1, now)
 
 		for i := range h.Clients {
 			client := &h.Clients[i]
 			client.Write(packet)
 		}
 	} else {
-		h.metrics.skipToClients.Inc(now)
-		h.metrics.skipBytes.Add(int(packet.Size), now)
+		h.Metrics.SkipToClients.IncAt(1, now)
+		h.Metrics.SkipBytes.IncAt(int64(packet.Size), now)
 	}
 }

@@ -9,6 +9,7 @@ import (
 )
 
 var Print printClass
+var Test printClass
 
 var labelWidth int = 25
 var Features uint64 = math.MaxUint64

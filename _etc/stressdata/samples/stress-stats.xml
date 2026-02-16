@@ -1,0 +1,144 @@
+<StressStats>
+    <StartOn>2025-12-12T09:04:08.441082312+02:00</StartOn>
+    <EndOn>2025-12-12T09:04:22.455343701+02:00</EndOn>
+    <Config targetIP="192.168.11.2:55555" startupDelaySeconds="2" runSeconds="11" tps="1"
+            webSocketUrl="wss://192.168.11.2:443/socket">
+        <Radar isActive="true" radarIP="192.168.11.12:55555">
+            <Type name="ObjectList" directory="./_etc/stressdata/objectlist" run="true" latchNo="0"
+                  latchDurationSecs="0"/>
+            <Type name="Statistics-Countdown" directory="./_etc/stressdata/stats/countdown" run="true" latchNo="1"
+                  latchDurationSecs="10"/>
+            <Type name="Statistics-Detail" directory="./_etc/stressdata/stats/detail" run="true" latchNo="1"
+                  latchDurationSecs="0"/>
+        </Radar>
+    </Config>
+    <Simulator rvproIP="192.168.11.2:55555" radarIP="192.168.11.12:55555">
+        <Latch>
+            <LatchNo>0</LatchNo>
+            <Provider directory="./_etc/stressdata/objectlist" name="ObjectList">
+                <File filename="_etc/stressdata/objectlist/objectlist1.bin">
+                    <Stats>
+                        <Iterations>6</Iterations>
+                        <SendCount>6</SendCount>
+                        <SendBytes>10776</SendBytes>
+                        <SendErrs>0</SendErrs>
+                        <MaxSendTimeNs>537557</MaxSendTimeNs>
+                        <MinSendTimeNs>77534</MinSendTimeNs>
+                        <TotalSendTimeNs>1845844</TotalSendTimeNs>
+                    </Stats>
+                </File>
+                <File filename="_etc/stressdata/objectlist/objectlist2.bin">
+                    <Stats>
+                        <Iterations>6</Iterations>
+                        <SendCount>6</SendCount>
+                        <SendBytes>10776</SendBytes>
+                        <SendErrs>0</SendErrs>
+                        <MaxSendTimeNs>475075</MaxSendTimeNs>
+                        <MinSendTimeNs>120595</MinSendTimeNs>
+                        <TotalSendTimeNs>1522357</TotalSendTimeNs>
+                    </Stats>
+                </File>
+                <LatchNo>0</LatchNo>
+            </Provider>
+        </Latch>
+        <Latch>
+            <LatchNo>1</LatchNo>
+            <Provider directory="./_etc/stressdata/stats/countdown" name="Statistics-Countdown">
+                <File filename="_etc/stressdata/stats/countdown/stats2.bin">
+                    <Stats>
+                        <Iterations>11</Iterations>
+                        <SendCount>11</SendCount>
+                        <SendBytes>1540</SendBytes>
+                        <SendErrs>0</SendErrs>
+                        <MaxSendTimeNs>63296</MaxSendTimeNs>
+                        <MinSendTimeNs>24694</MinSendTimeNs>
+                        <TotalSendTimeNs>454327</TotalSendTimeNs>
+                    </Stats>
+                </File>
+                <LatchNo>1</LatchNo>
+            </Provider>
+            <Provider directory="./_etc/stressdata/stats/detail" name="Statistics-Detail">
+                <File filename="_etc/stressdata/stats/detail/stats.bin">
+                    <Stats>
+                        <Iterations>1</Iterations>
+                        <SendCount>1</SendCount>
+                        <SendBytes>620</SendBytes>
+                        <SendErrs>0</SendErrs>
+                        <MaxSendTimeNs>38644</MaxSendTimeNs>
+                        <MinSendTimeNs>38644</MinSendTimeNs>
+                        <TotalSendTimeNs>38644</TotalSendTimeNs>
+                    </Stats>
+                </File>
+                <LatchNo>1</LatchNo>
+            </Provider>
+        </Latch>
+    </Simulator>
+    <CountsBefore>
+        <Radar>
+            <RadarIP>192.168.11.12</RadarIP>
+            <DataCount>1480</DataCount>
+            <ObjectLists>1219</ObjectLists>
+            <EventTriggers>0</EventTriggers>
+            <StatisticsCount>261</StatisticsCount>
+            <PVRCount>0</PVRCount>
+        </Radar>
+        <Radar>
+            <RadarIP>192.168.11.13</RadarIP>
+            <DataCount>725</DataCount>
+            <ObjectLists>725</ObjectLists>
+            <EventTriggers>0</EventTriggers>
+            <StatisticsCount>0</StatisticsCount>
+            <PVRCount>0</PVRCount>
+        </Radar>
+        <Radar>
+            <RadarIP>192.168.11.14</RadarIP>
+            <DataCount>9838989</DataCount>
+            <ObjectLists>1967797</ObjectLists>
+            <EventTriggers>1967797</EventTriggers>
+            <StatisticsCount>1967797</StatisticsCount>
+            <PVRCount>0</PVRCount>
+        </Radar>
+        <Radar>
+            <RadarIP>192.168.11.15</RadarIP>
+            <DataCount>9838755</DataCount>
+            <ObjectLists>1967750</ObjectLists>
+            <EventTriggers>1967750</EventTriggers>
+            <StatisticsCount>1967750</StatisticsCount>
+            <PVRCount>0</PVRCount>
+        </Radar>
+    </CountsBefore>
+    <CountsAfter>
+        <Radar>
+            <RadarIP>192.168.11.12</RadarIP>
+            <DataCount>1504</DataCount>
+            <ObjectLists>1231</ObjectLists>
+            <EventTriggers>0</EventTriggers>
+            <StatisticsCount>273</StatisticsCount>
+            <PVRCount>0</PVRCount>
+        </Radar>
+        <Radar>
+            <RadarIP>192.168.11.13</RadarIP>
+            <DataCount>725</DataCount>
+            <ObjectLists>725</ObjectLists>
+            <EventTriggers>0</EventTriggers>
+            <StatisticsCount>0</StatisticsCount>
+            <PVRCount>0</PVRCount>
+        </Radar>
+        <Radar>
+            <RadarIP>192.168.11.14</RadarIP>
+            <DataCount>9840029</DataCount>
+            <ObjectLists>1968005</ObjectLists>
+            <EventTriggers>1968005</EventTriggers>
+            <StatisticsCount>1968005</StatisticsCount>
+            <PVRCount>0</PVRCount>
+        </Radar>
+        <Radar>
+            <RadarIP>192.168.11.15</RadarIP>
+            <DataCount>9839795</DataCount>
+            <ObjectLists>1967958</ObjectLists>
+            <EventTriggers>1967958</EventTriggers>
+            <StatisticsCount>1967958</StatisticsCount>
+            <PVRCount>0</PVRCount>
+        </Radar>
+    </CountsAfter>
+</StressStats>

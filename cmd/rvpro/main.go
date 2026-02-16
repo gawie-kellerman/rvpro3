@@ -7,8 +7,8 @@ import (
 
 	"rvpro3/radarvision.com/internal/models/servicemodel"
 	"rvpro3/radarvision.com/internal/sdlc/uartsdlc"
-	"rvpro3/radarvision.com/internal/smartmicro/broker/udp"
 	"rvpro3/radarvision.com/internal/smartmicro/service"
+	"rvpro3/radarvision.com/internal/smartmicro/udp/broker"
 	"rvpro3/radarvision.com/utils"
 )
 
@@ -86,6 +86,7 @@ func loadArgs() *utils.Settings {
 	return settings
 }
 
+// loadSettingsFile loads the key value pair file
 func loadSettingsFile(settings *utils.Settings) *utils.Settings {
 	var err error
 	var isFile bool
@@ -103,13 +104,13 @@ func loadSettingsFile(settings *utils.Settings) *utils.Settings {
 	}
 
 	if isFile {
-		utils.Print.Ln("Loading config from", fileName)
+		utils.Print.InfoLn("Loading config from", fileName)
 
 		if err = res.MergeFromFile(fileName); err != nil {
 			goto _errorLabel
 		}
 	} else {
-		utils.Print.Ln("Config file", fileName, "not found - reverting to default")
+		utils.Print.InfoLn("Config file", fileName, "not found - reverting to default")
 	}
 
 	return res
@@ -146,13 +147,13 @@ func awaitComplete() {
 func startServices() {
 	utils.Print.InfoLn("Starting services")
 	for _, svc := range services {
-		utils.Print.InfoLn("Starting svc", svc.GetServiceName())
+		utils.Print.InfoLn("Starting", svc.GetServiceName())
 		svc.SetupAndStart(&utils.GlobalState, &utils.GlobalSettings)
 	}
 }
 
 func registerServiceSettings() *utils.Settings {
-	utils.Print.Ln("Registering service defaults")
+	utils.Print.InfoLn("Registering service defaults")
 
 	res := &utils.Settings{}
 	res.Init()
@@ -176,7 +177,7 @@ func registerServiceSettings() *utils.Settings {
 //}
 
 func registerServices(settings *utils.Settings) {
-	utils.Print.Ln("Registering services")
+	utils.Print.InfoLn("Registering services")
 
 	services = make([]utils.IRunnableService, 0, 100)
 	registerService(new(LifetimeService))
@@ -197,14 +198,14 @@ func registerServices(settings *utils.Settings) {
 		// that any number of radars can be defined.  This also
 		// means that the radar port can be different which will be very helpful
 		// in integration testing.  The question is however, what is a default config
-		registerService(new(udp.RadarChannels))
+		registerService(new(broker.UDPBrokersService))
 	}
 
 	registerService(new(uartsdlc.SDLCService))
 	registerService(new(uartsdlc.SDLCExecutorService))
 	registerService(new(WebService))
 
-	//NB:  When creating RadarChannels, remember to add the WorkflowBuilder
+	//NB:  When creating UDPBrokersService, remember to add the WorkflowBuilder
 	//TODO: Add TcpHub/Router back into the fold
 	//TODO: SNMP
 	//TODO: LCD

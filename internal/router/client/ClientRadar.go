@@ -19,14 +19,13 @@ type ClientRadar struct {
 	refCount       atomic.Int32
 	connection     utils.UDPServerConnection
 	now            time.Time
-	Metrics        virtualRadarMetrics
+	Metrics        ClientRadarMetrics
 	OnUDPRead      func(v *ClientRadar, addr utils.IP4, bytes []byte)
 	OnWriteSuccess func(v *ClientRadar, targetIP utils.IP4, dataOnly []byte)
 	OnWriteFail    func(v *ClientRadar, targetIP utils.IP4, dataOnly []byte, err error)
 }
 
-type virtualRadarMetrics struct {
-	name                      string
+type ClientRadarMetrics struct {
 	UdpOpen                   *utils.Metric
 	UdpClose                  *utils.Metric
 	UdpOpenError              *utils.Metric
@@ -46,34 +45,10 @@ type virtualRadarMetrics struct {
 	UdpWriteOKBytes           *utils.Metric
 	UdpWriteErrIterations     *utils.Metric
 	UdpWriteErrBytes          *utils.Metric
+	utils.MetricsInitMixin
 }
 
-func (m *virtualRadarMetrics) init(addr utils.IP4) {
-	if m.name != "" {
-		return
-	}
-	gm := &utils.GlobalMetrics
-
-	m.name = "Virtual.Radar." + addr.String()
-	m.UdpOpen = gm.U64(m.name, "Udp.Open")
-	m.UdpClose = gm.U64(m.name, "Udp.Close")
-	m.UdpOpenError = gm.U64(m.name, "Udp.Error.Open")
-	m.UdpWriteError = gm.U64(m.name, "Udp.Error.WritePacket")
-	m.UdpReadError = gm.U64(m.name, "Udp.Error.Read")
-	m.UdpUnknownError = gm.U64(m.name, "Udp.Error.Unknown")
-	m.UdpReadBytes = gm.U64(m.name, "Udp.Read.Bytes")
-	m.UdpReadIterations = gm.U64(m.name, "Udp.Read.Iterations")
-	m.UdpWATBytes = gm.U64(m.name, "Udp.WritePacket.AfterTerminate.Bytes")
-	m.UdpWATIterations = gm.U64(m.name, "Udp.WritePacket.AfterTerminate.Iterations")
-	m.WriteIncompleteError = gm.U64(m.name, "Udp.WritePacket.Incomplete")
-	m.WriteTerminatedBytes = gm.U64(m.name, "Udp.WritePacket.Terminated.Bytes")
-	m.WriteTerminatedIterations = gm.U64(m.name, "Udp.WritePacket.Terminated.Iterations")
-	m.WriteDequeueIterations = gm.U64(m.name, "Udp.WritePacket.Dequeue.Iterations")
-	m.WriteDequeueBytes = gm.U64(m.name, "Udp.WritePacket.Dequeue.Bytes")
-	m.UdpWriteOKBytes = gm.U64(m.name, "Udp.WritePacket.OK.Bytes")
-	m.UdpWriteOKIterations = gm.U64(m.name, "Udp.WritePacket.OK.Iterations")
-	m.UdpWriteErrIterations = gm.U64(m.name, "Udp.WritePacket.Error.Iterations")
-	m.UdpWriteErrBytes = gm.U64(m.name, "Udp.WritePacket.Error.Bytes")
+func (m *ClientRadarMetrics) inits(addr utils.IP4) {
 }
 
 func (v *ClientRadar) Start(ipAddr utils.IP4) {
@@ -87,7 +62,9 @@ func (v *ClientRadar) Start(ipAddr utils.IP4) {
 	v.refCount.Store(2)
 	v.writeChannel = make(chan []byte, 10) //TODO: Externalize the write message queue size
 	v.doneChannel = make(chan bool)
-	v.Metrics.init(ipAddr)
+
+	sectionName := "Router.Client.Radar.[" + ipAddr.String() + "]"
+	v.Metrics.InitMetrics(sectionName, &v.Metrics)
 
 	v.connection.Init(v, ipAddr, 2*utils.Kilobyte, 2*utils.Kilobyte, 3) // TODO: Externalize
 	v.connection.OnError = v.onUDPError
@@ -125,8 +102,8 @@ func (v *ClientRadar) executeRead() {
 
 			if bufferLen > 0 {
 				fmt.Println("Reading from ", fromAddr.String(), "bytes", bufferLen)
-				v.Metrics.UdpReadBytes.AddCount(uint64(bufferLen), v.now)
-				v.Metrics.UdpReadIterations.Inc(v.now)
+				v.Metrics.UdpReadBytes.IncAt(int64(bufferLen), v.now)
+				v.Metrics.UdpReadIterations.IncAt(1, v.now)
 				if v.OnUDPRead != nil {
 					v.OnUDPRead(v, fromAddr, buffer[:bufferLen])
 				}
@@ -181,15 +158,15 @@ func (v *ClientRadar) writeData(packetData []byte) {
 			targetAddr = pw.GetTargetIP4()
 		}
 		if err := v.connection.WriteData(targetAddr.ToUDPAddr(), pw.GetData()); err == nil {
-			v.Metrics.UdpWriteOKIterations.Inc(now)
-			v.Metrics.UdpWriteOKBytes.Add(int(pw.GetDataSize()), now)
+			v.Metrics.UdpWriteOKIterations.IncAt(1, now)
+			v.Metrics.UdpWriteOKBytes.IncAt(int64(pw.GetDataSize()), now)
 
 			if v.OnWriteSuccess != nil {
 				v.OnWriteSuccess(v, pw.GetTargetIP4(), pw.GetData())
 			}
 		} else {
-			v.Metrics.UdpWriteErrIterations.Inc(now)
-			v.Metrics.UdpWriteErrBytes.Add(int(pw.GetDataSize()), now)
+			v.Metrics.UdpWriteErrIterations.IncAt(1, now)
+			v.Metrics.UdpWriteErrBytes.IncAt(int64(pw.GetDataSize()), now)
 
 			if v.OnWriteFail != nil {
 				v.OnWriteFail(v, pw.GetTargetIP4(), pw.GetData(), err)
@@ -211,19 +188,19 @@ func (v *ClientRadar) Write(packetData []byte) {
 	}
 
 	if !pw.IsComplete() {
-		v.Metrics.WriteIncompleteError.Inc(now)
+		v.Metrics.WriteIncompleteError.IncAt(1, now)
 		return
 	}
 
 	if v.Terminate {
-		v.Metrics.WriteTerminatedBytes.Add(pw.GetPacketSize(), now)
-		v.Metrics.WriteTerminatedIterations.Inc(now)
+		v.Metrics.WriteTerminatedBytes.IncAt(int64(pw.GetPacketSize()), now)
+		v.Metrics.WriteTerminatedIterations.IncAt(1, now)
 		return
 	}
 
 	if len(v.writeChannel)+1 >= cap(v.writeChannel) {
-		v.Metrics.WriteDequeueIterations.Inc(now)
-		v.Metrics.WriteDequeueBytes.Add(pw.GetPacketSize(), now)
+		v.Metrics.WriteDequeueIterations.IncAt(1, now)
+		v.Metrics.WriteDequeueBytes.IncAt(int64(pw.GetPacketSize()), now)
 		return
 	}
 
@@ -244,22 +221,22 @@ func (v *ClientRadar) onUDPError(
 ) {
 	switch context {
 	case utils.IPErrorOnConnect:
-		v.Metrics.UdpOpenError.Inc(time.Now())
+		v.Metrics.UdpOpenError.Inc(1)
 	case utils.IPErrorOnReadData:
-		v.Metrics.UdpReadError.Inc(time.Now())
+		v.Metrics.UdpReadError.Inc(1)
 	case utils.IPErrorOnWriteData:
-		v.Metrics.UdpWriteError.Inc(time.Now())
+		v.Metrics.UdpWriteError.Inc(1)
 	default:
-		v.Metrics.UdpUnknownError.Inc(time.Now())
+		v.Metrics.UdpUnknownError.Inc(1)
 	}
 
 	// TODO: Add callback to desktop listening in...
 }
 
 func (v *ClientRadar) onUDPOpen(connection *utils.UDPServerConnection) {
-	v.Metrics.UdpOpen.Inc(time.Now())
+	v.Metrics.UdpOpen.Inc(1)
 }
 
 func (v *ClientRadar) onUDPClose(connection *utils.UDPServerConnection) {
-	v.Metrics.UdpClose.Inc(time.Now())
+	v.Metrics.UdpClose.Inc(1)
 }

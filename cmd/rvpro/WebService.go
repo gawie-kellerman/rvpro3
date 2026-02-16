@@ -77,6 +77,12 @@ func (w *WebService) getMetricsSection(context *gin.Context) {
 			result[section.Name] = section
 		}
 	}
+
+	regexes := context.QueryArray("regex")
+	for _, regex := range regexes {
+		utils.GlobalMetrics.MergeRegEx(result, regex)
+	}
+
 	context.JSON(http.StatusOK, result)
 }
 

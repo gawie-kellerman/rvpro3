@@ -9,31 +9,29 @@ import (
 
 const SDLCStaticStatusStateName = "SDLC.StaticStatus"
 const SDLCExecutorServiceStateName = "SDLC.Executor.Service"
-const SDLCExecutorMetricsAt = "SDLC.Executor"
-
-//type sdlcExecutorSettings[T SDLCExecutorService] struct{}
-//
-//var SDLCExecutorSettings = sdlcExecutorSettings{}
-
 const sdlcUARTStaticStatusRequestEvery = "SDLC.UART.StaticRequest.Every"
 
 type sdlcExecutorSettings struct{}
 
 type SDLCExecutorService struct {
-	Metronome             utils.Metronome
-	Terminate             bool
-	Terminated            bool
-	sdlcService           *SDLCService
-	Now                   time.Time
-	StaticRequestOn       time.Time
-	StaticRequestInterval time.Duration
-	StaticStatus          *StaticStatus
-
-	DecodeErrCount           *utils.Metric
-	DecodeErrBytes           *utils.Metric
-	StaticStatusRequests     *utils.Metric
-	StaticStatusResponses    *utils.Metric
+	Metronome                utils.Metronome
+	Terminate                bool
+	Terminated               bool
+	sdlcService              *SDLCService
+	Now                      time.Time
+	StaticRequestOn          time.Time
+	StaticRequestInterval    time.Duration
+	StaticStatus             *StaticStatus
+	Metrics                  SDLCExecutorServiceMetrics
 	StaticStatusRequestEvery time.Duration
+}
+
+type SDLCExecutorServiceMetrics struct {
+	DecodeErrCount        *utils.Metric
+	DecodeErrBytes        *utils.Metric
+	StaticStatusRequests  *utils.Metric
+	StaticStatusResponses *utils.Metric
+	utils.MetricsInitMixin
 }
 
 func (s *SDLCExecutorService) SetupDefaults(config *utils.Settings) {
@@ -65,14 +63,9 @@ func (s *SDLCExecutorService) GetServiceNames() []string {
 	return nil
 }
 
-func (s *SDLCExecutorService) InitMetrics() {
-	gm := &utils.GlobalMetrics
-	s.StaticStatusRequests = gm.U64(SDLCExecutorMetricsAt, "Static Status Requests")
-	s.StaticStatusResponses = gm.U64(SDLCExecutorMetricsAt, "Static Status Responses")
-}
-
 func (s *SDLCExecutorService) Start() {
-	s.InitMetrics()
+	s.Metrics.InitMetrics("SDLC.Executor", &s.Metrics)
+
 	utils.GlobalState.Set(SDLCExecutorServiceStateName, s)
 	s.Terminated = false
 	s.Terminate = false
@@ -112,7 +105,7 @@ func (s *SDLCExecutorService) doStaticStatusRequest() {
 		return
 	}
 
-	s.StaticStatusRequests.Add(1, s.Now)
+	s.Metrics.StaticStatusRequests.IncAt(1, s.Now)
 	encoder := SDLCRequestEncoder{}
 	data, err := encoder.StaticStatus()
 
@@ -128,8 +121,9 @@ func (s *SDLCExecutorService) OnReadMessage(_ *SDLCService, data []byte) {
 	decoder := SDLCResponseDecoder{}
 
 	if err := decoder.Init(data); err != nil {
-		s.DecodeErrCount.Add(1, s.Now)
-		s.DecodeErrBytes.Add(len(data), s.Now)
+		now := time.Now()
+		s.Metrics.DecodeErrCount.IncAt(1, now)
+		s.Metrics.DecodeErrBytes.IncAt(int64(len(data)), now)
 		return
 	}
 
@@ -147,7 +141,7 @@ func (s *SDLCExecutorService) onStaticResponse(decoder *SDLCResponseDecoder) {
 		return
 	}
 
-	s.StaticStatusResponses.Add(1, s.Now)
+	s.Metrics.StaticStatusResponses.Inc(1)
 
 	// TODO: Processing surrounding BUI needed
 

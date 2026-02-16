@@ -13,3 +13,9 @@ func (debug) Panic(err error) {
 		panic(err)
 	}
 }
+
+func (d debug) PanicIf(condition bool, message string) {
+	if condition {
+		panic(message)
+	}
+}

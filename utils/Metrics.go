@@ -20,7 +20,7 @@ func (m *Metrics) GetOrPut(name string, dataType MetricType) *Metric {
 	}
 
 	metric := new(Metric)
-	metric.DataType = dataType
+	metric.Type = dataType
 	metric.IsSet = false
 	metric.Name = name
 	m.Metric[name] = metric

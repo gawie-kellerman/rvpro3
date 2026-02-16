@@ -13,13 +13,13 @@ import (
 	"rvpro3/radarvision.com/utils"
 )
 
-const hubServer = "Hub.Server"
+const routerServer = "Router.Server"
 
 type Server struct {
 	BindAddr     utils.IP4
-	Metrics      hubServerMetrics
 	Terminate    bool
 	Writer       interfaces.IUDPPacketWriter
+	Metrics      ServerMetrics
 	writeChannel chan []byte
 	doneChannel  chan bool
 	refCount     atomic.Int32
@@ -27,7 +27,7 @@ type Server struct {
 	Connections  map[string]*HubServerConnection
 }
 
-type hubServerMetrics struct {
+type ServerMetrics struct {
 	ListenerStartErrors  *utils.Metric
 	ListenerAcceptErrors *utils.Metric
 	PropagateErrors      *utils.Metric
@@ -36,23 +36,11 @@ type hubServerMetrics struct {
 	PropagateOKBytes     *utils.Metric
 	PropagateNoops       *utils.Metric
 	PropagateNoopBytes   *utils.Metric
-}
-
-func (h *hubServerMetrics) init() {
-	gm := &utils.GlobalMetrics
-
-	h.ListenerStartErrors = gm.U64(hubServer, "Listener.Start.Errors")
-	h.ListenerAcceptErrors = gm.U64(hubServer, "Listener.Accept.Errors")
-	h.PropagateErrors = gm.U64(hubServer, "Listener.Propagate.Errors")
-	h.PropagateErrorBytes = gm.U64(hubServer, "Listener.Propagate.Errors.Bytes")
-	h.PropagateOKs = gm.U64(hubServer, "Listener.Propagate.OK")
-	h.PropagateOKBytes = gm.U64(hubServer, "Listener.Propagate.OK.Bytes")
-	h.PropagateNoops = gm.U64(hubServer, "Listener.Propagate.Noop")
-	h.PropagateNoopBytes = gm.U64(hubServer, "Listener.Propagate.Noop.Bytes")
+	utils.MetricsInitMixin
 }
 
 func (h *Server) Start(bindAddr utils.IP4, writer interfaces.IUDPPacketWriter) {
-	h.Metrics.init()
+	h.Metrics.InitMetrics(routerServer, &h.Metrics)
 	h.Connections = make(map[string]*HubServerConnection)
 	h.BindAddr = bindAddr
 	h.Terminate = false
@@ -74,7 +62,7 @@ func (h *Server) executeAccept() {
 		if listener == nil {
 			if listener, err = net.ListenTCP("tcp", &addr); err != nil {
 				listener = nil
-				h.Metrics.ListenerStartErrors.Inc(now)
+				h.Metrics.ListenerStartErrors.IncAt(1, now)
 				h.onError(err)
 				time.Sleep(time.Second)
 			}
@@ -86,7 +74,7 @@ func (h *Server) executeAccept() {
 
 			if conn, err = listener.AcceptTCP(); err != nil {
 				if !errors.Is(err, os.ErrDeadlineExceeded) {
-					h.Metrics.ListenerAcceptErrors.Inc(now)
+					h.Metrics.ListenerAcceptErrors.IncAt(1, now)
 
 					_ = listener.Close()
 					listener = nil
@@ -152,14 +140,14 @@ func (h *Server) onPropagateConnectionData(connection *HubServerConnection, pack
 
 	if h.Writer != nil {
 		if err := h.Writer.WritePacket(packetData); err != nil {
-			h.Metrics.PropagateErrors.Inc(now)
-			h.Metrics.PropagateErrorBytes.Add(packet.GetPacketSize(), now)
+			h.Metrics.PropagateErrors.IncAt(1, now)
+			h.Metrics.PropagateErrorBytes.IncAt(int64(packet.GetPacketSize()), now)
 		} else {
-			h.Metrics.PropagateOKs.Inc(now)
-			h.Metrics.PropagateOKBytes.Add(packet.GetPacketSize(), now)
+			h.Metrics.PropagateOKs.IncAt(1, now)
+			h.Metrics.PropagateOKBytes.IncAt(int64(packet.GetPacketSize()), now)
 		}
 	} else {
-		h.Metrics.PropagateNoops.Inc(now)
-		h.Metrics.PropagateNoopBytes.Add(packet.GetPacketSize(), now)
+		h.Metrics.PropagateNoops.IncAt(1, now)
+		h.Metrics.PropagateNoopBytes.IncAt(int64(packet.GetPacketSize()), now)
 	}
 }

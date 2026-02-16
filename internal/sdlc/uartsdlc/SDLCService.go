@@ -14,7 +14,6 @@ import (
 
 var errWriteMessageDiscarded = errors.New("write message discarded")
 
-const SDLCServiceMetricsAt = "SDLC.UART"
 const SDLCServiceName = "SDLC.Service"
 
 const sdlcUARTEnabled = "UART.UART.Enabled"
@@ -31,41 +30,46 @@ const readAction = "r"
 const errorAction = "e"
 
 type SDLCService struct {
-	Serial                    SerialConnection
-	doneChan                  chan bool
-	writeChannel              chan []byte
-	readBuffer                [1024]byte
-	backingBuffer             [2048]byte
-	serialBuffer              utils.SerialBuffer
-	terminate                 bool
-	terminateRefCount         atomic.Int32
-	WritePool                 *SDLCWritePool             `json:"-"`
-	OnError                   func(*SDLCService, error)  `json:"-"`
-	OnTerminate               func(*SDLCService)         `json:"-"`
-	OnReadMessage             func(*SDLCService, []byte) `json:"-"`
-	OnWriteMessage            func(*SDLCService, []byte) `json:"-"`
-	IsWriteEnabledMetric      *utils.Metric
-	WriteEnqueuedMetric       *utils.Metric
-	WriteEnqueuedBytesMetric  *utils.Metric
-	WriteDequeuedMetric       *utils.Metric
-	WriteDequeuedBytesMetric  *utils.Metric
-	WriteQueueFullMetric      *utils.Metric
-	WriteQueueFullBytesMetric *utils.Metric
-	WriteSuccessMetric        *utils.Metric
-	WriteSuccessBytesMetric   *utils.Metric
-	WriteErrorMetric          *utils.Metric
-	WriteErrorBytesMetric     *utils.Metric
-	WriteOmitMetric           *utils.Metric
-	WriteOmitBytesMetric      *utils.Metric
-	OmitLogWritesMetric       *utils.Metric
-	OmitLogReadsMetric        *utils.Metric
-	RetrySleepDuration        time.Duration
-	Error                     error
-	CsvProvider               *utils.CSVRollOverFileWriterProvider `json:"-"`
-	ReadBytesMetric           *utils.Metric
-	ReadsMetric               *utils.Metric
-	PopsMetric                *utils.Metric
-	PopBytesMetric            *utils.Metric
+	Serial             SerialConnection
+	doneChan           chan bool
+	writeChannel       chan []byte
+	readBuffer         [1024]byte
+	backingBuffer      [2048]byte
+	serialBuffer       utils.SerialBuffer
+	terminate          bool
+	terminateRefCount  atomic.Int32
+	Metrics            SDLCServiceMetrics
+	WritePool          *SDLCWritePool             `json:"-"`
+	OnError            func(*SDLCService, error)  `json:"-"`
+	OnTerminate        func(*SDLCService)         `json:"-"`
+	OnReadMessage      func(*SDLCService, []byte) `json:"-"`
+	OnWriteMessage     func(*SDLCService, []byte) `json:"-"`
+	RetrySleepDuration time.Duration
+	Error              error
+	CsvProvider        *utils.CSVRollOverFileWriterProvider `json:"-"`
+}
+
+type SDLCServiceMetrics struct {
+	IsWriteEnabled      *utils.Metric
+	WriteEnqueued       *utils.Metric
+	WriteEnqueuedBytes  *utils.Metric
+	WriteDequeued       *utils.Metric
+	WriteDequeuedBytes  *utils.Metric
+	WriteQueueFull      *utils.Metric
+	WriteQueueFullBytes *utils.Metric
+	WriteSuccess        *utils.Metric
+	WriteSuccessBytes   *utils.Metric
+	WriteError          *utils.Metric
+	WriteErrorBytes     *utils.Metric
+	WriteOmit           *utils.Metric
+	WriteOmitBytes      *utils.Metric
+	OmitLogWrites       *utils.Metric
+	OmitLogReads        *utils.Metric
+	ReadBytes           *utils.Metric
+	Reads               *utils.Metric
+	Pops                *utils.Metric
+	PopBytes            *utils.Metric
+	utils.MetricsInitMixin
 }
 
 func (s *SDLCService) SetupDefaults(config *utils.Settings) {
@@ -118,6 +122,7 @@ func (s *SDLCService) GetServiceNames() []string {
 }
 
 func (s *SDLCService) init() {
+	s.Metrics.InitMetrics(SDLCServiceName, &s.Metrics)
 	s.RetrySleepDuration = time.Duration(1) * time.Second
 	s.WritePool = NewSDLCWritePool()
 	s.Serial.RetryGuard.RetryEvery = 3
@@ -127,31 +132,6 @@ func (s *SDLCService) init() {
 	s.doneChan = make(chan bool)
 	s.writeChannel = make(chan []byte, 5)
 	s.terminateRefCount.Store(2)
-	s.initMetrics()
-}
-
-func (s *SDLCService) initMetrics() {
-	gm := &utils.GlobalMetrics
-	s.ReadBytesMetric = gm.U64(SDLCServiceMetricsAt, "Read Bytes")
-	s.ReadsMetric = gm.U64(SDLCServiceMetricsAt, "Reads")
-	s.PopsMetric = gm.U64(SDLCServiceMetricsAt, "Pops")
-	s.PopBytesMetric = gm.U64(SDLCServiceMetricsAt, "Pop Bytes")
-
-	s.WriteEnqueuedMetric = gm.U64(SDLCServiceMetricsAt, "Enqueued Writes")
-	s.WriteEnqueuedBytesMetric = gm.U64(SDLCServiceMetricsAt, "Enqueued WritePacket Bytes")
-	s.WriteDequeuedMetric = gm.U64(SDLCServiceMetricsAt, "Dequeued Writes")
-	s.WriteDequeuedBytesMetric = gm.U64(SDLCServiceMetricsAt, "Dequeued WritePacket Bytes")
-	s.WriteQueueFullMetric = gm.U64(SDLCServiceMetricsAt, "Error: Queue Full Writes rejected")
-	s.WriteQueueFullBytesMetric = gm.U64(SDLCServiceMetricsAt, "Error: Queue Full WritePacket Bytes rejected")
-	s.WriteSuccessMetric = gm.U64(SDLCServiceMetricsAt, "Success Writes")
-	s.WriteSuccessBytesMetric = gm.U64(SDLCServiceMetricsAt, "Success WritePacket Bytes")
-	s.WriteErrorMetric = gm.U64(SDLCServiceMetricsAt, "Error: Writes")
-	s.WriteErrorBytesMetric = gm.U64(SDLCServiceMetricsAt, "Error: WritePacket Bytes")
-	s.WriteOmitMetric = gm.U64(SDLCServiceMetricsAt, "Omit Writes")
-	s.WriteOmitBytesMetric = gm.U64(SDLCServiceMetricsAt, "Omit WritePacket Bytes")
-	s.OmitLogWritesMetric = gm.U64(SDLCServiceMetricsAt, "Omit Log Writes")
-	s.OmitLogReadsMetric = gm.U64(SDLCServiceMetricsAt, "Omit Log Reads")
-	s.IsWriteEnabledMetric = gm.U32(SDLCServiceMetricsAt, "IsWriteEnabled")
 }
 
 func (s *SDLCService) Start() {
@@ -169,7 +149,7 @@ func (s *SDLCService) Stop() {
 }
 
 func (s *SDLCService) executeReader() {
-	s.IsWriteEnabledMetric.SetU32(1, time.Now())
+	s.Metrics.IsWriteEnabled.SetBool(true)
 
 	for !s.terminate {
 
@@ -177,8 +157,8 @@ func (s *SDLCService) executeReader() {
 			readSize := s.Serial.Read(s.readBuffer[:])
 			if readSize > 0 {
 				now := time.Now()
-				s.ReadsMetric.Add(1, now)
-				s.ReadBytesMetric.Add(readSize, now)
+				s.Metrics.Reads.IncAt(1, now)
+				s.Metrics.ReadBytes.IncAt(int64(readSize), now)
 
 				if err := s.serialBuffer.Push(s.readBuffer[:readSize]); err != nil {
 					s.logError(err)
@@ -187,10 +167,10 @@ func (s *SDLCService) executeReader() {
 					}
 				} else {
 					if readBytes := s.serialBuffer.Pop(); readBytes != nil {
-						s.PopsMetric.Add(1, now)
-						s.PopBytesMetric.Add(len(readBytes), now)
+						s.Metrics.Pops.IncAt(1, now)
+						s.Metrics.PopBytes.IncAt(int64(len(readBytes)), now)
 
-						s.logMessage(readBytes, readAction, s.OmitLogReadsMetric)
+						s.logMessage(readBytes, readAction, s.Metrics.OmitLogReads)
 						if s.OnReadMessage != nil {
 							s.OnReadMessage(s, readBytes)
 						}
@@ -219,7 +199,7 @@ func (s *SDLCService) executeWriter() {
 			s.writeData(data)
 
 		case <-s.doneChan:
-			s.IsWriteEnabledMetric.SetU32(0, time.Now())
+			s.Metrics.IsWriteEnabled.SetBool(false)
 			s.terminate = true
 			s.terminateRefCount.Add(-1)
 			close(s.writeChannel)
@@ -232,23 +212,23 @@ func (s *SDLCService) executeWriter() {
 func (s *SDLCService) writeData(data []byte) {
 	now := time.Now()
 
-	if s.IsWriteEnabledMetric.GetU32() == 1 {
+	if s.Metrics.IsWriteEnabled.GetBool() {
 		if s.Serial.Write(data) {
-			s.WriteSuccessMetric.AddCount(1, now)
-			s.WriteSuccessBytesMetric.AddCount(uint64(len(data)), now)
-			s.logMessage(data, writeAction, s.OmitLogWritesMetric)
+			s.Metrics.WriteSuccess.IncAt(1, now)
+			s.Metrics.WriteSuccessBytes.IncAt(int64(len(data)), now)
+			s.logMessage(data, writeAction, s.Metrics.OmitLogWrites)
 		} else {
-			s.WriteErrorMetric.AddCount(1, now)
-			s.WriteErrorBytesMetric.AddCount(uint64(len(data)), now)
+			s.Metrics.WriteError.IncAt(1, now)
+			s.Metrics.WriteErrorBytes.IncAt(int64(len(data)), now)
 		}
 	} else {
-		s.WriteOmitMetric.AddCount(1, now)
-		s.WriteOmitBytesMetric.AddCount(uint64(len(data)), now)
+		s.Metrics.WriteOmit.IncAt(1, now)
+		s.Metrics.WriteOmitBytes.IncAt(int64(len(data)), now)
 	}
 
 	s.WritePool.Release(data)
-	s.WriteDequeuedBytesMetric.AddCount(uint64(len(data)), now)
-	s.WriteDequeuedMetric.AddCount(1, now)
+	s.Metrics.WriteDequeuedBytes.IncAt(int64(len(data)), now)
+	s.Metrics.WriteDequeued.IncAt(1, now)
 }
 
 func (s *SDLCService) Write(data []byte) {
@@ -261,14 +241,14 @@ func (s *SDLCService) Write(data []byte) {
 			buffer = buffer[:len(data)]
 			s.writeChannel <- buffer
 
-			s.WriteEnqueuedMetric.AddCount(1, now)
-			s.WriteEnqueuedBytesMetric.AddCount(uint64(len(buffer)), now)
+			s.Metrics.WriteEnqueued.IncAt(1, now)
+			s.Metrics.WriteEnqueuedBytes.IncAt(int64(len(buffer)), now)
 		} else {
 			// WritePacket Queue Full
 			s.WritePool.Release(data)
 			log.Err(errWriteMessageDiscarded).Str("msg", hex.EncodeToString(data))
-			s.WriteQueueFullMetric.AddCount(1, now)
-			s.WriteQueueFullBytesMetric.AddCount(uint64(len(data)), now)
+			s.Metrics.WriteQueueFull.IncAt(1, now)
+			s.Metrics.WriteQueueFullBytes.IncAt(int64(len(data)), now)
 		}
 	}
 }
@@ -279,7 +259,7 @@ func (s *SDLCService) logMessage(data []byte, action string, omitMetric *utils.M
 		writer, err := s.CsvProvider.GetWriter()
 
 		if err != nil {
-			omitMetric.AddCount(1, now)
+			omitMetric.IncAt(1, now)
 			return
 		}
 
@@ -295,7 +275,7 @@ func (s *SDLCService) WriteLogHeader(
 	_ string,
 	_ string,
 ) {
-	branding.CSVBranding.WriteTitle(writer, "SDLC Action Data", "101")
+	branding.CSVBranding.WriteTitle(writer, "SDLC Action Value", "101")
 	branding.CSVBranding.WriteFeaturesNL(writer)
 	writer.WriteColsNL("TIMESTAMP", "ACTION", "DATA")
 }
@@ -307,7 +287,7 @@ func (s *SDLCService) logError(errObj error) {
 		writer, err := s.CsvProvider.GetWriter()
 
 		if err != nil {
-			s.OmitLogReadsMetric.AddCount(1, now)
+			s.Metrics.OmitLogReads.IncAt(1, now)
 			return
 		}
 

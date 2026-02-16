@@ -80,10 +80,7 @@ type IP4 struct {
 }
 
 func (i IP4) MarshalJSON() ([]byte, error) {
-	return json.Marshal(map[string]interface{}{
-		"RadarIP": i.String(),
-		"Port":    i.Port,
-	})
+	return json.Marshal(i.String())
 }
 
 func (i IP4) String() string {
@@ -92,6 +89,21 @@ func (i IP4) String() string {
 
 	res.WriteString(fmt.Sprintf(
 		"%d.%d.%d.%d:%d",
+		i.bytes[0],
+		i.bytes[1],
+		i.bytes[2],
+		i.bytes[3],
+		i.Port,
+	))
+	return res.String()
+}
+
+func (i IP4) QuotedString() string {
+	res := strings.Builder{}
+	res.Grow(20)
+
+	res.WriteString(fmt.Sprintf(
+		"\"%d.%d.%d.%d:%d\"",
 		i.bytes[0],
 		i.bytes[1],
 		i.bytes[2],
