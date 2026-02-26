@@ -9,7 +9,7 @@ import (
 
 const SDLCStaticStatusStateName = "SDLC.StaticStatus"
 const SDLCExecutorServiceStateName = "SDLC.Executor.Service"
-const sdlcUARTStaticStatusRequestEvery = "SDLC.UART.StaticRequest.Every"
+const sdlcUARTStaticStatusRequestEvery = "sdlcexec.uart.staticrequest.every"
 
 type sdlcExecutorSettings struct{}
 

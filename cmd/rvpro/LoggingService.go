@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"io"
 	"os"
 	"path"
@@ -11,13 +12,13 @@ import (
 	"rvpro3/radarvision.com/utils"
 )
 
-const logLevel = "Log.Level"
-const logToConsole = "Log.To.Console"
-const logFileDir = "Log.File.Dir"
-const logFileName = "Log.File.Name"
-const logFileMaxSizeMB = "Log.File.MaxSizeMB"
-const logFileMaxAgeDays = "Log.File.MaxAgeDays"
-const logFileMaxBackups = "Log.File.MaxBackups"
+const logLevel = "log.level"
+const logToConsole = "log.to.console"
+const logFileDir = "log.file.dir"
+const logFileName = "log.lile.name"
+const logFileMaxSizeMB = "log.file.maxsizemb"
+const logFileMaxAgeDays = "log.file.maxagedays"
+const logFileMaxBackups = "log.file.maxbackups"
 
 type LoggingService struct {
 }
@@ -33,6 +34,8 @@ func (l *LoggingService) SetupDefaults(config *utils.Settings) {
 }
 
 func (l *LoggingService) SetupAndStart(state *utils.State, config *utils.Settings) {
+	level := zerolog.InfoLevel
+
 	var writers []io.Writer
 	zerolog.TimeFieldFormat = utils.DisplayDateTimeMS
 
@@ -45,6 +48,25 @@ func (l *LoggingService) SetupAndStart(state *utils.State, config *utils.Setting
 
 	fileDir := config.GetSettingAsStr(logFileDir)
 	fileName := config.GetSettingAsStr(logFileName)
+	logLevelStr := config.GetSettingAsStr(logLevel)
+	switch logLevelStr {
+	case "debug":
+		level = zerolog.DebugLevel
+	case "info":
+		level = zerolog.InfoLevel
+	case "warn":
+		level = zerolog.WarnLevel
+	case "error":
+		level = zerolog.ErrorLevel
+	case "fatal":
+		level = zerolog.FatalLevel
+	case "panic":
+		level = zerolog.PanicLevel
+	case "trace":
+		level = zerolog.TraceLevel
+	default:
+		zerolog.SetGlobalLevel(zerolog.InfoLevel)
+	}
 
 	if fileDir != "" && fileName != "" {
 		writers = append(writers, zerolog.ConsoleWriter{
@@ -53,12 +75,13 @@ func (l *LoggingService) SetupAndStart(state *utils.State, config *utils.Setting
 		})
 	}
 
+	fmt.Println(level)
 	mw := io.MultiWriter(writers...)
 	logger := zerolog.New(mw).With().Timestamp().Logger()
-
 	log.Logger = logger
 
-	log.Info().Msg("Logging initialized")
+	zerolog.SetGlobalLevel(level)
+	log.WithLevel(level).Msg("Logging initialized")
 }
 
 func (l *LoggingService) rollingAppender(config *utils.Settings) io.Writer {

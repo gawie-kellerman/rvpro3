@@ -12,12 +12,16 @@ import (
 // IUDPActivity -> IUDPWorkflow -> RadarChannel -> RadarChannels -> UDPData
 type IUDPActivity interface {
 	GetMetricName() string
-	Init(index int, radarIP utils.IP4, fullName string)
-	Process(IUDPWorkflow, int, time.Time, []byte)
-	SetDuration(duration int64, on time.Time)
+	// Init assumes that all struct variables are set already.
+	Init(workflow IUDPWorkflow, index int, fullName string)
+	Process(time.Time, []byte)
+	UpdateMetrics(duration int64, on time.Time)
 }
 
 type UDPActivityMixin struct {
+	Workflow       IUDPWorkflow
+	MetricName     string
+	Index          int
 	MinDuration    *utils.Metric
 	MaxDuration    *utils.Metric
 	TotalDuration  *utils.Metric
@@ -25,9 +29,20 @@ type UDPActivityMixin struct {
 	utils.MetricsInitMixin
 }
 
-func (u *UDPActivityMixin) SetDuration(duration int64, now time.Time) {
+func (u *UDPActivityMixin) InitBase(workflow IUDPWorkflow, index int, metricName string) {
+	u.Workflow = workflow
+	u.Index = index
+	u.MetricName = metricName
+	u.InitMetrics(metricName, &u)
+}
+
+func (u *UDPActivityMixin) UpdateMetrics(duration int64, now time.Time) {
 	u.MinDuration.SetIfLessAt(duration, now)
 	u.MaxDuration.SetIfMoreAt(duration, now)
 	u.TotalDuration.IncAt(duration, now)
 	u.ProcessedCount.IncAt(1, now)
+}
+
+func (u *UDPActivityMixin) GetMetricName() string {
+	return u.MetricName
 }

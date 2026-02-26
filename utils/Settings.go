@@ -11,8 +11,8 @@ import (
 	"time"
 )
 
-const defaultDot = "Default."
-const settingDot = "Setting."
+const defaultDot = "default."
+const settingDot = "setting."
 
 type Settings struct {
 	data        map[string]string
@@ -45,22 +45,24 @@ func (r *Settings) GetSettingAsStr(key string) string {
 	panic(fmt.Sprintf("data not found for key %s.", key))
 }
 
-func (r *Settings) GetIndexedAsStr(entityName string, entityIndex string, configKey string) string {
+func (r *Settings) GetIndexedAsStr(entityName string, entityIndex string, configKey string, defValue string) string {
 	radarKey := r.getIndexedKey(entityName, entityIndex, configKey)
 	if res, ok := r.data[radarKey]; ok {
 		return res
 	}
 
-	defaultKey := r.getDefaultKey(configKey)
+	defaultKey := r.getDefaultKey(entityName, configKey)
 	if res, ok := r.data[defaultKey]; ok {
 		return res
 	}
 
-	panic(fmt.Sprintf("data not found for entityIndex %s, configKey %s.", entityIndex, configKey))
+	r.SetRaw(defaultKey, defValue)
+	return defValue
+	//panic(fmt.Sprintf("data not found for %s or %s.", radarKey, defaultKey))
 }
 
-func (r *Settings) GetIndexedAsInt(entityName string, entityIndex string, configKey string) int {
-	value := r.GetIndexedAsStr(entityName, entityIndex, configKey)
+func (r *Settings) GetIndexedAsInt(entityName string, entityIndex string, configKey string, defValue int) int {
+	value := r.GetIndexedAsStr(entityName, entityIndex, configKey, strconv.Itoa(defValue))
 
 	res, err := ParseInt(value, 0)
 	if err != nil {
@@ -69,8 +71,8 @@ func (r *Settings) GetIndexedAsInt(entityName string, entityIndex string, config
 	return res
 }
 
-func (r *Settings) GetIndexedAsFloat(entityName string, entityIndex string, configKey string) float64 {
-	value := r.GetIndexedAsStr(entityName, entityIndex, configKey)
+func (r *Settings) GetIndexedAsFloat(entityName string, entityIndex string, configKey string, defValue float64) float64 {
+	value := r.GetIndexedAsStr(entityName, entityIndex, configKey, strconv.FormatFloat(defValue, 'f', -1, 64))
 	res, err := ParseFloat[float64](value, 0)
 	if err != nil {
 		r.handleErr(r.getIndexedKey(entityName, entityIndex, configKey), err)
@@ -78,11 +80,11 @@ func (r *Settings) GetIndexedAsFloat(entityName string, entityIndex string, conf
 	return res
 }
 
-func (r *Settings) GetIndexedAsBool(entityName string, entityIndex string, configKey string) bool {
+func (r *Settings) GetIndexedAsBool(entityName string, entityIndex string, configKey string, defValue bool) bool {
 	var res bool
 	var err error
 
-	value := r.GetIndexedAsStr(entityName, entityIndex, configKey)
+	value := r.GetIndexedAsStr(entityName, entityIndex, configKey, strconv.FormatBool(defValue))
 
 	if res, err = strconv.ParseBool(value); err != nil {
 		return false
@@ -96,8 +98,8 @@ func (r *Settings) getIndexedKey(entityName string, entityIndex string, configKe
 	return radarKey
 }
 
-func (r *Settings) getDefaultKey(key string) string {
-	defaultKey := defaultDot + key
+func (r *Settings) getDefaultKey(entityName string, entityKey string) string {
+	defaultKey := defaultDot + entityName + "." + entityKey
 	return defaultKey
 }
 
@@ -207,6 +209,25 @@ func (r *Settings) GetSettingAsInt(key string) int {
 	res, err := ParseInt(value, 0)
 	r.handleErr(r.getSettingKey(key), err)
 	return res
+}
+
+func (r *Settings) GetSettingAsIntDef(key string, defValue int) int {
+	value := r.GetSettingAsStr(key)
+
+	res, err := ParseInt(value, 0)
+	if err != nil {
+		return defValue
+	}
+	return res
+}
+
+func (r *Settings) GetSettingAsDuration(key string, defValue int) time.Duration {
+	value := r.GetSettingAsStr(key)
+	res, err := ParseInt(value, 0)
+	if err != nil {
+		return time.Duration(defValue)
+	}
+	return time.Duration(res)
 }
 
 func (r *Settings) SetSettingAsInt(key string, value int) {

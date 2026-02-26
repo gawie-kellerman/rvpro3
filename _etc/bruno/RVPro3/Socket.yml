@@ -1,0 +1,18 @@
+info:
+  name: Socket
+  type: websocket
+  seq: 1
+
+websocket:
+  url: http://localhost:8080/socket?subscribe=1
+  message:
+    type: json
+    data: |-
+      {
+        "Type": "my-subscriptions-request"
+      }
+  auth: inherit
+
+settings:
+  timeout: 0
+  keepAliveInterval: 0

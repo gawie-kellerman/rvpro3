@@ -24,7 +24,7 @@ func (id PortIdentifier) String() string {
 	case PiUncertainty:
 		return "Uncertainty"
 	case PiInstruction:
-		return "instruction"
+		return "Instruction"
 	case PiEventTrigger:
 		return "EventTrigger"
 	case PiPVR:

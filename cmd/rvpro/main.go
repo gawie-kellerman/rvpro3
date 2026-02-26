@@ -5,9 +5,13 @@ import (
 	"flag"
 	"os"
 
+	"github.com/pkg/errors"
+	"rvpro3/radarvision.com/internal/api/services/testing"
+	"rvpro3/radarvision.com/internal/api/services/web"
 	"rvpro3/radarvision.com/internal/models/servicemodel"
 	"rvpro3/radarvision.com/internal/sdlc/uartsdlc"
 	"rvpro3/radarvision.com/internal/smartmicro/service"
+	"rvpro3/radarvision.com/internal/smartmicro/udp/activity/pvr"
 	"rvpro3/radarvision.com/internal/smartmicro/udp/broker"
 	"rvpro3/radarvision.com/utils"
 )
@@ -52,7 +56,7 @@ func loadArgs() *utils.Settings {
 	var dir string
 	var err error
 
-	cfgFilename = utils.Args.GetString("--ini|-i", "ini/config.cfg")
+	cfgFilename = utils.Args.GetString("--cfg|-c", "")
 	isShowHelp := utils.Args.Has("--help|-h")
 	runMode = utils.Args.GetString("--mode|-m", "run")
 
@@ -76,11 +80,6 @@ func loadArgs() *utils.Settings {
 	utils.Print.InfoLn("With config ->", cfgFilename)
 	utils.Print.InfoLn("With run mode ->", runMode)
 
-	//if err = settings.MergeFromFile(cfgFilename); err != nil {
-	//	utils.Print.ErrorLn(err.Error())
-	//	utils.Print.ErrorLn("Using default settings")
-	//}
-
 	overrideUsingCmdLine(settings)
 
 	return settings
@@ -92,10 +91,11 @@ func loadSettingsFile(settings *utils.Settings) *utils.Settings {
 	var isFile bool
 
 	res := &utils.Settings{}
+	res.Init()
 
 	fileName := settings.GetOrPutStr(startupCfgFileSetting, "")
 
-	if fileName == "" {
+	if fileName == "" || fileName == "test" {
 		return res
 	}
 
@@ -110,7 +110,8 @@ func loadSettingsFile(settings *utils.Settings) *utils.Settings {
 			goto _errorLabel
 		}
 	} else {
-		utils.Print.InfoLn("Config file", fileName, "not found - reverting to default")
+		err = errors.Errorf("Config file %s not found", fileName)
+		goto _errorLabel
 	}
 
 	return res
@@ -180,6 +181,8 @@ func registerServices(settings *utils.Settings) {
 	utils.Print.InfoLn("Registering services")
 
 	services = make([]utils.IRunnableService, 0, 100)
+	utils.GlobalState.Set("Services", services)
+
 	registerService(new(LifetimeService))
 	registerService(new(LoggingService))
 
@@ -203,7 +206,9 @@ func registerServices(settings *utils.Settings) {
 
 	registerService(new(uartsdlc.SDLCService))
 	registerService(new(uartsdlc.SDLCExecutorService))
-	registerService(new(WebService))
+	registerService(new(web.WebService))
+	registerService(new(testing.SendTimeService))
+	registerService(new(pvr.CaptureMJPegService))
 
 	//NB:  When creating UDPBrokersService, remember to add the WorkflowBuilder
 	//TODO: Add TcpHub/Router back into the fold
@@ -213,26 +218,6 @@ func registerServices(settings *utils.Settings) {
 
 func registerService(service utils.IRunnableService) {
 	services = append(services, service)
-}
-
-func main() {
-	showBranding()
-	args := loadArgs()
-
-	switch runMode {
-	case "dump-cmd-settings":
-		doDumpCmdSettings(args)
-	case "dump-final-settings":
-		doDumpFinalSettings(args)
-
-	case "dump-config":
-		doDumpTestConfig(args)
-
-	default:
-		doRunMode(args)
-	}
-
-	// Register all services
 }
 
 func doDumpTestConfig(cmdSettings *utils.Settings) {
@@ -287,4 +272,28 @@ func doRunMode(args *utils.Settings) {
 	awaitComplete()
 
 	utils.Print.InfoLn("rvm program completed")
+}
+
+func main() {
+	showBranding()
+	args := loadArgs()
+
+	switch runMode {
+	case "dump-cmd-settings":
+		doDumpCmdSettings(args)
+
+	case "dump-final-settings":
+		doDumpFinalSettings(args)
+
+	case "dump-config":
+		doDumpTestConfig(args)
+
+	case "show-help":
+		showHelp()
+
+	default:
+		doRunMode(args)
+	}
+
+	// Register all services
 }

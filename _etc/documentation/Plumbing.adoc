@@ -1,0 +1,246 @@
+= RVM Plumming
+Gawie Kellerman <gawie.kellerman@gmail.com>
+0.1, February 18, 2026: Draft
+:description: Documents RVM System Configuration
+:keywords: rvm, service
+:sectnums:
+
+== Command Line Arguments
+=== Overview
+[cols="1,1,1"]
+|===
+| Short Form | Long Form | Description
+| -c         | --cfg     | Configuration File Path
+| -m         | --mode    | Run mode
+| -h         | --help    | Help
+|===
+
+=== Detail
+==== Configuration File Path (-c, --cfg)
+
+[horizontal]
+Example:: -c=configdir/configfile.cfg
+Default:: [Empty]
+Suggested:: -c=ini/config.cfg
+Cardinality:: 0 to 1
+Usage:: Command line value
+
+This setting allows RVM to load the configuration as key value pairs from a configuration file.  
+See the section <<configuration-design>> for an explanation of how the RVM configuration
+is managed.
+
+==== Run Mode (-m, --mode)
+
+[horizontal]
+Example:: -m=dump-config
+Default:: [Empty]
+Suggested:: Omitting the mode will make RVM run with service processing
+Cardinality:: 0 to 1
+Usage:: Command line value
+
+Run Mode determines the behaviour of the application.
+
+[cols="1,3"]
+|===
+| Command | Description
+| dump-cmd-settings | Dump settings from arguments to terminal
+| dump-final-settings | Dump all merged seetings to terminal
+| dump-config | Dump config settings to terminal
+| show-help | Show help, same as -h or --help command line argument
+| [Empty] | Runs RVM as a service
+|===
+
+
+==== Help (-h, --help)/setting
+
+[horizontal]
+Example:: -h
+Alternate:: -m=show-help
+Cardinality:: 0 to 1
+Usage:: Command line flag
+
+Prints help to the terminal of the allowed command line arguments.
+
+==== Configuration Override
+
+
+[horizontal]
+Example:: -o=setting.one.value=Abc
+Default:: [No Defaults]
+Cardinality:: 0 to *
+Usage:: Command line value
+
+Command line configuration override(s) allows overriding both default configuration and that loaded from
+the configuration file.  Note its awkward format in having at least two equals signs where the first is 
+a separator for the parameter type and the second the split between the configuration key and the configuration
+value.
+
+
+== Indexed Settings
+Every indexed default starts with "default." e.g.:
+
+[source,text]
+----
+default.radar.udp.verbose.trigger=false
+# Specific for radar 192.168.11.12:55555 is
+radar.[192.168.11.12:55555].udp.verbose.trigger=false
+# Assuming
+# 1. radar is the entity Name
+# 2. [192.168.11.12:55555] is the entity Index
+# 3. udp.verbose.trigger is the entity Key
+----
+
+Above example as command line argument is: `-o=radar.[192.168.11.12:55555].udp.verbose.trigger=true`
+
+
+[%header,cols="2,2,2,2,4,1",stripes=even]
+|===
+| Name  | Index     | Key                 | Type | Description                      | Default 
+| radar | [radarip] | udp.verbose.trigger | Bool | Verbose trigger logging by radar | false
+|       |           | See Setting           3+| udp.verbose.trigger
+| radar | [radarip] | udp.verbose.statistics | Bool | Verbose stats logging by radar |  false
+|       |           | See Setting           3+| udp.verbose.statistics
+| radar | [radarip] | udp.verbose.objectlist | Bool | Verbose objectlist logging by radar | false
+|       |           | See Setting           3+| udp.verbose.objectlist
+| radar | [radarip] | udp.verbose.pvr | Bool | Verbose PVR by radar | false
+|       |           | See Setting           3+| udp.verbose.pvr
+| radar | [radarip] | udp.counting.trigger | Bool | Terminal trigger counting | false
+|       |           | See Setting           3+| udp.counting.trigger
+| radar | [radarip] | udp.counting.statistics | Bool | Terminal stats counting | false
+|       |           | See Setting           3+| udp.counting.statistics 
+| radar | [radarip] | udp.counting.objectlist | Bool | Terminal objectlist counting | false
+|       |           | See Setting           3+| udp.counting.objectlist
+| radar | [radarip] | udp.counting.pvr        | Bool | Terminal pvr counting | false
+|       |           | See Setting           3+| udp.counting.pvr  
+|===
+
+== Configuration Settings
+
+
+Every key starts with "setting."
+[%header,cols="3,1,4,1",stripes=even]
+|===
+| Key | Type | Description | Default 
+| startup.cfg.file | Path | System Configuration file | 
+| startup.run.mode | String | System run mode |
+| udp.keepalive... |      | UDP Keep Alive |
+| udp.keepalive.enabled | Bool | Enable/Disable service | true
+| udp.keepalive.callbackup | IP4 | UDP Server host handling radar data | 192.168.11.2:55555
+| udp.keepalive.castip | IP4 | UDP Multicast address to reach radars | 239.144.0.0:60000
+| udp.keepalive.cooldown | Millis | Cooldown between sends (frequency of sends) | 1000
+| udp.keepalive.send.timeout | Millis | Deadline for sending UDP Multicast over socket | 1000
+| udp.keepalive.reconnect.cycle | Int | Reconnect cycle at | 5
+|                               |     | Reconnect cycle of 5 and cooldown of 1000 implies reconnect attempt every 5 seconds |
+| udp.keepalive.clientid | Int32 | Radar Client ID | 0x01000001
+| udp.keepalive.log.repeat.millis | Millis | Repeating UDP error logged once every | 60000
+| udp.data...      |      | UDP Server for Radar Data |
+| udp.data.enabled | Bool | Enable/Disable service | true 
+| udp.data.read.timeout | Millis | UDP socket read timeout | 3000 
+| udp.data.reconnect.sleep | Millis | Cycle sleep if no connection  | 1000
+| udp.data.reconnect.cycle | Int | Cycle at which a reconnect will be attempted | 5
+|                                  |     | reconnect.sleep of 1000 and reconnect.cycle of 5 means reconnect every 5 seconds |
+| udp.data.log.repeat.millis | Millis | Repeating UDP error logged once every | 60000
+| udp.keepalive.callbackip | IP4 | UDP Socket uses the Keep Alive setting to specify the host address | 192.168.11.2:55555
+| http... | | Web Server | 
+| http.enabled | Bool | Enable/Disable service | true
+| http.host | IP4 | Web Host Address | 0.0.0.0:8080 
+| http.sockets | | Socket configuration |
+| http.sockets.enabled | Bool | Enable/Disable web sockets | true
+| http.sockets.ping.every | Millis | Max time between ping the socket | 30000
+| http.sockets.pong.every | Millis | Max time to await pong from socket | 60000
+| http.sockets.write.deadline | Millis | Timeout of write to web socket | 3000
+| http.sockets.max.read.size | Int | Max Byte Size of Message Read | 2000
+| http.sockets.max.write.size | Int | Max Bute Size of Message Written | 8000
+| http.socket.timer... | | Timer socket service | Subscription 1
+| http.socket.timer.enabled | Bool | Is Timer socket enabled | false
+
+| sdlc.uart... | | SDLC UART Service |
+| sdlc.uart.enabled | Bool | Enable/Disable service | true
+| sdlc.uart.portname | String | Linux Device | /dev/ttymxc2
+| sdlc.uart.baudrate | Int | Baud Rate | 115200
+| sdlc.uart.databits | Int | Data Bits | 8
+| sdlc.uart.parity | Int | Parity | 0
+| sdlc.uart.stopbits | Int | Stop Bits | 0
+| sdlc.uart.csv.enabled | Bool | Is SDLC CSV Logging enabled | true
+| sdlc.uart.csv.filepath.template | PathFormat | File path in C format | /media/SDLOGS/logs/system/uart-%s.csv
+| sdlc.uart.csv.filepath.timeformat | DateFormat | GoLang Time Format | 20060102
+|                                   |            | The timeformat is used to determine when to roll over a file |
+| sdlcexec.uart.staticrequest.every | Millis | Get static status request every | 5000
+| log... | | Logging Service |
+| log.level | EnumStr | Logging Level (debug,trace,info,warn,error) | info 
+| log.to.console | Bool | Enable/Disable Logging to console | false
+| log.file.dir | Directory | Log to directory | /media/SDLOGS/logs/system
+| log.file.name | Filename | Log filename | rvm.log 
+| log.file.maxsizemb | Int | Max size in megabytes per log | 10
+| log.file.maxagedays | Int | Max age of logging archive files | 30
+| log.file.maxbackups | Int | Maximum number of backups per log | 10
+| udp.verbose.trigger | Bool | Executing as activity, for any radar, print trigger to terminal | false
+| udp.verbose.objectlist | Bool | Executing as activity, for any radar, print objectlist to terminal | false
+| udp.verbose.statistics | Bool | Executing as activity, for any radar, print statistics to terminal | false
+| udp.verbose.pvr | Bool | Executing as activity, for any radar, print PVR to terminal | false
+| udp.counting.trigger | Bool | As activity, for any radar, print trigger counts | false
+| udp.counting.objeclist | Bool | As activity, for any radar, print objectlist counts | false
+| udp.counting.statistics | Bool | As acticity, for any radar, print statistics counts | false
+| udp.counting.pvr | Bool | As activity, for any radar, print pvr counts | false
+| capture.mjpeg | | Captures MJPeg images from an MJPEG Http stream | 
+| capture.mjpeg.enabled | Bool | Enables/Disables capture of the MJPegs | true  
+| capture.mjpeg.url | String | The MJPEG Stream url, accessible from RVPro | ""
+| capture.mjpeg.head.length | Int | The number of photos to keep at the ready | 5
+| capture.mjpeg.tail.length | Int | The number of photos to keep after the offence | 5
+| capture.mjpeg.connect.timeout | Millis | The HTTP Stream TCP Connect timeout | 2000
+| capture.mjpeg.error.duration | Millis | The cooldown time after MJeg streaming error | 1000
+  | capture.mjpeg.error.count.log | Int | Log the same error once every number of iterations | 60
+|===
+
+
+== Addendum
+
+[#configuration-design]
+=== System Configuration Design
+
+RVM is designed to hide its technical configuration in favor of defaults.  
+It does this by following a 3-step process to establish
+its effective configuration:
+
+. *Program defaults* are loaded and merged to effective configuration
+. *Configuration file* is loaded and merged to effective configuration
+. *Command line overrides* merged to effective configuration
+
+In other words:
+
+. Command line overrides override anything
+. Configuration file overrides program defaults
+. Program defaults specify a default, implied set of program features and behaviour.
+
+The reason behind this intricate design is to allow for minimal configuration and reasonble ease to change behaviour 
+while retaining the ability to configure anything in the system if and when necessary, as a walk through:
+
+* [*] Running RVM without configuration is the default RVM execution
+* [*] Running RVM with a configuration file gives you the opportunity to specialize RVM for different devices/scenarios
+* [*] Running RVM with a configuration and command line overrides allow, for testing, to inherit behaviour but allow additional terminal output, or change unwanted behaviour
+
+IMPORTANT: System Configuration ONLY includes settings for features and behaviour of RVM at a technical level.  
+User Configuration (e.g. Channel Configuration) is not included in these settings.
+
+
+=== System Configuration Conventions
+
+Please Note:
+
+* System configuration settings are case sensitive
+* System configuration settings follows a dot notation
+* System configuration settings are all lowercase
+* System configuration settings are broken into two groups of settings (singleton and indexed)
+* Singleton configuration provides values that can only be specified for one service/feature
+* Singleton configuration always start with a leading "setting."
+* Indexed configuration provides defaults and value for array based services / features
+* Indexed configuration, as a default always start with "default." 
+
+
+[source,text]
+====
+Terminology:
+terminal is loosely used as the term for the standard output
+Command line flag is an argument that is either present or not without any additional value (e.g. -h)
+Command line value is an argument that has a value (e.g. -m=show-help)<F11><F11> 
+====

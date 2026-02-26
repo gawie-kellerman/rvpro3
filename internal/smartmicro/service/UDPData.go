@@ -9,11 +9,11 @@ import (
 )
 
 const UDPDataServiceName = "UDP.Data.Service"
-const udpDataEnabled = "UDP.Data.Enabled"
-const udpDataReadTimeout = "UDP.Data.ReadTimeout"
-const udpDataReconnectCycle = "UDP.Data.Reconnect.Cycle"
-const udpDataReconnectSleep = "UDP.Data.Reconnect.AwaitClick"
-const udpDataLogRepeatMillis = "UDP.Data.Log.RepeatMillis"
+const udpDataEnabled = "udp.data.enabled"
+const udpDataReadTimeout = "udp.data.read.timeout"
+const udpDataReconnectCycle = "udp.data.reconnect.cycle"
+const udpDataReconnectSleep = "udp.data.reconnect.sleep"
+const udpDataLogRepeatMillis = "udp.data.log.repeat.millis"
 
 type UDPData struct {
 	Connection        utils.UDPServerConnection

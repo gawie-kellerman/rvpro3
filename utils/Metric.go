@@ -57,19 +57,33 @@ func (s *Metric) Inc(value int64) {
 }
 
 func (s *Metric) IncAt(value int64, tm time.Time) bool {
-	now := tm.UnixMilli()
-
 	if !s.IsSet {
 		s.IsSet = true
-		s.FirstOn = now
+		s.FirstOn = tm.UnixMilli()
 		s.Value = s.Value + value
-		s.LastOn = now
+		s.LastOn = tm.UnixMilli()
+
 		return true
 	}
 
 	s.Value = s.Value + value
-	s.LastOn = now
+	s.LastOn = tm.UnixMilli()
 	return false
+}
+
+func (s *Metric) SetAt(value int64, now time.Time) bool {
+	if !s.IsSet {
+		s.IsSet = true
+		s.FirstOn = now.UnixMilli()
+		s.LastOn = now.UnixMilli()
+
+		return true
+	}
+
+	s.Value = value
+	s.LastOn = now.UnixMilli()
+	return false
+
 }
 
 func (s *Metric) Dec(value int64) {

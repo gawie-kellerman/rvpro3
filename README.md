@@ -216,3 +216,45 @@ multistep configuration of:
 
 It further leaves the option to combine/load multiple configuration files to tweak behavior, which
 will assist in simplifying configuration of specific services/objects within the application.
+
+
+
+# Wrong way rationale
+
+## Assumptions
+1. One radar and one camera per unit
+2. The offense will consist of a configured number of photos prior to offence, and thereafter
+3. A maximum of 10 photos before offense...  
+4. Likely 1 photo per second
+5. Going to make the file system the database where:
+
+## Streaming on RVPro
+### Advantages
+
+1. One store "centrally" (before and after pictures)
+2. One status "centrally" (is the video running)
+3. One state "centrally" (database of offenses)
+4. Easier photo sequence management
+
+### Disadvantages
+1. Continuous streaming adding to network usage 
+2. Memory/photo management
+
+### Counter Argument
+1. Only 1 camera for wrong way vs 4 for other.  So 2 stream for 1 camera should not pose a network risk
+
+
+## Streaming on Videology
+### Advantages 
+
+1. Less processing on RVPro
+2. No network streaming
+
+### Disadvantages
+
+1. Very little memory
+2. Very little storage
+3. Operating environment could change with a new version, making everything we do obsolee
+4. Disjoint trigger and state
+
+w

@@ -5,6 +5,7 @@ go 1.24.0
 require (
 	github.com/angli232/serial v1.0.0
 	github.com/gin-gonic/gin v1.11.0
+	github.com/google/uuid v1.6.0
 	github.com/gorilla/websocket v1.5.3
 	github.com/gosnmp/gosnmp v1.42.1
 	github.com/howeyc/crc16 v0.0.0-20171223171357-2b2a61e366a6
@@ -15,6 +16,16 @@ require (
 	go.bug.st/serial v1.6.4
 	golang.org/x/exp v0.0.0-20251219203646-944ab1f22d93
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
+	modernc.org/sqlite v1.46.1
+)
+
+require (
+	github.com/dustin/go-humanize v1.0.1 // indirect
+	github.com/ncruces/go-strftime v1.0.0 // indirect
+	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
+	modernc.org/libc v1.67.6 // indirect
+	modernc.org/mathutil v1.7.1 // indirect
+	modernc.org/memory v1.11.0 // indirect
 )
 
 require (

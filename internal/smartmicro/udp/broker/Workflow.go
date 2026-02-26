@@ -10,10 +10,10 @@ import (
 )
 
 type Workflow struct {
-	RadarIP        utils.IP4
 	Activities     []interfaces.IUDPActivity
 	PortIdentifier uint32
 	Metrics        WorkflowMetrics
+	Workflows      interfaces.IUDPWorkflows
 }
 
 type WorkflowMetrics struct {
@@ -30,7 +30,7 @@ type WorkflowMetrics struct {
 }
 
 func (w *Workflow) GetRadarIP() utils.IP4 {
-	return w.RadarIP
+	return w.Workflows.GetRadarIP()
 }
 
 func (w *Workflow) GetPortIdentifier() uint32 {
@@ -39,7 +39,11 @@ func (w *Workflow) GetPortIdentifier() uint32 {
 
 func (w *Workflow) AddActivity(activity interfaces.IUDPActivity) {
 	index := len(w.Activities)
-	activity.Init(index, w.GetRadarIP(), w.GetActivityName(index, w.GetRadarIP(), activity))
+	activity.Init(
+		w,
+		index,
+		w.GetActivityName(index, w.GetRadarIP(), activity),
+	)
 	w.Activities = append(w.Activities, activity)
 }
 
@@ -52,11 +56,16 @@ func (w *Workflow) NextActivityId() int {
 	return len(w.Activities)
 }
 
-func (w *Workflow) Init(ip utils.IP4, portIdentifier uint32) {
-	w.RadarIP = ip
+func (w *Workflow) Init(workflows interfaces.IUDPWorkflows, portIdentifier uint32) {
+	w.Workflows = workflows
 	w.PortIdentifier = portIdentifier
 
-	sectionName := fmt.Sprintf("Workflow.Activities.[%s].%d", ip, portIdentifier)
+	sectionName := fmt.Sprintf(
+		"Workflow.Activities.[%s].%d",
+		workflows.GetRadarIP(),
+		portIdentifier,
+	)
+
 	w.Metrics.InitMetrics(sectionName, &w.Metrics)
 }
 
@@ -87,12 +96,16 @@ func (w *Workflow) Drop(now time.Time, payload []byte) {
 	w.Metrics.DroppedBytes.IncAt(int64(len(payload)), now)
 }
 
-func (w *Workflow) processActivity(activity interfaces.IUDPActivity, index int, now time.Time, payload []byte) {
-
+func (w *Workflow) processActivity(
+	activity interfaces.IUDPActivity,
+	index int,
+	now time.Time,
+	payload []byte,
+) {
 	startOn := time.Now()
 	activity.Process(w, index, now, payload)
 	endOn := time.Now()
 
 	duration := endOn.Sub(startOn).Milliseconds()
-	activity.SetDuration(duration, endOn)
+	activity.UpdateMetrics(duration, endOn)
 }
