@@ -8,5 +8,5 @@ import (
 
 func TestObjectClassType_ToString(t *testing.T) {
 	car := OctCar
-	utils.Debug.Println(car)
+	utils.Test.Fmt("%v", car)
 }

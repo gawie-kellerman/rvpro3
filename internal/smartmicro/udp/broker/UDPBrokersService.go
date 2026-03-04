@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/rs/zerolog/log"
+	"rvpro3/radarvision.com/internal/general"
 	"rvpro3/radarvision.com/internal/models/servicemodel"
 	"rvpro3/radarvision.com/internal/smartmicro/interfaces"
 	"rvpro3/radarvision.com/internal/smartmicro/service"
@@ -19,9 +20,11 @@ type UDPBrokersService struct {
 	Brokers           []UDPBroker   `json:"Broker"`
 	TerminateRefCount atomic.Uint32 `json:"-"`
 	workflowBuilder   interfaces.IUDPWorkflowBuilder
+	IsEnabled         bool
 }
 
-func (rc *UDPBrokersService) SetupDefaults(config *utils.Settings) {
+func (rc *UDPBrokersService) InitFromSettings(_ *utils.Settings) {
+	rc.IsEnabled = true
 }
 
 func (rc *UDPBrokersService) getChannelConfig() *servicemodel.Config {
@@ -32,12 +35,16 @@ func (rc *UDPBrokersService) getChannelConfig() *servicemodel.Config {
 	return res
 }
 
-func (rc *UDPBrokersService) SetupAndStart(state *utils.State, _ *utils.Settings) {
-	state.Set("UDP.Brokers", rc)
-	dataService, ok := state.Get(service.UDPDataServiceName).(*service.UDPData)
+func (rc *UDPBrokersService) Start(state *utils.State, settings *utils.Settings) {
+	if !general.ServiceHelper.ShouldStart(state, settings, rc) {
+		return
+	}
+
+	dataService, ok := state.Get(service.UDPDataServiceName).(*service.UDPDataService)
 
 	if !ok {
 		log.Warn().Msg("UDP Brokers not configured due to no UDP data service...")
+		rc.IsEnabled = false
 		return
 	}
 
@@ -48,12 +55,19 @@ func (rc *UDPBrokersService) SetupAndStart(state *utils.State, _ *utils.Settings
 	for index, radarCfg := range serviceCfg.Radars {
 		channel := &rc.Brokers[index]
 		channel.InitMetrics(radarCfg.GetRadarIP())
+		channel.InitFromSettings(settings)
 		channel.SetupWorkflow(channel, serviceCfg, radarCfg)
 	}
 
 	rc.SetupStates(state)
 
-	rc.Start()
+	rc.TerminateRefCount.Store(0)
+
+	for index := range rc.Brokers {
+		radar := &rc.Brokers[index]
+		radar.OnTerminate = rc.OnChannelTerminate
+		radar.Run(radar.GetRadarIP())
+	}
 }
 
 func (rc *UDPBrokersService) SetupStates(state *utils.State) {
@@ -77,16 +91,6 @@ func (rc *UDPBrokersService) InitNoRadars(numberOfRadars int) {
 	rc.Brokers = make([]UDPBroker, numberOfRadars)
 }
 
-func (rc *UDPBrokersService) Start() {
-	rc.TerminateRefCount.Store(0)
-
-	for index := range rc.Brokers {
-		radar := &rc.Brokers[index]
-		radar.OnTerminate = rc.OnChannelTerminate
-		radar.Run(radar.GetRadarIP())
-	}
-}
-
 func (rc *UDPBrokersService) Stop() {
 	for index := range rc.Brokers {
 		radar := &rc.Brokers[index]
@@ -100,12 +104,12 @@ func (rc *UDPBrokersService) AwaitStop(sleepTime time.Duration) {
 	}
 }
 
-func (rc *UDPBrokersService) AttachTo(udp *service.UDPData) {
+func (rc *UDPBrokersService) AttachTo(udp *service.UDPDataService) {
 	udp.OnData = rc.OnData
 }
 
 func (rc *UDPBrokersService) OnData(
-	dataService *service.UDPData,
+	dataService *service.UDPDataService,
 	addr net.UDPAddr,
 	bytes []byte,
 ) {
@@ -113,7 +117,7 @@ func (rc *UDPBrokersService) OnData(
 	radarIndex := rc.getChannelConfig().GetRadarIndex(ip4)
 
 	if radarIndex == -1 {
-		dataService.Metrics.UnmappedRadarPacket.Inc(1)
+		dataService.Metrics.InvalidRadarSkipCount.Inc(1)
 		return
 	}
 

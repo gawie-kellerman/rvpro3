@@ -212,7 +212,7 @@ func (s *StatisticsReader) GetHeaderLength() int {
 func (s *StatisticsReader) PrintDetail() {
 	utils.Print.Detail("Statistics", "\n")
 
-	utils.Print.Indent(2)
+	utils.Print.SetIndent(2)
 	utils.Print.Detail("Nof Zones", "%d\n", s.GetNofZones())
 	utils.Print.Detail("Nof Classes", "%d\n", s.GetNofClasses())
 	utils.Print.Detail("Status", "%d\n", s.GetStatusBits())
@@ -228,17 +228,17 @@ func (s *StatisticsReader) PrintDetail() {
 	utils.Print.Detail("Interval Time", "%d\n", s.GetIntervalTime())
 	utils.Print.Detail("Sensor", "%x\n", s.GetSensorSerial())
 	utils.Print.Detail("Nof Statistics", "%d\n", s.GetNofStatistics())
-	utils.Print.Indent(-2)
+	utils.Print.SetIndent(-2)
 
 	for n := 0; n < int(s.GetNofStatistics()); n++ {
 		utils.Print.Detail("Statistic #", "%d\n", n)
-		utils.Print.Indent(2)
+		utils.Print.SetIndent(2)
 		utils.Print.Detail("Message Idx", "%d\n", s.GetMessageIdx(n))
 		utils.Print.Detail("Zone", "%d\n", s.GetZone(n))
 		utils.Print.Detail("Object Class", "%d, %s\n", s.GetObjectClass(n), s.GetObjectClass(n))
 		utils.Print.Detail("Output", "%d\n", s.GetOutput(n))
 		utils.Print.Detail("Mode", "%d, %s\n", s.GetMode(n), s.GetMode(n))
-		utils.Print.Indent(-2)
+		utils.Print.SetIndent(-2)
 	}
 }
 

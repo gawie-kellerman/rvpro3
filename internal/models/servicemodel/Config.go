@@ -7,7 +7,7 @@ import (
 	"rvpro3/radarvision.com/utils"
 )
 
-const StateName = "umrr.channel.config"
+const StateName = "UDP.Channel.Config"
 
 type Config struct {
 	SiteName     string   `json:"SiteName"`

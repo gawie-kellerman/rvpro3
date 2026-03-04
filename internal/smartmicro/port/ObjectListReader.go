@@ -290,17 +290,17 @@ func (o *ObjectListReader) detailLen() int {
 
 func (o *ObjectListReader) PrintDetail() {
 	utils.Print.Detail("Object List Header", "\n")
-	utils.Print.Indent(2)
+	utils.Print.SetIndent(2)
 	utils.Print.Detail("Metronome Time", "%f\n", o.GetCycleTime())
 	utils.Print.Detail("Nof Objects", "%d\n", o.GetNofObjects())
 	utils.Print.Detail("Ref Point", "%d, %s\n", o.GetRefPoint(), o.GetRefPoint())
 	utils.Print.Detail("Object Size", "%d\n", o.GetObjectSize())
 	utils.Print.Detail("Timestamp", "%d\n", o.GetTimestamp())
-	utils.Print.Indent(-2)
+	utils.Print.SetIndent(-2)
 
 	for n := 0; n < int(o.GetNofObjects()); n++ {
 		utils.Print.Detail("Object #", "%d\n", n+1)
-		utils.Print.Indent(2)
+		utils.Print.SetIndent(2)
 		utils.Print.Detail("Object Id", "%d\n", o.GetObjectId(n))
 		utils.Print.Detail("Object Class", "%d, %s\n", o.GetObjectClass(n), o.GetObjectClass(n))
 		utils.Print.Detail("Lane", "%d\n", o.GetLane(n))
@@ -310,7 +310,7 @@ func (o *ObjectListReader) PrintDetail() {
 		utils.Print.Detail("Pos Facing X, Y, Z", "%f,%f\n", o.GetPosXFacing(n), o.GetPosYFacing(n))
 		utils.Print.Detail("", "Speed: %.1f, Heading: %.1f, Length: %.1f\n", o.GetSpeed(n), o.GetHeading(n), o.GetLength(n))
 		utils.Print.Detail("", "Mileage: %.1f, Quality: %.1f, Accel: %.1f\n", o.GetMileage(n), o.GetQuality(n), o.GetAcceleration(n))
-		utils.Print.Indent(-2)
+		utils.Print.SetIndent(-2)
 	}
 }
 

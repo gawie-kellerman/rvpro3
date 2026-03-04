@@ -189,7 +189,7 @@ Every key starts with "setting."
 | capture.mjpeg.tail.length | Int | The number of photos to keep after the offence | 5
 | capture.mjpeg.connect.timeout | Millis | The HTTP Stream TCP Connect timeout | 2000
 | capture.mjpeg.error.duration | Millis | The cooldown time after MJeg streaming error | 1000
-  | capture.mjpeg.error.count.log | Int | Log the same error once every number of iterations | 60
+| capture.mjpeg.error.count.log | Int | Log the same error once every number of iterations | 60
 |===
 
 
@@ -244,3 +244,226 @@ terminal is loosely used as the term for the standard output
 Command line flag is an argument that is either present or not without any additional value (e.g. -h)
 Command line value is an argument that has a value (e.g. -m=show-help)<F11><F11> 
 ====
+
+
+== Services
+=== Capture MJPEG Service
+
+==== Overview
+Opens an HTTP MJPEG Stream to a compatible camera (Videology), and continuously read frames.
+
+==== TODO
+Change the service to work with a variable service name and metrics section so that it is possible to 
+run multiple instances
+
+==== Settings
+[%header,cols="1,1,1,2",stripes=even]
+|===
+| Key                   | Type | Description | Default
+| capture.mjpeg.enabled | Bool | Enable/Disable MJPEG service(s) | true
+|=== 
+
+==== Defaults
+[%header,cols="1,1,1,2",stripes=even]
+|===
+| Key                                | Type | Description | Default
+| stream.mjpeg.enabled-{camera ip}              | Bool | Enable/Disable video stream | false
+| stream.mjpeg.connect.timeout-{camera ip}      | Duration (ms) | HTTP Connect Timeout | 2000
+| stream.mjpeg.error.duration-{camera-ip}       | Duration (ms) | Sleep after error | 1000
+| stream.mjpeg.error.log.repeat-{camera-ip}     | Int | Log every nth repeating error | 100
+|===
+
+==== Metrics
+Section: CaptureMJPegService
+
+[%header,cols="1,4",stripes=even]
+|===
+| Metric Name | Metric Type
+| FrameReadBytes | Byte Count
+| | Total size of frame bytes read
+| | The value does not include network/HTTP data
+| | The value only include complete frames read, no error data
+| FrameReadCount | Iteration Count
+| | Total number of complete frames read
+| FrameMinDuration | Duration (ms)
+| FrameMaxDuration | Duration (ms)
+| FrameTotalDuration | Duration (ms)
+| ErrorsTotal | Iteration Count
+| ErrorsLogged | Iteration Count
+| ErrorsOfHttpConnect | Iteration Count
+| ErrorsOfContentType | Iteration Count
+| ErrorsOfHttpMultipart | Iteration Count
+| ErrorsOfStreamCopy | Iteration Count
+|===
+
+
+==== Feature Enablement
+
+A feature is considered one or more long running services.  Features may be dependent on other features.  
+Care is taken to graciously stop abilities for disabled dependancy features.
+
+All the listed features are of simple boolean type unless explicitly stated otherwise.
+
+[%header,cols="2,1,2",stripes=even]
+|===
+| Key | Service | Description
+| stream.mjpeg.enabled-{camera ip} | MJPegStreamService | Stream MJPEG from HTTP(s) e.g. Videology
+| feature.http.service.enabled | WebService         | Enable/Disable Web Service. Default is true
+|                            2+| Note that the sockets won't run unless the web service is running  
+| feature.umrr.udp.enabled     |                    | Enable/Disable collection of UMRR UDP Data Services.  Default is true
+|                              | UDPKeepAlive       |            
+|                              | UDPData            |            
+|                              | UDPBrokersService  |             
+| feature.sdlc.uart.enabled    |                    | Enable/Disable UART SDLC Services.  Default is false
+|                              | SDLCExecutor       | 
+|                              | SDLCService        |
+| feature.stream.mjpeg.enabled | MJPegStreamService |  Enable/Disable MJPeg streaming over HTTP(s).  Default is false.
+|                            2+| This is for testing only as dependent services will start necessary streaming
+|===
+
+
+
+
+
+
+
+
+== Testing
+
+=== HTTP Scripts
+
+[source bash]
+----
+# Get all metric sections / sorted alphabetically
+http GET http://my-rvpro:8080/metrics/sections | jq sort
+
+# Get specific MJPegStreamService metric 
+http GET http://localhost:8080/metrics/section "sn==MJPegStreamService-[192.168.11.22:443]"
+
+# Get MJPegStreamServices by regex
+http GET http://localhost:8080/metrics/section "regex==MJPegStreamService.*"
+
+# Get state keys
+http GET http://localhost:8080/state/keys | jq
+
+# Get MJPegStreamService state
+http GET http://localhost:8080/state/key "id==MJPegStreamService-[192.168.11.22:443]"
+
+# Get UDP/UMRR Data Service Details
+http GET http://localhost:8080/state/key "id==UDP.Data.Service"
+
+----
+
+
+
+=== RVM Startup Scripts
+
+.Examples
+[source batch]
+----
+
+./rvm -m=dump-final-settings
+./rvm -m=dump-final-settings -o=setting.log.level=info -o=setting.log.to.console=true -o=setting.sdlc.uart.enabled=false -o=setting.startup.cfg.file=test -o=feature.stream.mjpeg.enabled=true
+./rvm -m=dump-final-settings -o=feature.stream.mjpeg.enabled=true \
+  "-o=stream.mjpeg.camera.ips=192.168.11.22:443" \
+  "-o=stream.mjpeg.enabled-[192.168.11.22:443]=true" \
+  "-o=stream.mjpeg.url-[192.168.11.22:443]=https://192.168.11.22:443/mjpeg_stream_02/22" \
+  "-o=stream.mjpeg.log.repeat=100"
+
+
+
+./rvm -m=dump-cmd-settings
+./rvm -m=dump-config
+./rvm -m=show-help
+# rvm = go run . 
+----
+
+==== Dump Final Settings
+
+.Script
+[source bash]
+----
+go run . -m=dump-final-settings
+----
+
+.Partial Output
+----
+...
+feature.http.service.enabled = true
+feature.http.timersocket..enabled = true
+feature.sdlc.uart.enabled = false
+feature.umrr.udp.enabled = true
+feature.stream.mjpeg.enabled = false
+http.host = 0.0.0.0:8080
+http.sockets.enabled = true
+http.sockets.max.read.size = 2048
+http.sockets.max.write.size = 2048
+http.sockets.ping.every = 30000
+http.sockets.pong.every = 60000
+http.sockets.write.deadline = 3000
+log.file.dir = /media/SDLOGS/logs/system
+log.file.maxagedays = 30
+...
+----
+
+
+==== Echo command line settings
+.Script
+[source bash]
+----
+go run . -m=dump-cmd-settings
+----
+
+.Partial Output 
+----
+...
+startup.cfg.file = 
+startup.run.mode = dump-cmd-settings
+----
+
+==== Dump used config
+.Script 
+[source bash]
+----
+go run . -m=dump-config
+----
+
+
+.Partial Output
+----
+{
+  "SiteName": "Site Name",
+  "DistanceUnit": "ft",
+  "SpeedUnit": "mph",
+  "Radars": [
+    {
+      "RadarIP": "192.168.11.12",
+      "RadarName": "Sensor 1",
+      "StopBarDistance": "0",
+      "FailSafeTime": "30",
+      "Channels": []
+    },
+    {
+      "RadarIP": "192.168.11.13",
+      "RadarName": "Sensor 2",
+      "StopBarDistance": "0",
+      "FailSafeTime": "30",
+      "Channels": []
+    },
+    {
+      "RadarIP": "192.168.11.14",
+      "RadarName": "Sensor 3",
+      "StopBarDistance": "0",
+      "FailSafeTime": "30",
+      "Channels": []
+    },
+    {
+      "RadarIP": "192.168.11.15",
+      "RadarName": "Sensor 4",
+      "StopBarDistance": "0",
+      "FailSafeTime": "30",
+      "Channels": []
+    }
+  ]
+}
+----

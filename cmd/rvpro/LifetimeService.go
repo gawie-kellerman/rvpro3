@@ -15,29 +15,24 @@ type LifetimeService struct {
 	Wg         sync.WaitGroup
 }
 
-func (l *LifetimeService) SetupDefaults(config *utils.Settings) {
-}
+func (l *LifetimeService) InitFromSettings(_ *utils.Settings) {}
 
-func (l *LifetimeService) SetupAndStart(state *utils.State, config *utils.Settings) {
+func (l *LifetimeService) Start(state *utils.State, _ *utils.Settings) {
 	l.Wg.Add(1)
 	state.Set(l.GetServiceName(), l)
 
-	go l.Start()
+	go l.run()
 }
 
 func (l *LifetimeService) GetServiceName() string {
 	return LifetimeServiceName
 }
 
-func (l *LifetimeService) GetServiceNames() []string {
-	return nil
-}
-
 func (l *LifetimeService) StopApplication() {
-
+	l.Wg.Done()
 }
 
-func (l *LifetimeService) Start() {
+func (l *LifetimeService) run() {
 	for !l.Terminated {
 		time.Sleep(1 * time.Second)
 	}

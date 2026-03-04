@@ -19,7 +19,8 @@ func TestTransportHeaderReader_CalcCRC16(t *testing.T) {
 		Buffer: buffer,
 	}
 
-	panicIf(th.Check())
+	panicIf(th.CheckFormat())
+	panicIf(th.CheckCRC())
 	th.PrintDetail()
 
 	ph := port.PortHeaderReader{

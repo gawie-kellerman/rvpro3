@@ -19,13 +19,13 @@ type IUDPActivity interface {
 }
 
 type UDPActivityMixin struct {
-	Workflow       IUDPWorkflow
+	Workflow       IUDPWorkflow `json:"-"`
 	MetricName     string
 	Index          int
-	MinDuration    *utils.Metric
-	MaxDuration    *utils.Metric
-	TotalDuration  *utils.Metric
-	ProcessedCount *utils.Metric
+	MinDuration    *utils.Metric `json:"-"`
+	MaxDuration    *utils.Metric `json:"-"`
+	TotalDuration  *utils.Metric `json:"-"`
+	ProcessedCount *utils.Metric `json:"-"`
 	utils.MetricsInitMixin
 }
 
@@ -33,7 +33,7 @@ func (u *UDPActivityMixin) InitBase(workflow IUDPWorkflow, index int, metricName
 	u.Workflow = workflow
 	u.Index = index
 	u.MetricName = metricName
-	u.InitMetrics(metricName, &u)
+	u.InitMetrics(metricName, u)
 }
 
 func (u *UDPActivityMixin) UpdateMetrics(duration int64, now time.Time) {

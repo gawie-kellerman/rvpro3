@@ -103,14 +103,14 @@ errorLabel:
 	return m.connection
 }
 
-func (m *UDPServerConnection) ReceiveData(buffer []byte, now time.Time, waitMs int) (bufferLen int) {
+func (m *UDPServerConnection) ReceiveData(buffer []byte, now time.Time, waitMs Milliseconds) (bufferLen int) {
 	if m.connection == nil {
 		return 0
 	}
 	var err error
 	var fromAddr *net.UDPAddr
 
-	deadline := now.Add(time.Duration(waitMs) * time.Millisecond)
+	deadline := waitMs.Add(now)
 
 	if err = m.connection.SetReadDeadline(deadline); err != nil {
 		goto errorLabel
@@ -200,7 +200,7 @@ func (m *UDPServerConnection) WriteData(udpAddr net.UDPAddr, buffer []byte) erro
 		goto errLabel
 	}
 
-	fmt.Println("Writing from", cnx.LocalAddr(), "to", udpAddr.String(), len(buffer), "bytes")
+	fmt.Println("Writing from", cnx.LocalAddr(), "to", udpAddr.String(), len(buffer), "Bytes")
 	if _, err = cnx.WriteToUDP(buffer, &udpAddr); err != nil {
 		goto errLabel
 	}

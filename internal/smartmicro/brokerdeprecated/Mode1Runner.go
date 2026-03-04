@@ -8,7 +8,7 @@ import (
 )
 
 type Mode1Runner struct {
-	KeepAliveService service.UDPKeepAlive
+	KeepAliveService service.UDPKeepAliveService
 	ListenerService  service.UDPDataServiceOld
 	waitGroup        *sync.WaitGroup
 	Processor        UDPEventProcessor
@@ -30,7 +30,7 @@ func (s *Mode1Runner) setup(group *sync.WaitGroup) {
 	s.KeepAliveService.Init()
 	s.ListenerService.Init()
 
-	s.KeepAliveService.OnTerminate = func(_ *service.UDPKeepAlive) {
+	s.KeepAliveService.OnTerminate = func(_ *service.UDPKeepAliveService) {
 		s.waitGroup.Done()
 	}
 

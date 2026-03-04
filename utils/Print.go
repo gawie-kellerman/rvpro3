@@ -19,7 +19,7 @@ var out io.Writer = os.Stdout
 
 type printClass struct{}
 
-func (printClass) Indent(spaces int) {
+func (printClass) SetIndent(spaces int) {
 	indent += spaces
 	if indent < 0 {
 		indent = 0
@@ -77,6 +77,28 @@ func (printClass) FmtFeature(feature int, format string, a ...any) {
 		Print.DatetimeMS(time.Now(), false)
 		_, _ = fmt.Fprintf(out, format, a...)
 	}
+}
+
+func (printClass) Indent(ind int) {
+	_, _ = fmt.Fprintf(out, "%*s", ind, "")
+}
+
+func (printClass) Option(a ...any) {
+	Print.DatetimeMS(time.Now(), false)
+	Print.Indent(4)
+	_, _ = fmt.Println(a...)
+}
+
+func (printClass) Descrp(a ...any) {
+	Print.DatetimeMS(time.Now(), false)
+	Print.Indent(8)
+	_, _ = fmt.Println(a...)
+}
+
+func (c printClass) Sample(a ...any) {
+	Print.DatetimeMS(time.Now(), false)
+	Print.Indent(8)
+	_, _ = fmt.Println(a...)
 }
 
 func (printClass) IsFeature(feature int) bool {

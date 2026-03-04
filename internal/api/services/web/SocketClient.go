@@ -21,9 +21,9 @@ func (s *SocketClient) readSocket() {
 	}()
 
 	s.conn.SetReadLimit(s.service.MaxReadSize)
-	_ = s.conn.SetReadDeadline(time.Now().Add(s.service.PongEvery))
+	_ = s.conn.SetReadDeadline(s.service.PongEvery.Add(time.Now()))
 	s.conn.SetPongHandler(func(string) error {
-		_ = s.conn.SetReadDeadline(time.Now().Add(s.service.PongEvery))
+		_ = s.conn.SetReadDeadline(s.service.PongEvery.Add(time.Now()))
 		return nil
 	})
 
@@ -42,7 +42,7 @@ func (s *SocketClient) readSocket() {
 }
 
 func (s *SocketClient) writeSocket() {
-	ticker := time.NewTicker(s.service.PingEvery)
+	ticker := time.NewTicker(time.Duration(s.service.PingEvery))
 	defer func() {
 		ticker.Stop()
 		s.conn.Close()
@@ -53,7 +53,7 @@ func (s *SocketClient) writeSocket() {
 		case message, ok := <-s.send:
 			if ok {
 				if message.Subscription == 0 || message.Subscription&s.Subscriptions != 0 {
-					_ = s.conn.SetWriteDeadline(time.Now().Add(s.service.WriteDeadline))
+					_ = s.conn.SetWriteDeadline(s.service.WriteDeadline.Add(time.Now()))
 					if !ok {
 						_ = s.conn.WriteMessage(websocket.CloseMessage, []byte{})
 						return
@@ -75,7 +75,7 @@ func (s *SocketClient) writeSocket() {
 			}
 
 		case <-ticker.C:
-			_ = s.conn.SetWriteDeadline(time.Now().Add(s.service.WriteDeadline))
+			_ = s.conn.SetWriteDeadline(s.service.WriteDeadline.Add(time.Now()))
 			if err := s.conn.WriteMessage(websocket.PingMessage, nil); err != nil {
 				return
 			}

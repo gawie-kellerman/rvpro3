@@ -3,38 +3,48 @@ package testing
 import (
 	"time"
 
+	"github.com/rs/zerolog/log"
 	"rvpro3/radarvision.com/internal/api/services/web"
+	"rvpro3/radarvision.com/internal/general"
 	"rvpro3/radarvision.com/utils"
 )
 
-type SendTimeService struct {
+type SendTimeSocketService struct {
 	web       *web.WebService
+	IsEnabled bool
 	Terminate bool
 }
 
-func (s *SendTimeService) SetupDefaults(settings *utils.Settings) {
-	settings.SetSettingAsBool("http.socket.timer.enabled", true)
+func (s *SendTimeSocketService) InitFromSettings(settings *utils.Settings) {
+	s.IsEnabled = settings.Basic.GetBool("feature.http.timersocket.enabled", true)
 }
 
-func (s *SendTimeService) SetupAndStart(state *utils.State, config *utils.Settings) {
-	if utils.GlobalSettings.GetSettingAsBool("http.socket.timer.enabled") {
-		s.Terminate = false
-		s.web = utils.GlobalState.Get(web.WebServiceName).(*web.WebService)
-		if s.web != nil {
-			go s.run()
-		}
+func (s *SendTimeSocketService) Start(state *utils.State, settings *utils.Settings) {
+	if !general.ServiceHelper.ShouldStart(state, settings, s) {
+		return
+	}
+
+	if !s.IsEnabled {
+		return
+	}
+
+	// No metrics to initialize
+
+	s.Terminate = false
+	s.web = utils.GlobalState.Get(web.WebServiceName).(*web.WebService)
+	if s.web != nil {
+		go s.run()
+	} else {
+		s.IsEnabled = false
+		log.Warn().Msg("Unable to start time socket as WebService is not enabled")
 	}
 }
 
-func (s *SendTimeService) GetServiceName() string {
-	return "Send.Time.Service"
+func (s *SendTimeSocketService) GetServiceName() string {
+	return "Send.Time.Socket.Service"
 }
 
-func (s *SendTimeService) GetServiceNames() []string {
-	return nil
-}
-
-func (s *SendTimeService) run() {
+func (s *SendTimeSocketService) run() {
 	for !s.Terminate {
 		if s.web.IsAnySubscribed(web.SocketTime) {
 			now := time.Now()

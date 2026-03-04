@@ -9,6 +9,7 @@ import (
 	"github.com/rs/zerolog/log"
 	"go.bug.st/serial"
 	"rvpro3/radarvision.com/internal/branding"
+	"rvpro3/radarvision.com/internal/general"
 	"rvpro3/radarvision.com/utils"
 )
 
@@ -16,13 +17,13 @@ var errWriteMessageDiscarded = errors.New("write message discarded")
 
 const SDLCServiceName = "SDLC.Service"
 
-const sdlcUARTEnabled = "sdlc.uart.enabled"
+const sdlcUARTEnabled = "feature.sdlc.uart.enabled"
 const sdlcUARTPortName = "sdlc.uart.portname"
 const sdlcUARTBaudRate = "sdlc.uart.baudrate"
 const sdlcUARTDataBits = "sdlc.uart.databits"
 const sdlcUARTParity = "sdlc.uart.parity"
 const sdlcUARTStopBits = "sdlc.uart.stopbits"
-const sdlcUARTCSVEnabled = "sdlc.uart.csv.enabled"
+const sdlcUARTCSVEnabled = "feature.sdlc.uart.csv.enabled"
 const sdlcUARTCSVFilePathTemplate = "sdlc.uart.csv.filepath.template"
 const sdlcUARTCSVFilePathFormat = "sdlc.uart.csv.filepath.timeformat"
 const writeAction = "w"
@@ -30,23 +31,27 @@ const readAction = "r"
 const errorAction = "e"
 
 type SDLCService struct {
-	Serial             SerialConnection
-	doneChan           chan bool
-	writeChannel       chan []byte
-	readBuffer         [1024]byte
-	backingBuffer      [2048]byte
-	serialBuffer       utils.SerialBuffer
-	terminate          bool
-	terminateRefCount  atomic.Int32
-	Metrics            SDLCServiceMetrics
-	WritePool          *SDLCWritePool             `json:"-"`
-	OnError            func(*SDLCService, error)  `json:"-"`
-	OnTerminate        func(*SDLCService)         `json:"-"`
-	OnReadMessage      func(*SDLCService, []byte) `json:"-"`
-	OnWriteMessage     func(*SDLCService, []byte) `json:"-"`
-	RetrySleepDuration time.Duration
-	Error              error
-	CsvProvider        *utils.CSVRollOverFileWriterProvider `json:"-"`
+	IsEnabled           bool
+	Serial              SerialConnection
+	doneChan            chan bool
+	writeChannel        chan []byte
+	readBuffer          [1024]byte
+	backingBuffer       [2048]byte
+	serialBuffer        utils.SerialBuffer
+	terminate           bool
+	terminateRefCount   atomic.Int32
+	Metrics             SDLCServiceMetrics
+	WritePool           *SDLCWritePool             `json:"-"`
+	OnError             func(*SDLCService, error)  `json:"-"`
+	OnTerminate         func(*SDLCService)         `json:"-"`
+	OnReadMessage       func(*SDLCService, []byte) `json:"-"`
+	OnWriteMessage      func(*SDLCService, []byte) `json:"-"`
+	RetrySleepDuration  time.Duration
+	Error               error
+	CsvProvider         *utils.CSVRollOverFileWriterProvider `json:"-"`
+	CSVFilePathTemplate string
+	CSVFilePathFormat   string
+	IsCSVEnabled        bool
 }
 
 type SDLCServiceMetrics struct {
@@ -72,45 +77,31 @@ type SDLCServiceMetrics struct {
 	utils.MetricsInitMixin
 }
 
-func (s *SDLCService) SetupDefaults(config *utils.Settings) {
-	s.init()
-	config.SetSettingAsBool(sdlcUARTEnabled, true)
-	config.SetSettingAsStr(sdlcUARTPortName, "/dev/ttymxc2")
-	config.SetSettingAsInt(sdlcUARTBaudRate, 115200)
-	config.SetSettingAsInt(sdlcUARTDataBits, 8)
-	config.SetSettingAsInt(sdlcUARTParity, 0)
-	config.SetSettingAsInt(sdlcUARTStopBits, 0)
-	config.SetSettingAsBool(sdlcUARTCSVEnabled, true)
-	config.SetSettingAsStr(sdlcUARTCSVFilePathTemplate, "/media/SDLOGS/logs/system/uart-%s.csv")
-	config.SetSettingAsStr(sdlcUARTCSVFilePathFormat, "20060102")
+func (s *SDLCService) InitFromSettings(settings *utils.Settings) {
+	s.IsEnabled = settings.Basic.GetBool(sdlcUARTEnabled, true)
+	s.Serial.PortName = settings.Basic.Get(sdlcUARTPortName, "/dev/ttymxc2")
+	s.Serial.Mode.BaudRate = settings.Basic.GetInt(sdlcUARTBaudRate, 115200)
+	s.Serial.Mode.DataBits = settings.Basic.GetInt(sdlcUARTDataBits, 8)
+	s.Serial.Mode.Parity = serial.Parity(settings.Basic.GetInt(sdlcUARTParity, 0))
+	s.Serial.Mode.StopBits = serial.StopBits(settings.Basic.GetInt(sdlcUARTStopBits, 0))
+	s.IsCSVEnabled = settings.Basic.GetBool(sdlcUARTCSVEnabled, true)
+	s.CSVFilePathTemplate = settings.Basic.Get(sdlcUARTCSVFilePathTemplate, "/media/SDLOGS/logs/system/uart-%s.csv")
+	s.CSVFilePathFormat = settings.Basic.Get(sdlcUARTCSVFilePathFormat, "20060102")
 }
 
-func (s *SDLCService) SetupAndStart(state *utils.State, config *utils.Settings) {
-	if !config.GetSettingAsBool(sdlcUARTEnabled) {
-		log.Info().Msg("SDLC UART is disabled")
+func (s *SDLCService) Start(state *utils.State, settings *utils.Settings) {
+	if !general.ServiceHelper.ShouldStart(state, settings, s) {
 		return
 	}
 
-	s.InitFromConfig(config)
-	s.Start()
-
-	state.Set(SDLCServiceName, s)
-}
-
-func (s *SDLCService) InitFromConfig(config *utils.Settings) {
-	s.Serial.PortName = config.GetSettingAsStr(sdlcUARTPortName)
-	s.Serial.Mode.BaudRate = config.GetSettingAsInt(sdlcUARTBaudRate)
-	s.Serial.Mode.DataBits = config.GetSettingAsInt(sdlcUARTDataBits)
-	s.Serial.Mode.Parity = serial.Parity(config.GetSettingAsInt(sdlcUARTParity))
-	s.Serial.Mode.StopBits = serial.StopBits(config.GetSettingAsInt(sdlcUARTStopBits))
-
-	if config.GetSettingAsBool(sdlcUARTCSVEnabled) {
-		s.CsvProvider = utils.NewCSVRollOverFileWriterProvider(
-			config.GetSettingAsStr(sdlcUARTCSVFilePathTemplate),
-			config.GetSettingAsStr(sdlcUARTCSVFilePathFormat),
-			s.WriteLogHeader,
-		)
+	if !s.IsEnabled {
+		return
 	}
+
+	s.init()
+
+	go s.executeReader()
+	go s.executeWriter()
 }
 
 func (s *SDLCService) GetServiceName() string {
@@ -122,7 +113,6 @@ func (s *SDLCService) GetServiceNames() []string {
 }
 
 func (s *SDLCService) init() {
-	s.Metrics.InitMetrics(SDLCServiceName, &s.Metrics)
 	s.RetrySleepDuration = time.Duration(1) * time.Second
 	s.WritePool = NewSDLCWritePool()
 	s.Serial.RetryGuard.RetryEvery = 3
@@ -132,12 +122,14 @@ func (s *SDLCService) init() {
 	s.doneChan = make(chan bool)
 	s.writeChannel = make(chan []byte, 5)
 	s.terminateRefCount.Store(2)
-}
 
-func (s *SDLCService) Start() {
-	s.init()
-	go s.executeReader()
-	go s.executeWriter()
+	if s.IsCSVEnabled {
+		s.CsvProvider = utils.NewCSVRollOverFileWriterProvider(
+			s.CSVFilePathTemplate,
+			s.CSVFilePathFormat,
+			s.WriteLogHeader,
+		)
+	}
 }
 
 func (s *SDLCService) Stop() {

@@ -72,7 +72,7 @@ type BIUDiagnostics struct {
 
 func (d BIUDiagnostics) PrintDetail() {
 	utils.Print.Detail("BIU Diagnostics Response", "\n")
-	utils.Print.Indent(2)
+	utils.Print.SetIndent(2)
 
 	utils.Print.Detail("MMU MergeFromFile Switch", "%d\n", d.MMULoadSwitchCounter)
 	utils.Print.Detail("DateTime Broadcast", "%d\n", d.DateTimeBroadcastCounter)
@@ -88,7 +88,7 @@ func (d BIUDiagnostics) PrintDetail() {
 	utils.Print.Detail("Service Request", "%d\n", d.ServiceRequestCounter)
 	utils.Print.Detail("Reserved", "%d\n", d.ReservedCounter)
 
-	utils.Print.Indent(-2)
+	utils.Print.SetIndent(-2)
 }
 
 type SIUDiagnostics struct {
@@ -115,14 +115,14 @@ type DynamicStatus struct {
 
 func (s DynamicStatus) PrintDetail() {
 	utils.Print.Detail("Dynamic Status Response", "\n")
-	utils.Print.Indent(2)
+	utils.Print.SetIndent(2)
 	utils.Print.Detail("SDLC Fail Metric", "%d\n", s.SdlcFailCount)
 	utils.Print.Detail("Request Metric", "%d\n", s.RequestedCount)
 	utils.Print.Detail("UART Fail Metric", "%d\n", s.UartFailCount)
 	utils.Print.Detail("Since Last COMMs", "%d\n", s.SinceLastSDLCComms)
 	utils.Print.Detail("Uptime (Days)", "%d\n", s.UptimeInDays)
 	utils.Print.Detail("Uptime (mins)", "%d\n", s.UptimeIn6Mins)
-	utils.Print.Indent(-2)
+	utils.Print.SetIndent(-2)
 }
 
 type SDLCDiagnostics struct {
@@ -136,13 +136,13 @@ type SDLCDiagnostics struct {
 
 func (d SDLCDiagnostics) PrintDetail() {
 	utils.Print.Detail("SDLC Diagnostics Response", "\n")
-	utils.Print.Indent(2)
+	utils.Print.SetIndent(2)
 	utils.Print.Detail("Control Error", "%d\n", d.ControlError)
 	utils.Print.Detail("CRC Error", "%d\n", d.CRCError)
 	utils.Print.Detail("IdleError", "%d\n", d.IdleError)
 	utils.Print.Detail("Framing Error", "%d\n", d.FramingError)
 	utils.Print.Detail("Long-Frame Error", "%d\n", d.LongFrameError)
-	utils.Print.Indent(-2)
+	utils.Print.SetIndent(-2)
 }
 
 type StaticStatus struct {
@@ -169,13 +169,13 @@ func (s *StaticStatus) MarshalJSON() ([]byte, error) {
 
 func (s *StaticStatus) PrintDetail() {
 	utils.Print.Detail("SDLC Static Status", "\n")
-	utils.Print.Indent(2)
+	utils.Print.SetIndent(2)
 	utils.Print.Detail("SDLC Version", "%d.%d\n", int(s.MajorVersion), int(s.MinorVersion))
 	utils.Print.Detail("Protocol Version", "%d\n", s.ProtocolVersion)
 	utils.Print.Detail("Mode", "%d, %s\n", int(s.Mode), s.Mode.String())
 	utils.Print.Detail("BIU", "%08b\n", int(s.BIU))
 	utils.Print.Detail("Serial", "%16x\n", s.Serial)
-	utils.Print.Indent(-2)
+	utils.Print.SetIndent(-2)
 }
 
 type CMUFrame struct {

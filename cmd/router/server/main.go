@@ -31,8 +31,8 @@ type mainType struct {
 	HubIP     utils.IP4
 	Wg        sync.WaitGroup
 	Server    server.Server
-	KeepAlive service.UDPKeepAlive
-	Data      service.UDPData
+	KeepAlive service.UDPKeepAliveService
+	Data      service.UDPDataService
 }
 
 func (m *mainType) WritePacket(packetData []byte) error {
@@ -61,7 +61,7 @@ func (m *mainType) Start(hubIP utils.IP4) {
 	go m.runMulticast(m.KeepAlive.LocalIPAddr)
 }
 
-func (m *mainType) onRadarDataReceived(service *service.UDPData, addr net.UDPAddr, bytes []byte) {
+func (m *mainType) onRadarDataReceived(service *service.UDPDataService, addr net.UDPAddr, bytes []byte) {
 	sourceIP := utils.IP4Builder.FromAddr(&addr)
 	var packetData [2 * utils.Kilobyte]byte
 	packet := tcphub.PacketWrapper{}

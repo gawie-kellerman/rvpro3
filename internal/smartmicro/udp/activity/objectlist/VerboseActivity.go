@@ -31,8 +31,6 @@ func (l *VerboseActivity) Init(
 }
 
 func (l *VerboseActivity) Process(
-	workflow interfaces.IUDPWorkflow,
-	_ int,
 	time time.Time,
 	bytes []byte,
 ) {
@@ -51,7 +49,7 @@ func (l *VerboseActivity) Process(
 
 		utils.Print.Fmt(
 			"Radar %s Objects=%d\n",
-			workflow.GetRadarIP(),
+			l.Workflow.GetRadarIP(),
 			objList.GetNofObjects(),
 		)
 	} else {

@@ -9,6 +9,8 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	jack "gopkg.in/natefinch/lumberjack.v2"
+	"rvpro3/radarvision.com/internal/general"
+
 	"rvpro3/radarvision.com/utils"
 )
 
@@ -21,35 +23,43 @@ const logFileMaxAgeDays = "log.file.maxagedays"
 const logFileMaxBackups = "log.file.maxbackups"
 
 type LoggingService struct {
+	FileDir      string
+	FileName     string
+	Level        string
+	MaxSizeMB    int
+	MaxAgeDays   int
+	MaxBackups   int
+	LogToConsole bool
 }
 
-func (l *LoggingService) SetupDefaults(config *utils.Settings) {
-	config.SetSettingAsStr(logLevel, "info")
-	config.SetSettingAsBool(logToConsole, false)
-	config.SetSettingAsStr(logFileDir, "/media/SDLOGS/logs/system")
-	config.SetSettingAsStr(logFileName, "rvm.log")
-	config.SetSettingAsInt(logFileMaxSizeMB, 10)
-	config.SetSettingAsInt(logFileMaxAgeDays, 30)
-	config.SetSettingAsInt(logFileMaxBackups, 10)
+func (l *LoggingService) InitFromSettings(settings *utils.Settings) {
+	l.FileDir = settings.Basic.Get(logFileDir, "/media/SDLOGS/logs/system")
+	l.FileName = settings.Basic.Get(logFileName, "rvm.log")
+	l.Level = settings.Basic.Get(logLevel, "info")
+	l.MaxSizeMB = settings.Basic.GetInt(logFileMaxSizeMB, 10)
+	l.MaxAgeDays = settings.Basic.GetInt(logFileMaxAgeDays, 30)
+	l.MaxBackups = settings.Basic.GetInt(logFileMaxBackups, 10)
+	l.LogToConsole = settings.Basic.GetBool(logToConsole, false)
 }
 
-func (l *LoggingService) SetupAndStart(state *utils.State, config *utils.Settings) {
+func (l *LoggingService) Start(state *utils.State, settings *utils.Settings) {
+	if !general.ServiceHelper.ShouldStart(state, settings, l) {
+		return
+	}
+
 	level := zerolog.InfoLevel
 
 	var writers []io.Writer
 	zerolog.TimeFieldFormat = utils.DisplayDateTimeMS
 
-	if config.GetSettingAsBool(logToConsole) {
+	if l.LogToConsole {
 		writers = append(writers, zerolog.ConsoleWriter{
 			Out:        os.Stderr,
 			TimeFormat: utils.DisplayDateTimeMS,
 		})
 	}
 
-	fileDir := config.GetSettingAsStr(logFileDir)
-	fileName := config.GetSettingAsStr(logFileName)
-	logLevelStr := config.GetSettingAsStr(logLevel)
-	switch logLevelStr {
+	switch l.Level {
 	case "debug":
 		level = zerolog.DebugLevel
 	case "info":
@@ -68,9 +78,9 @@ func (l *LoggingService) SetupAndStart(state *utils.State, config *utils.Setting
 		zerolog.SetGlobalLevel(zerolog.InfoLevel)
 	}
 
-	if fileDir != "" && fileName != "" {
+	if l.FileDir != "" && l.FileName != "" {
 		writers = append(writers, zerolog.ConsoleWriter{
-			Out:        l.rollingAppender(config),
+			Out:        l.rollingAppender(settings),
 			TimeFormat: utils.DisplayDateTimeMS,
 		})
 	}
@@ -85,31 +95,22 @@ func (l *LoggingService) SetupAndStart(state *utils.State, config *utils.Setting
 }
 
 func (l *LoggingService) rollingAppender(config *utils.Settings) io.Writer {
-	fileDir := config.GetSettingAsStr(logFileDir)
-	fileName := config.GetSettingAsStr(logFileName)
-
-	gc := &utils.GlobalSettings
-
-	if err := os.MkdirAll(fileDir, 0744); err != nil {
+	if err := os.MkdirAll(l.FileDir, 0744); err != nil {
 		log.Error().
 			Err(err).
-			Str("logFileDir", fileDir).
+			Str("logFileDir", l.FileDir).
 			Msg("Failed to create log directory")
 		return nil
 	}
 
 	return &jack.Logger{
-		Filename:   path.Join(fileDir, fileName),
-		MaxSize:    gc.GetSettingAsInt(logFileMaxSizeMB),
-		MaxAge:     gc.GetSettingAsInt(logFileMaxAgeDays),
-		MaxBackups: gc.GetSettingAsInt(logFileMaxBackups),
+		Filename:   path.Join(l.FileDir, l.FileName),
+		MaxSize:    l.MaxSizeMB,
+		MaxAge:     l.MaxAgeDays,
+		MaxBackups: l.MaxBackups,
 	}
 }
 
 func (l *LoggingService) GetServiceName() string {
 	return "Logging.Service"
-}
-
-func (l *LoggingService) GetServiceNames() []string {
-	return nil
 }

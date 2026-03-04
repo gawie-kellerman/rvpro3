@@ -129,16 +129,16 @@ func (p *PVRReader) GetHeaderLength() int {
 
 func (p *PVRReader) PrintDetail() {
 	utils.Print.Detail("PVR", "\n")
-	utils.Print.Indent(2)
+	utils.Print.SetIndent(2)
 	utils.Print.Detail("Nof Objects", "%d\n", p.GetNofObjects())
 	utils.Print.Detail("Object Size", "%d\n", p.GetObjectSize())
 	utils.Print.Detail("Unix Time", "%d\n", p.GetUnixTime())
 	utils.Print.Detail("Milliseconds", "%d\n", p.GetMilliseconds())
-	utils.Print.Indent(-2)
+	utils.Print.SetIndent(-2)
 
 	for n := 0; n < int(p.GetNofObjects()); n++ {
 		utils.Print.Detail("PVR Object ", "%d\n", n)
-		utils.Print.Indent(2)
+		utils.Print.SetIndent(2)
 		utils.Print.Detail("Object Id", "%d\n", p.GetObjectId(n))
 		utils.Print.Detail("Object Class", "%d, %s\n", p.GetObjectClass(n), p.GetObjectClass(n))
 		utils.Print.Detail("Speed", "%f\n", p.GetSpeed(n))
@@ -146,7 +146,7 @@ func (p *PVRReader) PrintDetail() {
 		utils.Print.Detail("Length", "%f\n", p.GetLength(n))
 		utils.Print.Detail("Counter", "%d\n", p.GetCounter(n))
 		utils.Print.Detail("Zone", "%d\n", p.GetZone(n))
-		utils.Print.Indent(-2)
+		utils.Print.SetIndent(-2)
 	}
 }
 

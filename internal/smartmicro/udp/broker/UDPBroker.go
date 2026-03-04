@@ -17,23 +17,31 @@ import (
 )
 
 type UDPBroker struct {
-	buffer           [16000]byte
-	fixed            utils.FixedBuffer
-	terminated       bool
-	isDone           bool
-	msgChannel       chan *UDPMessage
-	doneChannel      chan bool
 	State            RadarState
 	IPAddress        utils.IP4
 	SegmentCounter   uint16
 	SegmentTotal     uint16
 	SegmentId        uint16
 	Now              time.Time
+	FailSafePipeline triggerpipeline.RadarFailsafeItem
+	Executor         Workflows
+	IsVerboseTrigger bool
+	IsVerboseStats   bool
+	IsVerboseObjList bool
+	IsVerbosePVR     bool
+	IsCountTrigger   bool
+	IsCountStats     bool
+	IsCountObjList   bool
+	IsCountPVR       bool
 	DataSlice        []byte           `json:"-"`
 	OnTerminate      func(*UDPBroker) `json:"-"`
 	Metrics          UDPBrokerMetrics `json:"-"`
-	FailSafePipeline triggerpipeline.RadarFailsafeItem
-	Executor         Workflows
+	buffer           [16000]byte
+	fixed            utils.FixedBuffer
+	terminated       bool
+	isDone           bool
+	msgChannel       chan *UDPMessage
+	doneChannel      chan bool
 }
 
 type UDPBrokerMetrics struct {
@@ -50,41 +58,29 @@ type UDPBrokerMetrics struct {
 	utils.MetricsInitMixin
 }
 
-func (rc *UDPBroker) SetupDefaults(config *utils.Settings) {
-	config.GetOrPutBool("udp.verbose.trigger", false)
-	config.GetOrPutBool("udp.verbose.statistics", false)
-	config.GetOrPutBool("udp.verbose.objectlist", false)
-	config.GetOrPutBool("udp.verbose.pvr", false)
-	config.GetOrPutBool("udp.counting.trigger", false)
-	config.GetOrPutBool("udp.counting.statistics", false)
-	config.GetOrPutBool("udp.counting.objectlist", false)
-	config.GetOrPutBool("udp.counting.pvr", false)
-	config.SetDefault("radar.udp.verbose.trigger", "false")
-	config.SetDefault("radar.udp.verbose.statistics", "false")
-	config.SetDefault("radar.udp.verbose.objectlist", "false")
-	config.SetDefault("radar.udp.verbose.pvr", "false")
-	config.SetDefault("radar.udp.counting.trigger", "false")
-	config.SetDefault("radar.udp.counting.statistics", "false")
-	config.SetDefault("radar.udp.counting.objectlist", "false")
-	config.SetDefault("radar.udp.counting.pvr", "false")
+func (rc *UDPBroker) InitFromSettings(settings *utils.Settings) {
+	ip := rc.IPAddress.String()
+	rc.IsVerboseTrigger = settings.Indexed.GetBool("radar.udp.verbose.trigger", ip, false)
+	rc.IsVerboseStats = settings.Indexed.GetBool("radar.udp.verbose.statistics", ip, false)
+	rc.IsVerboseObjList = settings.Indexed.GetBool("radar.udp.verbose.objectlist", ip, false)
+	rc.IsVerbosePVR = settings.Indexed.GetBool("radar.udp.verbose.pvr", ip, false)
+
+	rc.IsCountTrigger = settings.Indexed.GetBool("radar.udp.counting.trigger", ip, false)
+	rc.IsCountStats = settings.Indexed.GetBool("radar.udp.counting.statistics", ip, false)
+	rc.IsCountObjList = settings.Indexed.GetBool("radar.udp.counting.objectlist", ip, false)
+	rc.IsCountPVR = settings.Indexed.GetBool("radar.udp.counting.pvr", ip, false)
 }
 
-func (rc *UDPBroker) SetupAndStart(state *utils.State, config *utils.Settings) {
-	//radars := config.GetSettingAsSplit(radarChannelSupportedRadars, ",")
-	//noRadars := len(radars)
+func (rc *UDPBroker) Start(_ *utils.State, _ *utils.Settings) {
 }
 
 func (rc *UDPBroker) GetServiceName() string {
 	return "Broker." + rc.IPAddress.String() + ".Service"
 }
 
-func (rc *UDPBroker) GetServiceNames() []string {
-	return nil
-}
-
 func (rc *UDPBroker) InitMetrics(ip utils.IP4) {
 	rc.IPAddress = ip
-	sectionName := fmt.Sprintf("UDP.Broker.[%s]", ip)
+	sectionName := fmt.Sprintf("UDP.Broker-%s", ip)
 	rc.Metrics.InitMetrics(sectionName, &rc.Metrics)
 	rc.Executor.Init(ip)
 }
@@ -310,28 +306,6 @@ func (rc *UDPBroker) SendMessage(msg *UDPMessage) {
 	}
 }
 
-//func (rc *UDPBroker) logDroppedMessage(msg *UDPMessage) {
-//	rc.Metrics.SendMessageDrops.IncAt(1, rc.Now)
-//
-//	th := port.TransportHeaderReader{}
-//	if !rc.isTransportHeader(&th, msg) {
-//		return
-//	}
-//
-//	if th.GetFlags().IsSegmentation() {
-//		rc.Metrics.DiscardSegmentErr.IncAt(1, rc.Now)
-//	}
-//
-//	ph := port.PortHeaderReader{
-//		Buffer:      rc.DataSlice,
-//		StartOffset: int(th.GetHeaderLength()),
-//	}
-//
-//	pid := ph.GetIdentifier()
-//	rc.Executor.Drop(rc.Now, uint32(pid), rc.DataSlice)
-//
-//}
-
 func (rc *UDPBroker) SetupFailSafe() {
 	//pipeline := triggerpipeline.GetTriggerPipeline()
 	//rc.FailSafePipeline.SetChannels.Lo = 15
@@ -347,35 +321,26 @@ func (rc *UDPBroker) SetupWorkflow(
 	rc.setupVerboseActivityCounting(cuter)
 }
 
-func (rc *UDPBroker) isVerbose(configKey string) (isVerbose bool) {
-	entityName := "[" + rc.GetRadarIP().String() + "]"
-
-	gs := &utils.GlobalSettings
-	isVerbose = gs.GetIndexedAsBool("radar", entityName, configKey, false)
-	isVerbose = isVerbose || gs.GetOrPutBool(configKey, false)
-	return isVerbose
-}
-
 func (rc *UDPBroker) setupVerboseActivityLogging(cuter *Workflows) {
-	if rc.isVerbose("udp.verbose.trigger") {
+	if rc.IsVerboseTrigger {
 		cuter.
 			Workflow(port.PiEventTrigger).
 			AddActivity(&trigger.VerboseActivity{})
 	}
 
-	if utils.GlobalSettings.GetOrPutBool("udp.verbose.objectlist", false) {
+	if rc.IsVerboseObjList {
 		cuter.
 			Workflow(port.PiObjectList).
 			AddActivity(&objectlist.VerboseActivity{})
 	}
 
-	if utils.GlobalSettings.GetOrPutBool("udp.verbose.statistics", false) {
+	if rc.IsVerboseStats {
 		cuter.
 			Workflow(port.PiStatistics).
 			AddActivity(&statistics.VerboseActivity{})
 	}
 
-	if utils.GlobalSettings.GetOrPutBool("udp.verbose.pvr", false) {
+	if rc.IsVerbosePVR {
 		cuter.
 			Workflow(port.PiPVR).
 			AddActivity(&pvr.VerboseActivity{})
@@ -383,25 +348,25 @@ func (rc *UDPBroker) setupVerboseActivityLogging(cuter *Workflows) {
 }
 
 func (rc *UDPBroker) setupVerboseActivityCounting(cuter *Workflows) {
-	if rc.isVerbose("udp.counting.trigger") {
+	if rc.IsCountTrigger {
 		cuter.
 			Workflow(port.PiEventTrigger).
 			AddActivity(&generic.CountingActivity{})
 	}
 
-	if rc.isVerbose("udp.counting.objectlist") {
+	if rc.IsCountObjList {
 		cuter.
 			Workflow(port.PiObjectList).
 			AddActivity(&generic.CountingActivity{})
 	}
 
-	if rc.isVerbose("udp.counting.statistics") {
+	if rc.IsCountStats {
 		cuter.
 			Workflow(port.PiStatistics).
 			AddActivity(&generic.CountingActivity{})
 	}
 
-	if rc.isVerbose("udp.counting.pvr") {
+	if rc.IsCountPVR {
 		cuter.
 			Workflow(port.PiPVR).
 			AddActivity(&generic.CountingActivity{})

@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/rs/zerolog/log"
+	"rvpro3/radarvision.com/internal/general"
 	"rvpro3/radarvision.com/utils"
 )
 
@@ -23,7 +24,7 @@ type SDLCExecutorService struct {
 	StaticRequestInterval    time.Duration
 	StaticStatus             *StaticStatus
 	Metrics                  SDLCExecutorServiceMetrics
-	StaticStatusRequestEvery time.Duration
+	StaticStatusRequestEvery utils.Milliseconds
 }
 
 type SDLCExecutorServiceMetrics struct {
@@ -34,39 +35,15 @@ type SDLCExecutorServiceMetrics struct {
 	utils.MetricsInitMixin
 }
 
-func (s *SDLCExecutorService) SetupDefaults(config *utils.Settings) {
-	config.SetSettingAsMillis(sdlcUARTStaticStatusRequestEvery, 5000)
+func (s *SDLCExecutorService) InitFromSettings(settings *utils.Settings) {
+	s.StaticStatusRequestEvery = settings.Basic.GetMilliseconds(
+		sdlcUARTStaticStatusRequestEvery,
+		5000,
+	)
 }
 
-func (s *SDLCExecutorService) SetupAndStart(state *utils.State, config *utils.Settings) {
-	// Don't start the service if the SDLC UART is not enabled
-	if !config.GetSettingAsBool(sdlcUARTEnabled) {
-		return
-	}
-
-	service := new(SDLCExecutorService)
-	service.InitFromConfig(config)
-	service.Start()
-
-	state.Set(SDLCExecutorServiceStateName, service)
-}
-
-func (s *SDLCExecutorService) InitFromConfig(config *utils.Settings) {
-	s.StaticStatusRequestEvery = config.GetSettingAsMillis(sdlcUARTStaticStatusRequestEvery)
-}
-
-func (s *SDLCExecutorService) GetServiceName() string {
-	return SDLCExecutorServiceStateName
-}
-
-func (s *SDLCExecutorService) GetServiceNames() []string {
-	return nil
-}
-
-func (s *SDLCExecutorService) Start() {
-	s.Metrics.InitMetrics("SDLC.Executor", &s.Metrics)
-
-	utils.GlobalState.Set(SDLCExecutorServiceStateName, s)
+func (s *SDLCExecutorService) init() {
+	s.Metrics.InitMetrics(s.GetServiceName(), &s.Metrics)
 	s.Terminated = false
 	s.Terminate = false
 	s.Metronome.CycleDuration = 100 * time.Millisecond
@@ -75,16 +52,27 @@ func (s *SDLCExecutorService) Start() {
 	s.StaticRequestInterval = time.Duration(10) * time.Second
 
 	if s.sdlcService == nil {
-		panic("SDLC s is not running")
+		panic("SDLC service is not running")
 	}
 
 	s.sdlcService.OnReadMessage = s.OnReadMessage
 	s.StaticStatus = utils.GlobalState.Set(SDLCStaticStatusStateName, new(StaticStatus)).(*StaticStatus)
-
-	go s.execute()
 }
 
-func (s *SDLCExecutorService) execute() {
+func (s *SDLCExecutorService) Start(state *utils.State, settings *utils.Settings) {
+	if !general.ServiceHelper.ShouldStart(state, settings, s) {
+		return
+	}
+
+	s.init()
+	go s.run()
+}
+
+func (s *SDLCExecutorService) GetServiceName() string {
+	return SDLCExecutorServiceStateName
+}
+
+func (s *SDLCExecutorService) run() {
 	s.Metronome.Start()
 
 	for !s.Terminate {

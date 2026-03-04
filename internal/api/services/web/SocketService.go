@@ -1,12 +1,14 @@
 package web
 
-import "time"
+import (
+	"rvpro3/radarvision.com/utils"
+)
 
 type SocketService struct {
 	Terminated    bool
-	PongEvery     time.Duration
-	PingEvery     time.Duration
-	WriteDeadline time.Duration
+	PongEvery     utils.Milliseconds
+	PingEvery     utils.Milliseconds
+	WriteDeadline utils.Milliseconds
 	MaxReadSize   int64
 	clients       map[*SocketClient]bool
 	register      chan *SocketClient

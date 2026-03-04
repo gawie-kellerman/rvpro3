@@ -27,8 +27,6 @@ func (l *VerboseActivity) Init(workflow interfaces.IUDPWorkflow, index int, metr
 }
 
 func (l *VerboseActivity) Process(
-	workflow interfaces.IUDPWorkflow,
-	_ int,
 	tm time.Time,
 	bytes []byte,
 ) {
@@ -47,7 +45,7 @@ func (l *VerboseActivity) Process(
 
 		utils.Print.Fmt(
 			"Radar %s Trigger (hi) %016x (lo) %016x\n",
-			workflow.GetRadarIP(),
+			l.Workflow.GetRadarIP(),
 			trigger.GetRelays2(),
 			trigger.GetRelays(),
 		)

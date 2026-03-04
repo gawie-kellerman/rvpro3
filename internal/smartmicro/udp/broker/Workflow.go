@@ -12,8 +12,8 @@ import (
 type Workflow struct {
 	Activities     []interfaces.IUDPActivity
 	PortIdentifier uint32
-	Metrics        WorkflowMetrics
-	Workflows      interfaces.IUDPWorkflows
+	Metrics        WorkflowMetrics          `json:"-"`
+	Workflows      interfaces.IUDPWorkflows `json:"-"`
 }
 
 type WorkflowMetrics struct {
@@ -39,17 +39,19 @@ func (w *Workflow) GetPortIdentifier() uint32 {
 
 func (w *Workflow) AddActivity(activity interfaces.IUDPActivity) {
 	index := len(w.Activities)
+	actName := w.GetActivityName(index, w.GetRadarIP(), activity)
 	activity.Init(
 		w,
 		index,
-		w.GetActivityName(index, w.GetRadarIP(), activity),
+		actName,
 	)
 	w.Activities = append(w.Activities, activity)
 }
 
 func (w *Workflow) GetActivityName(index int, radarIP utils.IP4, activity interfaces.IUDPActivity) string {
 	typeName := reflect.TypeOf(activity).Elem().Name()
-	return fmt.Sprintf("Workflow.Activity.[%s].%d.%d.%s", radarIP, w.GetPortIdentifier(), index, typeName)
+	//return fmt.Sprintf("Workflow.Activity.[%s].%d.%d.%s", radarIP, w.GetPortIdentifier(), index, typeName)
+	return fmt.Sprintf("Workflow.Activity.#=%d.pid=%d.%s-%s", index, w.GetPortIdentifier(), typeName, radarIP)
 }
 
 func (w *Workflow) NextActivityId() int {
@@ -98,12 +100,12 @@ func (w *Workflow) Drop(now time.Time, payload []byte) {
 
 func (w *Workflow) processActivity(
 	activity interfaces.IUDPActivity,
-	index int,
+	_ int,
 	now time.Time,
 	payload []byte,
 ) {
 	startOn := time.Now()
-	activity.Process(w, index, now, payload)
+	activity.Process(now, payload)
 	endOn := time.Now()
 
 	duration := endOn.Sub(startOn).Milliseconds()

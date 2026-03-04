@@ -82,8 +82,8 @@ func (header *TransportHeader) Write(writer *utils.FixedBuffer) {
 
 func (header *TransportHeader) PrintDetail() {
 	utils.Print.Detail("Transport Header", "\n")
-	utils.Print.Indent(2)
-	utils.Print.Indent(-2)
+	utils.Print.SetIndent(2)
+	utils.Print.SetIndent(-2)
 }
 
 func (header *TransportHeader) Read(reader *utils.FixedBuffer) {

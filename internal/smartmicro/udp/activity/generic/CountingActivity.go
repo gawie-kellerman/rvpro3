@@ -25,12 +25,11 @@ func (c *CountingActivity) Init(
 	metricsName string,
 ) {
 	c.InitBase(workflow, index, metricsName)
-	c.OpenTime = time.Now()
+	c.StartTime = time.Now()
+	c.OpenTime = c.StartTime
 }
 
 func (c *CountingActivity) Process(
-	_ interfaces.IUDPWorkflow,
-	_ int,
 	time time.Time,
 	bytes []byte,
 ) {
@@ -53,7 +52,7 @@ func (c *CountingActivity) Process(
 }
 
 func (c *CountingActivity) dumpOutput(duration time.Duration) {
-	pid := port.PortIdentifier(c.ActivityType)
+	pid := port.PortIdentifier(c.Workflow.GetPortIdentifier())
 
 	millis := duration.Milliseconds()
 	if millis == 0 {
@@ -62,15 +61,15 @@ func (c *CountingActivity) dumpOutput(duration time.Duration) {
 		cycleSeconds := float64(millis) / float64(1000)
 		totalSeconds := float64(c.CloseTime.Sub(c.StartTime).Milliseconds()) / float64(1000)
 
-		utils.Print.Fmt("Radar: %s-%s, ", c.RadarIP4, pid)
-		utils.Print.Fmt("Cycle[Dur: %d, Cnt: %d, Avg/Sec: %.2f, Bytes: %d, Bytes/Sec: %d], ",
+		utils.Print.Fmt("Radar: %s-%s, ", c.Workflow.GetRadarIP(), pid)
+		utils.Print.Fmt("Cycle[Dur: %.2f, Cnt: %d, Tx/Sec: %.2f, Bytes: %d, Bytes/Sec: %.2f], ",
 			cycleSeconds,
 			c.CycleCount,
 			float64(c.CycleCount)/cycleSeconds,
 			c.CycleBytes,
 			float64(c.CycleBytes)/cycleSeconds)
 
-		utils.Print.Fmt("Total[Dur: %d, Cnt: %d, Avg/Sec: %.2f, Bytes: %d, Bytes/Sec: %d]\n",
+		utils.Print.Fmt("Total[Dur: %.2f, Cnt: %d, Tx/Sec: %.2f, Bytes: %d, Bytes/Sec: %.2f]\n",
 			totalSeconds,
 			c.TotalCount,
 			float64(c.TotalCount)/cycleSeconds,

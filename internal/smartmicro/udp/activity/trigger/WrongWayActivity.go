@@ -31,7 +31,7 @@ type WrongWayActivity struct {
 	StreamURL            string
 	MaxHeadPhotos        int
 	MaxRecordingDuration time.Duration
-	jpegService          *CaptureMJPegService
+	jpegService          *MJPegStreamService
 	jpegCache            CaptureMJPegCache
 	Metrics              WrongWayActivityMetrics `json:"-"`
 	interfaces.UDPActivityMixin
@@ -47,14 +47,14 @@ func (w *WrongWayActivity) Init(workflow interfaces.IUDPWorkflow, index int, met
 	w.InitBase(workflow, index, metricsName)
 	w.Metrics.InitMetrics(metricsName, &w.Metrics)
 
-	w.jpegService = &CaptureMJPegService{
+	w.jpegService = &MJPegStreamService{
 		StreamURL:       w.StreamURL,
 		Enabled:         true,
 		OnFrameCallback: w.onFrameCallback,
 		OnErrorCallback: w.onErrorCallback,
 	}
 	w.jpegCache.Init(w.MaxHeadPhotos)
-	w.jpegService.SetupAndStart(&utils.GlobalState, &utils.GlobalSettings)
+	w.jpegService.Start(&utils.GlobalState, &utils.GlobalSettings)
 	w.ChannelMask = bit.Set(uint64(0), w.ChannelSO)
 }
 

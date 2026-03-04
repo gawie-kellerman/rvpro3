@@ -11,7 +11,7 @@ import (
 type Workflows struct {
 	RadarIP   utils.IP4
 	Workflows map[uint32]interfaces.IUDPWorkflow
-	Metrics   WorkflowExecutorMetrics
+	Metrics   WorkflowExecutorMetrics `json:"-"`
 }
 
 type WorkflowExecutorMetrics struct {
@@ -58,7 +58,7 @@ func (we *Workflows) Workflow(portIdentifier uint32) interfaces.IUDPWorkflow {
 
 func (we *Workflows) Init(radarIP utils.IP4) {
 	we.RadarIP = radarIP
-	we.Metrics.InitMetrics(fmt.Sprintf("Workflow.Executor.[%s]", radarIP), &we.Metrics)
+	we.Metrics.InitMetrics(fmt.Sprintf("Workflow.Executor-%s", radarIP), &we.Metrics)
 }
 
 func (we *Workflows) Execute(

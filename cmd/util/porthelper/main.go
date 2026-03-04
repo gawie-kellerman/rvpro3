@@ -62,12 +62,12 @@ func getZoneWidths() *port.Instruction {
 func checkResponse() {
 	hostIP := utils.IP4Builder.FromString("192.168.11.1:55555")
 
-	udpAlive := service.NewT44KeepAliveService()
-	udpAlive.Init()
-	udpAlive.Start(hostIP)
+	udpAlive := service.UDPKeepAliveService{}
+	//udpAlive.Init()
+	//udpAlive.Start(hostIP)
 
-	udpListener := service.UDPData{}
-	udpListener.OnData = func(dataService *service.UDPData, addr net.UDPAddr, bytes []byte) {
+	udpListener := service.UDPDataService{}
+	udpListener.OnData = func(dataService *service.UDPDataService, addr net.UDPAddr, bytes []byte) {
 		//fmt.Println("Received data: ", len(bytes), addr.String())
 
 		reader := utils.NewFixedBuffer(bytes, 0, len(bytes))
@@ -95,7 +95,7 @@ func checkResponse() {
 
 		}
 	}
-	udpListener.Start(hostIP)
+	//udpListener.Start(hostIP)
 
 	time.Sleep(100 * time.Millisecond)
 	ins := getZoneWidths()

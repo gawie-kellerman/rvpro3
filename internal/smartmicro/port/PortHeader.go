@@ -118,14 +118,14 @@ func (s *PortHeader) Init(identifier PortIdentifier) {
 
 func (s *PortHeader) PrintDetail() {
 	utils.Print.Detail("Port Header", "\n")
-	utils.Print.Indent(2)
+	utils.Print.SetIndent(2)
 	utils.Print.Detail("Port Identifier", "%d, 0x%0x, %s\n", s.Identifier, s.Identifier, s.Identifier.String())
 	utils.Print.Detail("Port Version", "%d.%d\n", s.PortMajorVersion, s.PortMinorVersion)
 	utils.Print.Detail("Timestamp", "%d\n", s.Timestamp)
 	utils.Print.Detail("Body Order", "%s\n", s.BodyOrder.String())
 	utils.Print.Detail("Port Size", "%d\n", s.PortSize)
 	utils.Print.Detail("Header Version", "%d.%d\n", s.HeaderMajorVersion, s.HeaderMinorVersion)
-	utils.Print.Indent(-2)
+	utils.Print.SetIndent(-2)
 }
 
 func (s *PortHeader) Validate() error {

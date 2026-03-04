@@ -161,10 +161,10 @@ func (ih *InstructionHeader) Write(writer *utils.FixedBuffer, order binary.ByteO
 
 func (ih *InstructionHeader) PrintDetail() {
 	utils.Print.Detail("instruction Header", "\n")
-	utils.Print.Indent(2)
+	utils.Print.SetIndent(2)
 	_, _ = utils.Print.Detail("Instructions", "%d\n", ih.NoInstructions)
 	_, _ = utils.Print.Detail("Sequence Metric", "%d\n", ih.SequenceNo)
-	utils.Print.Indent(-2)
+	utils.Print.SetIndent(-2)
 }
 
 func (ih *InstructionHeader) GetByteSize() int {
@@ -256,7 +256,7 @@ func (id *InstructionDetail) Sign(sectionName string, parameterName string) {
 
 func (id *InstructionDetail) PrintDetail(no int, order binary.ByteOrder) {
 	utils.Print.Detail("instruction Detail", "# %d\n", no)
-	utils.Print.Indent(2)
+	utils.Print.SetIndent(2)
 	utils.Print.Detail("Request Type", "%d, %s\n", id.RequestType, id.RequestType.ToString())
 	utils.Print.Detail("Response Type", "%d, %s\n", id.ResponseType, id.ResponseType.ToString())
 	utils.Print.Detail("InstructionSection", "%d\n", id.SectionId)
@@ -266,7 +266,7 @@ func (id *InstructionDetail) PrintDetail(no int, order binary.ByteOrder) {
 	utils.Print.Detail("Element", "%d, %d\n", id.Element1, id.Element2)
 	utils.Print.Detail("Signature", "%d\n", id.Signature)
 	utils.Print.Detail("Value", "%s\n", id.ToString(order))
-	utils.Print.Indent(-2)
+	utils.Print.SetIndent(-2)
 }
 
 func (id *InstructionDetail) ToString(order binary.ByteOrder) string {

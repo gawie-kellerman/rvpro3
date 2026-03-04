@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"strings"
+	"sync"
 
 	"github.com/pkg/errors"
 )
@@ -14,6 +15,7 @@ type RVProSocket struct {
 	Url             string
 	subscriptionBuf [14]byte
 	conn            *websocket.Conn
+	Err             error
 }
 
 func (r *RVProSocket) Init(url string) {
@@ -107,4 +109,26 @@ func (r *RVProSocket) _readUntilSubscription() ([]*RVProRadarStat, error) {
 	}
 
 	return extractJson(message)
+}
+
+func (r *RVProSocket) RunReadSubscription(subscription uint64, wg *sync.WaitGroup, callback func([]byte) error) {
+	subBuf := r.makeSubscription(subscription)
+
+	if err := r.conn.WriteMessage(websocket.BinaryMessage, subBuf); err != nil {
+		r.Err = err
+		return
+	}
+
+	for {
+		_, message, err := r.conn.ReadMessage()
+		if err != nil {
+			r.Err = err
+			return
+		}
+
+		if r.Err = callback(message); r.Err != nil {
+			return
+		}
+	}
+	wg.Done()
 }

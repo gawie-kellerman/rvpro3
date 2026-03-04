@@ -5,5 +5,5 @@ import (
 )
 
 func main() {
-	utils.Debug.Println("crosstest is working")
+	utils.Test.Ln("crosstest is working")
 }

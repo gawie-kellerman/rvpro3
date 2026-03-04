@@ -63,7 +63,7 @@ func (r PortHeaderReader) GetHeaderMinorVersion() uint8 {
 
 func (r PortHeaderReader) PrintDetail() {
 	utils.Print.Detail("Port Header", "\n")
-	utils.Print.Indent(2)
+	utils.Print.SetIndent(2)
 	utils.Print.Detail("Port Identifier", "%d, 0x%x, %s\n", r.GetIdentifier(), int(r.GetIdentifier()), r.GetIdentifier())
 	utils.Print.Detail("Port Version", "%d.%d\n", r.GetPortMajorVersion(), r.GetPortMinorVersion())
 	utils.Print.Detail("Timestamp", "%d\n", r.GetTimestamp())
@@ -71,7 +71,7 @@ func (r PortHeaderReader) PrintDetail() {
 	utils.Print.Detail("Body Order", "%d, %s\n", r.GetBodyOrder(), r.GetBodyOrder())
 	utils.Print.Detail("Port Index", "%d\n", r.GetPortIndex())
 	utils.Print.Detail("Header Version", "%d.%d\n", r.GetHeaderMajorVersion(), r.GetHeaderMinorVersion())
-	utils.Print.Indent(-2)
+	utils.Print.SetIndent(-2)
 }
 
 func (r PortHeaderReader) Check() error {

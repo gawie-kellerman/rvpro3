@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"flag"
 	"os"
+	"strings"
 
 	"github.com/pkg/errors"
 	"rvpro3/radarvision.com/internal/api/services/testing"
@@ -11,7 +12,7 @@ import (
 	"rvpro3/radarvision.com/internal/models/servicemodel"
 	"rvpro3/radarvision.com/internal/sdlc/uartsdlc"
 	"rvpro3/radarvision.com/internal/smartmicro/service"
-	"rvpro3/radarvision.com/internal/smartmicro/udp/activity/pvr"
+	"rvpro3/radarvision.com/internal/smartmicro/udp/activity/trigger"
 	"rvpro3/radarvision.com/internal/smartmicro/udp/broker"
 	"rvpro3/radarvision.com/utils"
 )
@@ -73,14 +74,14 @@ func loadArgs() *utils.Settings {
 	settings := &utils.Settings{}
 	settings.Init()
 
-	settings.SetSettingAsStr(startupRunModeSetting, runMode)
-	settings.SetSettingAsStr(startupCfgFileSetting, cfgFilename)
+	settings.Basic.Set(startupRunModeSetting, runMode)
+	settings.Basic.Set(startupCfgFileSetting, cfgFilename)
 
 	utils.Print.InfoLn("Using directory ->", dir)
 	utils.Print.InfoLn("With config ->", cfgFilename)
 	utils.Print.InfoLn("With run mode ->", runMode)
 
-	overrideUsingCmdLine(settings)
+	settings.ReadArgs()
 
 	return settings
 }
@@ -93,9 +94,9 @@ func loadSettingsFile(settings *utils.Settings) *utils.Settings {
 	res := &utils.Settings{}
 	res.Init()
 
-	fileName := settings.GetOrPutStr(startupCfgFileSetting, "")
+	fileName := settings.Basic.Get(startupCfgFileSetting, "")
 
-	if fileName == "" || fileName == "test" {
+	if fileName == "" || fileName == "test" || fileName == "debug" {
 		return res
 	}
 
@@ -121,25 +122,6 @@ _errorLabel:
 	return nil
 }
 
-// overrideUsingCmdLine overrides arguments as received from the command line
-// The process is:
-// 1. Every service stage its onw defauts
-// 2. A configuration file override step 1 values
-// 3. Command line arguments override step 2 values
-// Individual values can be set with the --override or -o flags
-// e.g. --override=Sample.Value=abc
-func overrideUsingCmdLine(settings *utils.Settings) {
-	overrides := utils.Args.GetKVPairIndexes("--override|-o")
-
-	for _, override := range overrides {
-		key := utils.Args.GetKeyName(override, "--override|-o")
-		_, value := utils.Args.GetPair("--override|-o", key)
-		if key != "" {
-			settings.SetRaw(key, value)
-		}
-	}
-}
-
 func awaitComplete() {
 	lts := utils.GlobalState.Get(LifetimeServiceName).(*LifetimeService)
 	lts.Wg.Wait()
@@ -149,7 +131,8 @@ func startServices() {
 	utils.Print.InfoLn("Starting services")
 	for _, svc := range services {
 		utils.Print.InfoLn("Starting", svc.GetServiceName())
-		svc.SetupAndStart(&utils.GlobalState, &utils.GlobalSettings)
+		svc.InitFromSettings(&utils.GlobalSettings)
+		svc.Start(&utils.GlobalState, &utils.GlobalSettings)
 	}
 }
 
@@ -160,7 +143,7 @@ func registerServiceSettings() *utils.Settings {
 	res.Init()
 
 	for _, svc := range services {
-		svc.SetupDefaults(res)
+		svc.InitFromSettings(res)
 	}
 
 	return res
@@ -177,6 +160,46 @@ func registerServiceSettings() *utils.Settings {
 //	}
 //}
 
+func registerUDPRadarServices(settings *utils.Settings) {
+	if settings.Basic.GetBool("feature.umrr.udp.enabled", true) {
+		config, err := servicemodel.SettingsBuilder.Build(settings)
+		if err != nil {
+			utils.Print.ErrorLn("Unable to load channel configuration", err)
+			os.Exit(1)
+		}
+		utils.GlobalState.Set(servicemodel.StateName, config)
+
+		registerService(new(service.UDPKeepAliveService))
+		registerService(new(service.UDPDataService))
+
+		// Radar Channels are built using the configuration (json), meaning
+		// that any number of radars can be defined.  This also
+		// means that the radar port can be different which will be very helpful
+		// in integration testing.  The question is however, what is a default config
+		registerService(new(broker.UDPBrokersService))
+	}
+}
+
+func registerSDLCServices(settings *utils.Settings) {
+	if settings.Basic.GetBool("feature.sdlc.uart.enabled", false) {
+		registerService(new(uartsdlc.SDLCService))
+		registerService(new(uartsdlc.SDLCExecutorService))
+	}
+}
+
+func registerVideoServices(settings *utils.Settings) {
+	if settings.Basic.GetBool("feature.stream.mjpeg.enabled", false) {
+		ipAddressesStr := settings.Basic.Get("stream.mjpeg.camera.ips", trigger.MJPegDefaultIPs)
+		ipAddresses := strings.Split(ipAddressesStr, ";")
+
+		for _, ipAddress := range ipAddresses {
+			svc := new(trigger.MJPegStreamService)
+			svc.InitBeforeStart(utils.IP4Builder.FromString(ipAddress))
+			registerService(svc)
+		}
+	}
+}
+
 func registerServices(settings *utils.Settings) {
 	utils.Print.InfoLn("Registering services")
 
@@ -186,29 +209,12 @@ func registerServices(settings *utils.Settings) {
 	registerService(new(LifetimeService))
 	registerService(new(LoggingService))
 
-	if utils.GlobalSettings.GetOrPutBool("feature.umrr.udp", true) {
-		config, err := servicemodel.SettingsBuilder.Build(settings)
-		if err != nil {
-			utils.Print.ErrorLn("Unable to load channel configuration", err)
-			os.Exit(1)
-		}
-		utils.GlobalState.Set(servicemodel.StateName, config)
+	registerUDPRadarServices(settings)
+	registerSDLCServices(settings)
+	registerVideoServices(settings)
 
-		registerService(new(service.UDPKeepAlive))
-		registerService(new(service.UDPData))
-
-		// Radar Channels are built using the configuration (json), meaning
-		// that any number of radars can be defined.  This also
-		// means that the radar port can be different which will be very helpful
-		// in integration testing.  The question is however, what is a default config
-		registerService(new(broker.UDPBrokersService))
-	}
-
-	registerService(new(uartsdlc.SDLCService))
-	registerService(new(uartsdlc.SDLCExecutorService))
 	registerService(new(web.WebService))
-	registerService(new(testing.SendTimeService))
-	registerService(new(pvr.CaptureMJPegService))
+	registerService(new(testing.SendTimeSocketService))
 
 	//NB:  When creating UDPBrokersService, remember to add the WorkflowBuilder
 	//TODO: Add TcpHub/Router back into the fold
@@ -224,7 +230,7 @@ func doDumpTestConfig(cmdSettings *utils.Settings) {
 	fileSettings := loadSettingsFile(cmdSettings)
 	cmdSettings.MergeFromSettings(fileSettings)
 
-	if utils.GlobalSettings.GetOrPutBool("feature.umrr.udp", true) {
+	if utils.GlobalSettings.Basic.GetBool("feature.umrr.udp", true) {
 		config, err := servicemodel.SettingsBuilder.Build(cmdSettings)
 		if err != nil {
 			utils.Print.ErrorLn("Unable to load channel configuration", err)

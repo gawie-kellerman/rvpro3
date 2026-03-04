@@ -16,8 +16,8 @@ import (
 type BuildLiveZonesCmd struct {
 	clientId           uint32
 	targetIP           utils.IP4
-	aliveService       service.UDPKeepAlive
-	dataService        service.UDPData
+	aliveService       service.UDPKeepAliveService
+	dataService        service.UDPDataService
 	config             LiveConfig
 	insServices        [4]service.Instruction
 	insStarteds        [4]bool
@@ -58,16 +58,16 @@ func (s *BuildLiveZonesCmd) Init(params *radarUtilParams) {
 		s.dataService.Stop()
 	}
 
-	s.aliveService.OnTerminate = func(aliveService *service.UDPKeepAlive) {
+	s.aliveService.OnTerminate = func(aliveService *service.UDPKeepAliveService) {
 		s.waitGroup.Add(-1)
 	}
 
-	s.dataService.OnTerminate = func(dataService *service.UDPData) {
+	s.dataService.OnTerminate = func(dataService *service.UDPDataService) {
 		s.waitGroup.Add(-1)
 	}
 }
 
-func (s *BuildLiveZonesCmd) onDataServiceDataCallback(ds *service.UDPData, addr net.UDPAddr, bytes []byte) {
+func (s *BuildLiveZonesCmd) onDataServiceDataCallback(ds *service.UDPDataService, addr net.UDPAddr, bytes []byte) {
 	radarIP4 := utils.IP4Builder.FromIP(addr.IP, addr.Port)
 	radarIndex := utils.RadarIndexOf(radarIP4.ToU32())
 

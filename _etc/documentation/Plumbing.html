@@ -1027,6 +1027,60 @@ radar.[192.168.11.12:55555].udp.verbose.trigger=false
 <td class="tableblock halign-left valign-top"><p class="tableblock">0.0.0.0:8080</p></td>
 </tr>
 <tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">http.sockets</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Socket configuration</p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">http.sockets.enabled</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Bool</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Enable/Disable web sockets</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">true</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">http.sockets.ping.every</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Millis</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Max time between ping the socket</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">30000</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">http.sockets.pong.every</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Millis</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Max time to await pong from socket</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">60000</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">http.sockets.write.deadline</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Millis</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Timeout of write to web socket</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">3000</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">http.sockets.max.read.size</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Int</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Max Byte Size of Message Read</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">2000</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">http.sockets.max.write.size</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Int</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Max Bute Size of Message Written</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">8000</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">http.socket.timer&#8230;&#8203;</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Timer socket service</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Subscription 1</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">http.socket.timer.enabled</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Bool</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Is Timer socket enabled</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">false</p></td>
+</tr>
+<tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">sdlc.uart&#8230;&#8203;</p></td>
 <td class="tableblock halign-left valign-top"></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">SDLC UART Service</p></td>
@@ -1194,6 +1248,54 @@ radar.[192.168.11.12:55555].udp.verbose.trigger=false
 <td class="tableblock halign-left valign-top"><p class="tableblock">As activity, for any radar, print pvr counts</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">false</p></td>
 </tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">capture.mjpeg</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Captures MJPeg images from an MJPEG Http stream</p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">capture.mjpeg.enabled</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Bool</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Enables/Disables capture of the MJPegs</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">true</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">capture.mjpeg.url</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">String</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The MJPEG Stream url, accessible from RVPro</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">""</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">capture.mjpeg.head.length</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Int</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The number of photos to keep at the ready</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">5</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">capture.mjpeg.tail.length</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Int</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The number of photos to keep after the offence</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">5</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">capture.mjpeg.connect.timeout</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Millis</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The HTTP Stream TCP Connect timeout</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">2000</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">capture.mjpeg.error.duration</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Millis</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The cooldown time after MJeg streaming error</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1000</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">capture.mjpeg.error.count.log</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Int</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Log the same error once every number of iterations</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">60</p></td>
+</tr>
 </tbody>
 </table>
 </div>
@@ -1314,11 +1416,391 @@ Command line value is an argument that has a value (e.g. -m=show-help)&lt;F11&gt
 </div>
 </div>
 </div>
+<div class="sect1">
+<h2 id="_services">5. Services</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_capture_mjpeg_service">5.1. Capture MJPEG Service</h3>
+<div class="sect3">
+<h4 id="_overview_2">5.1.1. Overview</h4>
+<div class="paragraph">
+<p>Opens an HTTP MJPEG Stream to a compatible camera (Videology), and continuously read frames.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_todo">5.1.2. TODO</h4>
+<div class="paragraph">
+<p>Change the service to work with a variable service name and metrics section so that it is possible to
+run multiple instances</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_settings">5.1.3. Settings</h4>
+<table class="tableblock frame-all grid-all stripes-even stretch">
+<colgroup>
+<col style="width: 20%;">
+<col style="width: 20%;">
+<col style="width: 20%;">
+<col style="width: 40%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Key</th>
+<th class="tableblock halign-left valign-top">Type</th>
+<th class="tableblock halign-left valign-top">Description</th>
+<th class="tableblock halign-left valign-top">Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">capture.mjpeg.enabled</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Bool</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Enable/Disable MJPEG service(s)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">true</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect3">
+<h4 id="_defaults">5.1.4. Defaults</h4>
+<table class="tableblock frame-all grid-all stripes-even stretch">
+<colgroup>
+<col style="width: 20%;">
+<col style="width: 20%;">
+<col style="width: 20%;">
+<col style="width: 40%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Key</th>
+<th class="tableblock halign-left valign-top">Type</th>
+<th class="tableblock halign-left valign-top">Description</th>
+<th class="tableblock halign-left valign-top">Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">stream.mjpeg.enabled-{camera ip}</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Bool</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Enable/Disable video stream</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">false</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">stream.mjpeg.connect.timeout-{camera ip}</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Duration (ms)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">HTTP Connect Timeout</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">2000</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">stream.mjpeg.error.duration-{camera-ip}</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Duration (ms)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Sleep after error</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1000</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">stream.mjpeg.error.log.repeat-{camera-ip}</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Int</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Log every nth repeating error</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">100</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect3">
+<h4 id="_metrics">5.1.5. Metrics</h4>
+<div class="paragraph">
+<p>Section: CaptureMJPegService</p>
+</div>
+<table class="tableblock frame-all grid-all stripes-even stretch">
+<colgroup>
+<col style="width: 20%;">
+<col style="width: 80%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Metric Name</th>
+<th class="tableblock halign-left valign-top">Metric Type</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">FrameReadBytes</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Byte Count</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Total size of frame bytes read</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The value does not include network/HTTP data</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The value only include complete frames read, no error data</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">FrameReadCount</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Iteration Count</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Total number of complete frames read</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">FrameMinDuration</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Duration (ms)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">FrameMaxDuration</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Duration (ms)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">FrameTotalDuration</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Duration (ms)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">ErrorsTotal</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Iteration Count</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">ErrorsLogged</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Iteration Count</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">ErrorsOfHttpConnect</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Iteration Count</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">ErrorsOfContentType</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Iteration Count</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">ErrorsOfHttpMultipart</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Iteration Count</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">ErrorsOfStreamCopy</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Iteration Count</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect3">
+<h4 id="_feature_enablement">5.1.6. Feature Enablement</h4>
+<div class="paragraph">
+<p>A feature is considered one or more long running services.  Features may be dependent on other features.
+Care is taken to graciously stop abilities for disabled dependancy features.</p>
+</div>
+<div class="paragraph">
+<p>All the listed features are of simple boolean type unless explicitly stated otherwise.</p>
+</div>
+<table class="tableblock frame-all grid-all stripes-even stretch">
+<colgroup>
+<col style="width: 40%;">
+<col style="width: 20%;">
+<col style="width: 40%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Key</th>
+<th class="tableblock halign-left valign-top">Service</th>
+<th class="tableblock halign-left valign-top">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">stream.mjpeg.enabled-{camera ip}</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">MJPegStreamService</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Stream MJPEG from HTTP(s) e.g. Videology</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">feature.http.service.enabled</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">WebService</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Enable/Disable Web Service. Default is true</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top" colspan="2"><p class="tableblock">Note that the sockets won&#8217;t run unless the web service is running</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">feature.umrr.udp.enabled</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Enable/Disable collection of UMRR UDP Data Services.  Default is true</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">UDPKeepAlive</p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">UDPData</p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">UDPBrokersService</p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">feature.sdlc.uart.enabled</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Enable/Disable UART SDLC Services.  Default is false</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">SDLCExecutor</p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">SDLCService</p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">feature.stream.mjpeg.enabled</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">MJPegStreamService</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Enable/Disable MJPeg streaming over HTTP(s).  Default is false.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top" colspan="2"><p class="tableblock">This is for testing only as dependent services will start necessary streaming</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_testing">6. Testing</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_developer_scripts">6.1. Developer Scripts</h3>
+<div class="listingblock">
+<div class="title">Examples</div>
+<div class="content">
+<pre>./rvm -m=dump-final-settings
+./rvm -m=dump-final-settings -o=setting.log.level=info -o=setting.log.to.console=true -o=setting.sdlc.uart.enabled=false -o=setting.startup.cfg.file=test -o=feature.stream.mjpeg.enabled=true
+./rvm -m=dump-final-settings -o=feature.stream.mjpeg.enabled=true \
+  "-o=stream.mjpeg.camera.ips=192.168.11.22:443" \
+  "-o=stream.mjpeg.enabled-[192.168.11.22:443]=true" \
+  "-o=stream.mjpeg.url-[192.168.11.22:443]=https://192.168.11.22:443/mjpeg_stream_02/22" \
+  "-o=stream.mjpeg.log.repeat=100"
+
+
+
+./rvm -m=dump-cmd-settings
+./rvm -m=dump-config
+./rvm -m=show-help
+# rvm = go run .</pre>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_dump_final_settings">6.1.1. Dump Final Settings</h4>
+<div class="listingblock">
+<div class="title">Script</div>
+<div class="content">
+<pre>go run . -m=dump-final-settings</pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Partial Output</div>
+<div class="content">
+<pre>...
+feature.http.service.enabled = true
+feature.http.timersocket..enabled = true
+feature.sdlc.uart.enabled = false
+feature.umrr.udp.enabled = true
+feature.stream.mjpeg.enabled = false
+http.host = 0.0.0.0:8080
+http.sockets.enabled = true
+http.sockets.max.read.size = 2048
+http.sockets.max.write.size = 2048
+http.sockets.ping.every = 30000
+http.sockets.pong.every = 60000
+http.sockets.write.deadline = 3000
+log.file.dir = /media/SDLOGS/logs/system
+log.file.maxagedays = 30
+...</pre>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_echo_command_line_settings">6.1.2. Echo command line settings</h4>
+<div class="listingblock">
+<div class="title">Script</div>
+<div class="content">
+<pre>go run . -m=dump-cmd-settings</pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Partial Output</div>
+<div class="content">
+<pre>...
+startup.cfg.file =
+startup.run.mode = dump-cmd-settings</pre>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_dump_used_config">6.1.3. Dump used config</h4>
+<div class="listingblock">
+<div class="title">Script</div>
+<div class="content">
+<pre>go run . -m=dump-config</pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Partial Output</div>
+<div class="content">
+<pre>{
+  "SiteName": "Site Name",
+  "DistanceUnit": "ft",
+  "SpeedUnit": "mph",
+  "Radars": [
+    {
+      "RadarIP": "192.168.11.12",
+      "RadarName": "Sensor 1",
+      "StopBarDistance": "0",
+      "FailSafeTime": "30",
+      "Channels": []
+    },
+    {
+      "RadarIP": "192.168.11.13",
+      "RadarName": "Sensor 2",
+      "StopBarDistance": "0",
+      "FailSafeTime": "30",
+      "Channels": []
+    },
+    {
+      "RadarIP": "192.168.11.14",
+      "RadarName": "Sensor 3",
+      "StopBarDistance": "0",
+      "FailSafeTime": "30",
+      "Channels": []
+    },
+    {
+      "RadarIP": "192.168.11.15",
+      "RadarName": "Sensor 4",
+      "StopBarDistance": "0",
+      "FailSafeTime": "30",
+      "Channels": []
+    }
+  ]
+}</pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
 </div>
 <div id="footer">
 <div id="footer-text">
 Version 0.1<br>
-Last updated 2026-02-19 07:53:54 +0200
+Last updated 2026-03-03 09:37:13 +0200
 </div>
 </div>
 </body>

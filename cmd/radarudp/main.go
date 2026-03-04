@@ -11,7 +11,7 @@ import (
 )
 
 type RadarServices struct {
-	keepAliveService service.UDPKeepAlive
+	keepAliveService service.UDPKeepAliveService
 	listenerService  service.UDPDataServiceOld
 	waitGroup        sync.WaitGroup
 }

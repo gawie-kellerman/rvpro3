@@ -37,7 +37,7 @@ const (
 type Instruction struct {
 	Context           any
 	RadarIP           utils.IP4
-	DataService       *UDPData
+	DataService       *UDPDataService
 	sequenceNo        atomic.Uint32
 	sendMutex         sync.Mutex
 	sendQueue         utils.Queue
@@ -64,7 +64,7 @@ func (s *Instruction) Init() {
 // Start the Instruction Service
 // dataService is used for writing the UDP to the radar
 func (s *Instruction) Start(
-	dataService *UDPData,
+	dataService *UDPDataService,
 	radarIP utils.IP4,
 ) {
 	if s.terminate {

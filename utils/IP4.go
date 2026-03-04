@@ -16,7 +16,7 @@ type ip4Builder struct {
 
 func (ip4Builder) FromOctets(o1 byte, o2 byte, o3 byte, o4 byte, port int) IP4 {
 	return IP4{
-		bytes: [4]byte{o1, o2, o3, o4},
+		Bytes: [4]byte{o1, o2, o3, o4},
 		Port:  port,
 	}
 }
@@ -33,9 +33,9 @@ func (ip4Builder) FromIP(addr net.IP, port int) IP4 {
 	result := IP4{}
 
 	if len(addr) == 16 {
-		copy(result.bytes[:], addr[12:16])
+		copy(result.Bytes[:], addr[12:16])
 	} else {
-		copy(result.bytes[:], addr[0:4])
+		copy(result.Bytes[:], addr[0:4])
 	}
 	result.Port = port
 	return result
@@ -44,14 +44,14 @@ func (ip4Builder) FromIP(addr net.IP, port int) IP4 {
 func (ip4Builder) FromBytes(bytes []byte, port int) IP4 {
 	result := IP4{}
 	result.Port = port
-	copy(result.bytes[:], bytes)
+	copy(result.Bytes[:], bytes)
 	return result
 }
 
 func (ip4Builder) FromU32(ip uint32, port int) IP4 {
 	result := IP4{}
 	result.Port = port
-	binary.BigEndian.PutUint32(result.bytes[0:4], ip)
+	binary.BigEndian.PutUint32(result.Bytes[0:4], ip)
 	return result
 }
 
@@ -75,7 +75,7 @@ func (b ip4Builder) FromPort(port int) IP4 {
 }
 
 type IP4 struct {
-	bytes [4]byte
+	Bytes [4]byte
 	Port  int
 }
 
@@ -89,10 +89,10 @@ func (i IP4) String() string {
 
 	res.WriteString(fmt.Sprintf(
 		"%d.%d.%d.%d:%d",
-		i.bytes[0],
-		i.bytes[1],
-		i.bytes[2],
-		i.bytes[3],
+		i.Bytes[0],
+		i.Bytes[1],
+		i.Bytes[2],
+		i.Bytes[3],
 		i.Port,
 	))
 	return res.String()
@@ -104,10 +104,10 @@ func (i IP4) QuotedString() string {
 
 	res.WriteString(fmt.Sprintf(
 		"\"%d.%d.%d.%d:%d\"",
-		i.bytes[0],
-		i.bytes[1],
-		i.bytes[2],
-		i.bytes[3],
+		i.Bytes[0],
+		i.Bytes[1],
+		i.Bytes[2],
+		i.Bytes[3],
 		i.Port,
 	))
 	return res.String()
@@ -115,7 +115,7 @@ func (i IP4) QuotedString() string {
 
 func (i IP4) ToUDPAddr() net.UDPAddr {
 	res := net.UDPAddr{
-		IP:   net.IPv4(i.bytes[0], i.bytes[1], i.bytes[2], i.bytes[3]),
+		IP:   net.IPv4(i.Bytes[0], i.Bytes[1], i.Bytes[2], i.Bytes[3]),
 		Port: i.Port,
 	}
 
@@ -123,12 +123,12 @@ func (i IP4) ToUDPAddr() net.UDPAddr {
 }
 
 func (i IP4) ToU32() uint32 {
-	return binary.BigEndian.Uint32(i.bytes[:])
+	return binary.BigEndian.Uint32(i.Bytes[:])
 }
 
 func (i IP4) WithUDPPort(port int) net.UDPAddr {
 	res := net.UDPAddr{
-		IP:   net.IPv4(i.bytes[0], i.bytes[1], i.bytes[2], i.bytes[3]),
+		IP:   net.IPv4(i.Bytes[0], i.Bytes[1], i.Bytes[2], i.Bytes[3]),
 		Port: port,
 	}
 
@@ -137,7 +137,7 @@ func (i IP4) WithUDPPort(port int) net.UDPAddr {
 
 func (i IP4) WithPort(port int) IP4 {
 	return IP4{
-		bytes: i.bytes,
+		Bytes: i.Bytes,
 		Port:  port,
 	}
 }
@@ -148,7 +148,7 @@ func (i IP4) RelativeTo(baseIP uint32) int {
 
 func (i IP4) ToTCPAddr() net.TCPAddr {
 	res := net.TCPAddr{
-		IP:   net.IPv4(i.bytes[0], i.bytes[1], i.bytes[2], i.bytes[3]),
+		IP:   net.IPv4(i.Bytes[0], i.Bytes[1], i.Bytes[2], i.Bytes[3]),
 		Port: i.Port,
 	}
 
@@ -160,7 +160,7 @@ func (i IP4) DistanceTo(ip4 uint32) int {
 }
 
 func (i IP4) WithHost8(host int) IP4 {
-	i.bytes[3] = byte(host)
+	i.Bytes[3] = byte(host)
 	return i
 }
 
@@ -170,17 +170,17 @@ func (i IP4) ToIPString() string {
 
 	res.WriteString(fmt.Sprintf(
 		"%d.%d.%d.%d",
-		i.bytes[0],
-		i.bytes[1],
-		i.bytes[2],
-		i.bytes[3],
+		i.Bytes[0],
+		i.Bytes[1],
+		i.Bytes[2],
+		i.Bytes[3],
 	))
 	return res.String()
 
 }
 
 func (i IP4) WriteToFixedBuffer(writer *FixedBuffer) {
-	writer.WriteBytes(i.bytes[:])
+	writer.WriteBytes(i.Bytes[:])
 	writer.WriteU16(uint16(i.Port), binary.BigEndian)
 }
 

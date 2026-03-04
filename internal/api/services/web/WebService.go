@@ -3,15 +3,15 @@ package web
 import (
 	"net/http"
 	"strconv"
-	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 	"github.com/rs/zerolog/log"
+	"rvpro3/radarvision.com/internal/general"
 	"rvpro3/radarvision.com/utils"
 )
 
-const webEnabled = "http.enabled"
+const webEnabled = "feature.http.service.enabled"
 const webHost = "http.host"
 const socketsEnabled = "http.sockets.enabled"
 const WebServiceName = "Web.Service"
@@ -30,38 +30,48 @@ var upgrader = websocket.Upgrader{
 }
 
 type WebService struct {
-	Sockets *SocketService
+	Sockets             *SocketService
+	Enabled             bool
+	Host                string
+	SocketEnabled       bool
+	SocketPingEvery     utils.Milliseconds
+	SocketPongEvery     utils.Milliseconds
+	SocketWriteDeadline utils.Milliseconds
+	SocketMaxReadSize   int
+	SocketMaxWriteSize  int
 }
 
-func (w *WebService) SetupDefaults(config *utils.Settings) {
-	config.SetSettingAsStr(webHost, "0.0.0.0:8080")
-	config.SetSettingAsBool(webEnabled, true)
-	config.SetSettingAsBool(socketsEnabled, true)
-	config.SetSettingAsInt(socketPingEvery, 30000)
-	config.SetSettingAsInt(socketPongEvery, 60000)
-	config.SetSettingAsInt(socketWriteDeadline, 3000)
-	config.SetSettingAsInt(socketMaxReadSize, 2000)
-	config.SetSettingAsInt(socketMaxWriteSize, 8000)
+func (w *WebService) InitFromSettings(settings *utils.Settings) {
+	w.Enabled = settings.Basic.GetBool(webEnabled, true)
+	w.Host = settings.Basic.Get(webHost, "0.0.0.0:8080")
+	w.SocketEnabled = settings.Basic.GetBool(socketsEnabled, true)
+
+	w.SocketPingEvery = settings.Basic.GetMilliseconds(socketPingEvery, 30000)
+	w.SocketPongEvery = settings.Basic.GetMilliseconds(socketPongEvery, 60000)
+	w.SocketWriteDeadline = settings.Basic.GetMilliseconds(socketWriteDeadline, 3000)
+	w.SocketMaxReadSize = settings.Basic.GetInt(socketMaxReadSize, 2*utils.Kilobyte)
+	w.SocketMaxWriteSize = settings.Basic.GetInt(socketMaxWriteSize, 2*utils.Kilobyte)
 }
 
-func (w *WebService) SetupAndStart(state *utils.State, config *utils.Settings) {
-
-	if !config.GetSettingAsBool(webEnabled) {
+func (w *WebService) Start(state *utils.State, settings *utils.Settings) {
+	if !general.ServiceHelper.ShouldStart(state, settings, w) {
 		return
 	}
 
-	if config.GetSettingAsBool(socketsEnabled) {
-		w.Sockets = NewSocketService()
-		w.Sockets.PingEvery = time.Duration(config.GetSettingAsInt(socketPingEvery)) * time.Millisecond
-		w.Sockets.PongEvery = time.Duration(config.GetSettingAsInt(socketPongEvery)) * time.Millisecond
-		w.Sockets.WriteDeadline = time.Duration(config.GetSettingAsInt(socketWriteDeadline)) * time.Millisecond
-		w.Sockets.MaxReadSize = int64(config.GetSettingAsInt(socketMaxReadSize))
-		upgrader.ReadBufferSize = int(w.Sockets.MaxReadSize)
-		upgrader.WriteBufferSize = config.GetSettingAsInt(socketMaxWriteSize)
-		go w.Sockets.Run()
+	if !w.Enabled {
+		return
 	}
 
-	host := config.GetSettingAsStr(webHost)
+	if w.SocketEnabled {
+		w.Sockets = NewSocketService()
+		w.Sockets.PingEvery = w.SocketPingEvery
+		w.Sockets.PongEvery = w.SocketPongEvery
+		w.Sockets.WriteDeadline = w.SocketWriteDeadline
+		w.Sockets.MaxReadSize = int64(w.SocketMaxWriteSize)
+		upgrader.ReadBufferSize = w.SocketMaxWriteSize
+		upgrader.WriteBufferSize = w.SocketMaxWriteSize
+		go w.Sockets.Run()
+	}
 
 	router := gin.Default()
 	router.GET("/general/version", w.getGeneralVersion)
@@ -78,23 +88,19 @@ func (w *WebService) SetupAndStart(state *utils.State, config *utils.Settings) {
 	router.GET("/socket", w.getSocket)
 
 	go func() {
-		if err := router.Run(host); err != nil {
+		if err := router.Run(w.Host); err != nil {
 			// Handle the error if the server fails to start
 			utils.Debug.Panic(err)
 		}
 	}()
 
-	log.Info().Msgf("Web service listening on %s", host)
+	log.Info().Msgf("Web service listening on %s", w.Host)
 
 	state.Set(WebServiceName, w)
 }
 
 func (w *WebService) GetServiceName() string {
 	return WebServiceName
-}
-
-func (w *WebService) GetServiceNames() []string {
-	return nil
 }
 
 func (w *WebService) getGeneralVersion(context *gin.Context) {

@@ -46,6 +46,13 @@ func (s *State) Get(key string) any {
 	return s.data[key]
 }
 
+func (s *State) Has(key string) bool {
+	s.mutex.RLock()
+	defer s.mutex.RUnlock()
+	_, ok := s.data[key]
+	return ok
+}
+
 func (s *State) Delete(key string) {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()

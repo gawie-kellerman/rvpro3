@@ -112,7 +112,7 @@ func (t TransportHeaderReader) CheckFormat() error {
 
 func (t TransportHeaderReader) PrintDetail() {
 	utils.Print.Detail("Transport Header", "\n")
-	utils.Print.Indent(2)
+	utils.Print.SetIndent(2)
 	_, _ = utils.Print.Detail("Run Pattern", "0x%x\n", t.GetStartPattern())
 	_, _ = utils.Print.Detail("Protocol Version", "%d\n", t.GetProtocolVersion())
 	_, _ = utils.Print.Detail("Header Length", "%d\n", t.GetHeaderLength())
@@ -121,7 +121,7 @@ func (t TransportHeaderReader) PrintDetail() {
 	t.PrintFlags()
 	_, _ = utils.Print.Detail("CRC16", "0x%04x\n", t.GetCRC16())
 	_, _ = utils.Print.Detail("CRC16 Check", "0x%04x\n", t.CalcCRC16())
-	utils.Print.Indent(-2)
+	utils.Print.SetIndent(-2)
 }
 
 func (t TransportHeaderReader) PrintFlags() {

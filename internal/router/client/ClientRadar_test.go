@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/goccy/go-json"
+
 	"rvpro3/radarvision.com/internal/tcphub"
 	"rvpro3/radarvision.com/utils"
 )
@@ -46,7 +47,7 @@ func sendAsRadar(radar *ClientRadar, wg *sync.WaitGroup) {
 	targetIP := utils.IP4Builder.FromString("192.168.0.2:39999")
 
 	for n := 0; n < 5; n++ {
-		packet.Init(buffer[:], 0, targetIP)
+		packet.Init(buffer[:], 0, targetIP, targetIP)
 		packet.SetData([]byte("Hello World"))
 
 		radar.Write(packet.GetPacket())
