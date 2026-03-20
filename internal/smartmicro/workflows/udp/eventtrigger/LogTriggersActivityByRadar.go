@@ -29,8 +29,8 @@ type LogTriggersActivityByRadar struct {
 
 func (l *LogTriggersActivityByRadar) Init(parent interfaces.IUDPWorkflowParent) {
 	l.parent = parent
-	l.csv.Template = l.CSVTemplate
-	l.csv.Format = l.CSVFormat
+	l.csv.PathTemplate = l.CSVTemplate
+	l.csv.TimeFormat = l.CSVFormat
 	l.csv.OnHeader = l.OnCSVHeader
 }
 
@@ -62,7 +62,7 @@ func (l *LogTriggersActivityByRadar) OnCSVHeader(
 ) {
 	writer, err := provider.GetWriter()
 	if err != nil {
-		log.Err(err).Msgf("Error creating CSV roll over file")
+		log.Err(err).Msgf("Error creating CSVFacade roll over file")
 	}
 
 	branding.CSVBranding.WriteTitle(writer, l.CSVFileType, l.CSVVersion)
@@ -73,7 +73,7 @@ func (l *LogTriggersActivityByRadar) OnCSVHeader(
 func (l *LogTriggersActivityByRadar) logTriggers(reader *port.EventTriggerReader) {
 	writer, err := l.csv.GetWriter()
 	if err != nil {
-		log.Err(err).Msgf("Error creating CSV roll over file")
+		log.Err(err).Msgf("Error creating CSVFacade roll over file")
 	}
 
 	writer.WriteCol(time.Now().Format(utils.DisplayDateTimeMS))

@@ -352,6 +352,10 @@ http GET http://localhost:8080/state/key "id==MJPegStreamService-[192.168.11.22:
 # Get UDP/UMRR Data Service Details
 http GET http://localhost:8080/state/key "id==UDP.Data.Service"
 
+
+# Get Radar State (with Trigger Pipeline)
+http GET http://localhost:8080/state/key "id==Radar.State-192.168.11.12:55555"
+
 ----
 
 
@@ -466,4 +470,104 @@ go run . -m=dump-config
     }
   ]
 }
+----
+
+
+
+== Activity
+=== Trigger
+==== LogCSVActivity
+.Overview
+Logs the received, unmasked (raw) trigger as received from the radar
+
+. The activity is always in the workflow and can be enabled/disabled without service restart
+. The directories necessary for the path will be created if it does not exist
+. This activity does not contribute to the trigger pipeline
+. The file time format is YYYYMMDDThhmmss
+. The rollover time format is same day
+. The startup trigger values are (hi: 0, lo: 0)
+
+.Settings
+Every key starts with: 
+`activity.trigger.unmasked.csv`
+[%header,cols="1,1,3,2",stripes=even]
+|===
+| Key | Type | Description | Default
+| enabled-{radar ip}
+| Bool 
+| Enables / Disables unmasked trigger logging 
+| false
+|     3+| This activity can be enabled/disabled while service is running
+| pathtemplate
+| String
+| Sets the file path of the generated trigger file
+| /media/SDLOGS/logs/sensor/%d/events/events-%%s.csv
+|     3+| %d is replaced with the host (last octet) of radar ip
+|     3+| %%s gets replaced by file date in format YYYYMMDDThhmmss
+|===
+
+.Example Filename
+`/media/SDLOGS/logs/sensor/12/events/events-12-20260102T151213.csv`
+
+.Example Output
+[source,text]
+----
+Event Trigger,3.0.0
+Radar Vision,https://radarvision.ai
+======================================================
+Recording start date:,2026-03-05T08:18:33+0200
+Sensor:,4496b,,192.168.11.12:55555
+Features Configured:,
+------------------------------------------------------
+TIMESTAMP,TRIGGERED OBJECTS,TRIGGERED RELAYS,RELAYS
+2026-03-05T08:18:16.291,0,0,0x0000000000000000
+----
+
+
+
+=== GPIO
+
+
+[mermaid]
+....
+classDiagram
+  class `gpio.Chips` {
+    Chips : map[string]*Chip
+  }
+  class `gpio.Chip` {
+      No : Int
+      Chip : gpiocdev.Chip
+      Lines : map[int]*gpiocdev.Line
+      OnHandleGPIO :  func(*Chip, gpiocdev.LineEvent)
+  }
+  class `gpiocdev.Chip` 
+  class `gpiocdev.Line`
+  `gpio.Chips` *--  "0..*" `gpio.Chip` 
+  `gpio.Chips` o--  `gpio.Util` 
+  `gpio.Chip` "1" *-- "1" `gpiocdev.Chip`
+  `gpio.Chip` "1" *-- "*" `gpiocdev.Line`
+
+  class `gpio.FileSystem`
+  class `gpio.File`
+  class `gpio.Direction`
+  class `gpio.Util`
+  `gpio.File` --> `gpio.FileSystem`
+  `gpio.File` o-- `gpio.Direction`
+....
+
+
+[source,text]
+----
+    gpio_Chips : +gpio_Chip
+    class gpio_Chip
+
+graph TD;
+    gpio
+    gpio --> gpio.Chips
+    gpio --> gpio.File
+    gpio --> gpio.FileSystem
+    gpio --> gpio.Util
+    gpio.Chips --> gpio.Chip
+    gpio.Chip --> gpiocdev.Chip
+    gpio.Chip "1" --> "0..*" gpiocdev.Line : handle to
 ----

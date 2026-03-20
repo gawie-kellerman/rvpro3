@@ -1,7 +1,10 @@
 package interfaces
 
+import "rvpro3/radarvision.com/utils"
+
 type IPhaseState interface {
 	EqualsRYG(other IPhaseState) bool
-	SetRYG(red uint64, yellow uint64, green uint64)
-	GetRYG() (uint64, uint64, uint64)
+	SetRYG(source string, red utils.Uint64, yellow utils.Uint64, green utils.Uint64)
+	GetRYG() (utils.Uint64, utils.Uint64, utils.Uint64)
+	IsEverSet() bool
 }

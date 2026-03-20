@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -10,6 +11,10 @@ import (
 type Uint128 struct {
 	Hi uint64
 	Lo uint64
+}
+
+func (u Uint128) MarshalJSON() ([]byte, error) {
+	return json.Marshal(fmt.Sprintf("%016x:%016x", u.Hi, u.Lo))
 }
 
 type callback func(int, bool)

@@ -13,17 +13,18 @@ import (
 	"rvpro3/radarvision.com/internal/smartmicro/udp/activity/pvr"
 	"rvpro3/radarvision.com/internal/smartmicro/udp/activity/statistics"
 	"rvpro3/radarvision.com/internal/smartmicro/udp/activity/trigger"
+	"rvpro3/radarvision.com/internal/smartmicro/udp/state"
 	"rvpro3/radarvision.com/utils"
 )
 
 type UDPBroker struct {
-	State            RadarState
+	RadarState       *state.RadarState
 	IPAddress        utils.IP4
 	SegmentCounter   uint16
 	SegmentTotal     uint16
 	SegmentId        uint16
 	Now              time.Time
-	FailSafePipeline triggerpipeline.RadarFailsafeItem
+	FailSafePipeline triggerpipeline.RadarFailsafePipelineItem
 	Executor         Workflows
 	IsVerboseTrigger bool
 	IsVerboseStats   bool
@@ -132,7 +133,7 @@ func (rc *UDPBroker) execute() {
 }
 
 func (rc *UDPBroker) startMsg(msg *UDPMessage) {
-	rc.Now = time.Now()
+	rc.Now = utils.Time.Exact()
 	rc.Metrics.ReceivedCount.IncAt(1, rc.Now)
 	rc.Metrics.ReceivedBytes.IncAt(int64(msg.BufferLen), rc.Now)
 
@@ -251,6 +252,9 @@ func (rc *UDPBroker) process() {
 		}
 	}
 
+	rc.RadarState.ReplaceSerial(th.GetSourceClientId())
+	rc.RadarState.FailSafe.SetUpdateOn(utils.Time.Approx())
+
 	rc.Executor.Execute(
 		rc.Now,
 		uint32(ph.GetIdentifier()),
@@ -317,17 +321,63 @@ func (rc *UDPBroker) SetupWorkflow(
 	radarCfg *servicemodel.Radar,
 ) {
 	cuter := &rc.Executor
-	rc.setupVerboseActivityLogging(cuter)
-	rc.setupVerboseActivityCounting(cuter)
+	rc.setupPipeline()
+	rc.setupTriggerWorkflow()
+	//rc.setupVerboseActivityLogging(cuter)
+	//rc.setupVerboseActivityCounting(cuter)
+	rc.setupCSVLogging(cuter)
+}
+
+func (rc *UDPBroker) setupPipeline() {
+	pipeline := &rc.RadarState.Pipeline
+
+	addStagingItem := func() {
+		stageItem := new(triggerpipeline.TriggerPipelineOrItem)
+		stageItem.RadarIP = rc.GetRadarIP()
+		stageItem.Name = triggerpipeline.Staging
+		stageItem.Order = 10
+		stageItem.Status = triggerpipeline.ChannelStatusCall
+		pipeline.AddItem(stageItem)
+	}
+
+	addManualItem := func() {
+		manualItem := new(triggerpipeline.TriggerPipelineOrItem)
+		manualItem.RadarIP = rc.GetRadarIP()
+		manualItem.Name = triggerpipeline.Manual
+		manualItem.Order = 80
+		manualItem.Status = triggerpipeline.ChannelStatusForceSet
+		pipeline.AddItem(manualItem)
+	}
+
+	addFailsafeItem := func() {
+		failsafeItem := new(triggerpipeline.RadarFailsafePipelineItem)
+		failsafeItem.RadarIP = rc.GetRadarIP()
+		failsafeItem.Name = triggerpipeline.Failsafe
+		failsafeItem.Order = 90
+		pipeline.AddItem(failsafeItem)
+
+		rc.RadarState.FailSafe = failsafeItem
+	}
+
+	addStagingItem()
+	addManualItem()
+	addFailsafeItem()
+}
+
+func (rc *UDPBroker) setupTriggerWorkflow() {
+	wf := rc.Executor.Workflow(port.PiEventTrigger)
+	utils.Exec.If(rc.IsVerboseTrigger, func() { wf.AddActivity(&trigger.VerboseActivity{}) })
+	utils.Exec.If(rc.IsCountTrigger, func() { wf.AddActivity(&generic.CountingActivity{}) })
+	wf.AddActivity(&trigger.LogCSVActivity{})
+	wf.AddActivity(&trigger.StageTriggerActivity{})
+}
+
+func (rc *UDPBroker) setupCSVLogging(cuter *Workflows) {
+	cuter.Workflow(port.PiEventTrigger).
+		AddActivity(&trigger.LogCSVActivity{})
 }
 
 func (rc *UDPBroker) setupVerboseActivityLogging(cuter *Workflows) {
-	if rc.IsVerboseTrigger {
-		cuter.
-			Workflow(port.PiEventTrigger).
-			AddActivity(&trigger.VerboseActivity{})
-	}
-
 	if rc.IsVerboseObjList {
 		cuter.
 			Workflow(port.PiObjectList).
@@ -348,12 +398,6 @@ func (rc *UDPBroker) setupVerboseActivityLogging(cuter *Workflows) {
 }
 
 func (rc *UDPBroker) setupVerboseActivityCounting(cuter *Workflows) {
-	if rc.IsCountTrigger {
-		cuter.
-			Workflow(port.PiEventTrigger).
-			AddActivity(&generic.CountingActivity{})
-	}
-
 	if rc.IsCountObjList {
 		cuter.
 			Workflow(port.PiObjectList).

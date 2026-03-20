@@ -24,7 +24,7 @@ type SendDetectResponse struct {
 // /SDLC:2000
 // /Notes:
 // /1. Lines terminated with 0x0a0d (Windows)
-// /2. SDLC Line does not have a terminator
+// /2. SDLC ListenTo does not have a terminator
 func (r *SendDetectResponse) Unmarshal(body string) (err error) {
 	var i64 int64
 

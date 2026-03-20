@@ -56,7 +56,7 @@ func (s *SendTimeSocketService) run() {
 			msg.Set("Location", now.Location().String())
 			zone, offset := now.Zone()
 			msg.Set("Zone", zone)
-			msg.SetInt("Offset", offset)
+			msg.SetInt("GetOffset", offset)
 			s.web.Broadcast(msg.ToPayload(web.SocketTime))
 		}
 

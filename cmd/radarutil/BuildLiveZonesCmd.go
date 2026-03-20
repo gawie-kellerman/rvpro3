@@ -8,6 +8,7 @@ import (
 	"sync"
 
 	"github.com/rs/zerolog/log"
+	"rvpro3/radarvision.com/internal/smartmicro/instruction/face08700"
 	"rvpro3/radarvision.com/internal/smartmicro/port"
 	"rvpro3/radarvision.com/internal/smartmicro/service"
 	"rvpro3/radarvision.com/utils"
@@ -34,10 +35,9 @@ func (s *BuildLiveZonesCmd) Init(params *radarUtilParams) {
 	s.liveConfigFilename = params.GetLiveConfigFilename()
 	s.liveConfig.Init()
 
-	s.dataService.Init()
-
 	s.waitGroup.Add(2)
-	s.aliveService.SetupDefaults(&utils.GlobalSettings)
+
+	s.dataService.InitFromSettings(&utils.GlobalSettings)
 	s.aliveService.InitFromSettings(&utils.GlobalSettings)
 
 	for i := range s.insServices {
@@ -82,7 +82,7 @@ func (s *BuildLiveZonesCmd) onDataServiceDataCallback(ds *service.UDPDataService
 		ins := port.NewInstruction()
 		ins.Th.Flags = ins.Th.Flags.Set(port.FlSourceClientId)
 		ins.Th.SourceClientId = s.clientId
-		ins.AddDetail(port.Face08700.Parameters.GetNofZones())
+		ins.AddDetail(face08700.Detail.Parameters.GetNofZones())
 		insService.EnqueueSend(ins, 5)
 	}
 
@@ -113,7 +113,7 @@ func (s *BuildLiveZonesCmd) onInstructionResponse(insService *service.Instructio
 		detail := &response.Detail[i]
 		radarIP := insService.RadarIP.ToIPString()
 
-		if port.Face08700.Parameters.IsGetNofZones(detail) {
+		if face08700.Detail.Parameters.IsGetNofZones(detail) {
 			noZones := int(detail.GetU16(response.Ph.GetOrder()))
 			Terminal.Println(noZones, "zones found for", radarIP)
 			s.liveConfig.SetupZones(radarIP, noZones)
@@ -122,26 +122,26 @@ func (s *BuildLiveZonesCmd) onInstructionResponse(insService *service.Instructio
 				ins := port.NewInstruction()
 				ins.Th.Flags = ins.Th.Flags.Set(port.FlSourceClientId)
 				ins.Th.SourceClientId = s.clientId
-				ins.AddDetail(port.Face08700.Zones.GetNofSegmentsByZone(n))
+				ins.AddDetail(face08700.Detail.Zones.GetNofSegmentsByZone(n))
 				insService.EnqueueSend(ins, 5)
 
 				ins = port.NewInstruction()
 				ins.Th.Flags = ins.Th.Flags.Set(port.FlSourceClientId)
 				ins.Th.SourceClientId = s.clientId
-				ins.AddDetail(port.Face08700.Zones.GetWidthByZone(n))
+				ins.AddDetail(face08700.Detail.Zones.GetWidthByZone(n))
 				insService.EnqueueSend(ins, 6)
 
 				ins = port.NewInstruction()
 				ins.Th.Flags = ins.Th.Flags.Set(port.FlSourceClientId)
 				ins.Th.SourceClientId = s.clientId
-				ins.AddDetail(port.Face08700.Zones.GetRelayAssignment(n))
+				ins.AddDetail(face08700.Detail.Zones.GetRelayAssignment(n))
 				insService.EnqueueSend(ins, 7)
 			}
 		}
 
 		zoneNo := detail.Element1
 
-		if port.Face08700.Zones.IsNofSegmentsByZone(detail) {
+		if face08700.Detail.Zones.IsNofSegmentsByZone(detail) {
 			segments := int(detail.GetU8())
 			Terminal.Println(segments, "segments for zone", zoneNo, "radar", radarIP)
 			s.liveConfig.SetupSegments(radarIP, int(zoneNo), segments)
@@ -151,18 +151,18 @@ func (s *BuildLiveZonesCmd) onInstructionResponse(insService *service.Instructio
 					ins := port.NewInstruction()
 					ins.Th.Flags = ins.Th.Flags.Set(port.FlSourceClientId)
 					ins.Th.SourceClientId = s.clientId
-					ins.AddDetail(port.Face08700.ZoneSegments.GetXSegment(j))
+					ins.AddDetail(face08700.Detail.ZoneSegments.GetXSegment(j))
 					insService.EnqueueSend(ins, 6)
 					ins = port.NewInstruction()
 					ins.Th.Flags = ins.Th.Flags.Set(port.FlSourceClientId)
 					ins.Th.SourceClientId = s.clientId
-					ins.AddDetail(port.Face08700.ZoneSegments.GetYSegment(j))
+					ins.AddDetail(face08700.Detail.ZoneSegments.GetYSegment(j))
 					insService.EnqueueSend(ins, 6)
 				}
 			}
 		}
 
-		if port.Face08700.ZoneSegments.IsGetXSegment(detail) {
+		if face08700.Detail.ZoneSegments.IsGetXSegment(detail) {
 			segmentNo := detail.Element1
 			zoneIx, coordIx := s.liveConfig.ZoneAndCoordBySegment(radarIP, int(segmentNo))
 			x := detail.GetF32(response.Ph.GetOrder())
@@ -171,7 +171,7 @@ func (s *BuildLiveZonesCmd) onInstructionResponse(insService *service.Instructio
 			s.liveConfig.SetX(radarIP, zoneIx, coordIx, x)
 		}
 
-		if port.Face08700.ZoneSegments.IsGetYSegment(detail) {
+		if face08700.Detail.ZoneSegments.IsGetYSegment(detail) {
 			segmentNo := detail.Element1
 			zoneIx, coordIx := s.liveConfig.ZoneAndCoordBySegment(radarIP, int(segmentNo))
 			y := detail.GetF32(response.Ph.GetOrder())
@@ -180,13 +180,13 @@ func (s *BuildLiveZonesCmd) onInstructionResponse(insService *service.Instructio
 			s.liveConfig.SetY(radarIP, zoneIx, coordIx, y)
 		}
 
-		if port.Face08700.Zones.IsWidthByZone(detail) {
+		if face08700.Detail.Zones.IsWidthByZone(detail) {
 			width := detail.GetF32(response.Ph.GetOrder())
 			Terminal.Println(width, "width for zone", zoneNo, "radar", radarIP)
 			s.liveConfig.SetWidth(radarIP, int(zoneNo), width)
 		}
 
-		if port.Face08700.Zones.IsRelayAssignment(detail) {
+		if face08700.Detail.Zones.IsRelayAssignment(detail) {
 			relay := detail.GetU8()
 			Terminal.Println("relay", relay, "assigned for zone", zoneNo, "radar", radarIP)
 			s.liveConfig.SetTrigger(radarIP, int(zoneNo), int(relay))
@@ -205,11 +205,11 @@ func (s *BuildLiveZonesCmd) Execute() {
 	Terminal.Indent(2)
 	Terminal.PrintfLnKv("Target RVProIP", "%s", s.targetIP.String())
 	Terminal.PrintfLnKv("Client ID", "0x%x", s.clientId)
-	s.aliveService.Start()
+	s.aliveService.Start(&utils.GlobalState, &utils.GlobalSettings)
 
 	Terminal.Indent(-2)
 	Terminal.Println("Starting data Service")
-	s.dataService.Start()
+	s.dataService.Start(&utils.GlobalState, &utils.GlobalSettings)
 
 	Terminal.Indent(2)
 	Terminal.PrintfLnKv("Listening on", "%s", s.dataService.ListenAddr.String())

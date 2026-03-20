@@ -8,6 +8,7 @@ import (
 	"github.com/gorilla/websocket"
 	"github.com/rs/zerolog/log"
 	"rvpro3/radarvision.com/internal/general"
+	"rvpro3/radarvision.com/internal/smartmicro/interfaces"
 	"rvpro3/radarvision.com/utils"
 )
 
@@ -79,6 +80,7 @@ func (w *WebService) Start(state *utils.State, settings *utils.Settings) {
 	router.GET("/metrics/sections", w.getMetricsSections)
 	router.GET("/state/keys", w.getStateKeys)
 	router.GET("/state/key", w.getStateKey)
+	router.PUT("/state/set/phase", w.setPhaseState)
 
 	//router.PUT("/executor/radars/stop", putStopRadars)
 	//router.PUT("/executor/radars/start", putStartRadars)
@@ -184,4 +186,39 @@ func (w *WebService) IsAnySubscribed(mask uint64) bool {
 		return false
 	}
 	return w.Sockets.IsAnySubscribed(mask)
+}
+
+func (w *WebService) setPhaseState(context *gin.Context) {
+	phases := utils.GlobalState.Get(interfaces.PhaseStateName).(interfaces.IPhaseState)
+	if phases == nil {
+		http.Error(context.Writer, "Phase state not found", http.StatusNotFound)
+		return
+	}
+
+	var err error
+	var r, g, y uint64
+
+	red := context.Query("red")
+	green := context.Query("green")
+	yellow := context.Query("yellow")
+
+	if r, err = strconv.ParseUint(red, 16, 64); err != nil {
+		goto _errorLabel
+	}
+
+	if g, err = strconv.ParseUint(green, 16, 64); err != nil {
+		goto _errorLabel
+	}
+
+	if y, err = strconv.ParseUint(yellow, 16, 64); err != nil {
+		goto _errorLabel
+	}
+
+	phases.SetRYG("rest", utils.Uint64(r), utils.Uint64(y), utils.Uint64(g))
+	context.JSON(http.StatusOK, phases)
+	return
+
+_errorLabel:
+	context.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	return
 }

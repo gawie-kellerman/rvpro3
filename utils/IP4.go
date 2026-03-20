@@ -68,6 +68,10 @@ func (b ip4Builder) FromAddr(addr net.Addr) IP4 {
 	return result
 }
 
+func (b ip4Builder) FromUDPAddr(addr net.UDPAddr) IP4 {
+	return IP4Builder.FromIP(addr.IP, addr.Port)
+}
+
 func (b ip4Builder) FromPort(port int) IP4 {
 	res := IP4{}
 	res.Port = port
@@ -190,6 +194,10 @@ func (i IP4) Equals(other IP4) bool {
 
 func (i IP4) IsEqualIP(other IP4) bool {
 	return other.ToU32() == i.ToU32()
+}
+
+func (i IP4) GetHost() byte {
+	return i.Bytes[3]
 }
 
 func getPortFromString(addr string) int {

@@ -119,3 +119,10 @@ func (a args) GetValue(argNo int) string {
 	}
 	return source[index+1:]
 }
+
+func (a args) Command(index int, defValue string) string {
+	if len(os.Args) <= index {
+		return defValue
+	}
+	return os.Args[index]
+}

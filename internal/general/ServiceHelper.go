@@ -22,7 +22,7 @@ func (serviceHelper) ShouldStart(state *utils.State, settings *utils.Settings, s
 		return false
 	}
 	state.Set(service.GetServiceName(), service)
-	service.InitFromSettings(settings)
+	//service.InitFromSettings(settings)  <-- Removed for radar-startsim
 	return true
 }
 

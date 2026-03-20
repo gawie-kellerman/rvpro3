@@ -11,6 +11,7 @@ import (
 	"rvpro3/radarvision.com/internal/smartmicro/interfaces"
 	"rvpro3/radarvision.com/internal/smartmicro/service"
 	"rvpro3/radarvision.com/internal/smartmicro/triggerpipeline"
+	state2 "rvpro3/radarvision.com/internal/smartmicro/udp/state"
 	"rvpro3/radarvision.com/utils"
 )
 
@@ -53,10 +54,13 @@ func (rc *UDPBrokersService) Start(state *utils.State, settings *utils.Settings)
 	rc.AttachTo(dataService)
 
 	for index, radarCfg := range serviceCfg.Radars {
-		channel := &rc.Brokers[index]
-		channel.InitMetrics(radarCfg.GetRadarIP())
-		channel.InitFromSettings(settings)
-		channel.SetupWorkflow(channel, serviceCfg, radarCfg)
+		udpBroker := &rc.Brokers[index]
+		udpBroker.RadarState = state2.RadarStateHelper.GetOrSet(radarCfg.GetRadarIP())
+		udpBroker.RadarState.IP = radarCfg.GetRadarIP()
+		udpBroker.RadarState.Name = radarCfg.RadarName
+		udpBroker.InitMetrics(radarCfg.GetRadarIP())
+		udpBroker.InitFromSettings(settings)
+		udpBroker.SetupWorkflow(udpBroker, serviceCfg, radarCfg)
 	}
 
 	rc.SetupStates(state)
@@ -64,14 +68,14 @@ func (rc *UDPBrokersService) Start(state *utils.State, settings *utils.Settings)
 	rc.TerminateRefCount.Store(0)
 
 	for index := range rc.Brokers {
-		radar := &rc.Brokers[index]
-		radar.OnTerminate = rc.OnChannelTerminate
-		radar.Run(radar.GetRadarIP())
+		udpBroker := &rc.Brokers[index]
+		udpBroker.OnTerminate = rc.OnChannelTerminate
+		udpBroker.Run(udpBroker.GetRadarIP())
 	}
 }
 
 func (rc *UDPBrokersService) SetupStates(state *utils.State) {
-	// Setup Global Trigger Pipeline State
+	// Setup Global Trigger Pipeline RadarState
 	state.Set(
 		triggerpipeline.TriggerPipelineStateName,
 		new(triggerpipeline.TriggerPipeline),

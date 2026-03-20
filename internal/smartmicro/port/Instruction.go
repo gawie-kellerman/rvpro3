@@ -325,6 +325,14 @@ func (id *InstructionDetail) GetU16(order binary.ByteOrder) uint16 {
 	return bits
 }
 
+func (id *InstructionDetail) SetU16(order binary.ByteOrder, value uint16) {
+	order.PutUint16(id.Value[:], value)
+}
+
+func (id *InstructionDetail) SetU32(order binary.ByteOrder, value uint32) {
+	order.PutUint32(id.Value[:], value)
+}
+
 type Instruction struct {
 	Th       TransportHeader
 	Ph       PortHeader
@@ -370,6 +378,11 @@ func (i *Instruction) Read(reader *utils.FixedBuffer) error {
 	}
 
 	return i.Validate()
+}
+
+func (i *Instruction) ReadBytes(bytes []byte) error {
+	fb := utils.FixedBuffer{Buffer: bytes, WritePos: len(bytes)}
+	return i.Read(&fb)
 }
 
 func (i *Instruction) Validate() (err error) {
@@ -484,4 +497,14 @@ func (i *Instruction) GetTotalSize() int {
 
 func (i *Instruction) GetDetail(index int) *InstructionDetail {
 	return &i.Detail[index]
+}
+
+func (i *Instruction) Find(sectionId int, parameterId int) *InstructionDetail {
+	for index := range i.Detail {
+		detail := &i.Detail[index]
+		if detail.SectionId == uint16(sectionId) && detail.ParameterId == uint16(parameterId) {
+			return detail
+		}
+	}
+	return nil
 }

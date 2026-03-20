@@ -13,15 +13,12 @@ type TriggerPipeline struct {
 	Item []ITriggerPipelineItem
 }
 
-func GetTriggerPipeline() *TriggerPipeline {
-	return utils.GlobalState.Get(TriggerPipelineStateName).(*TriggerPipeline)
-}
-
 func (t *TriggerPipeline) AddItem(item ITriggerPipelineItem) ITriggerPipelineItem {
 	if result := t.Find(item.GetName(), item.GetRadarIP()); result != nil {
 		return result
 	}
 
+	item.SetParent(t)
 	t.Item = append(t.Item, item)
 	t.Sort()
 

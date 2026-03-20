@@ -7,20 +7,20 @@ import (
 	"rvpro3/radarvision.com/utils/bit"
 )
 
-// RadarFailsafeItem must be registered with the highest order, which will make it
+// RadarFailsafePipelineItem must be registered with the highest order, which will make it
 // execute last. It should be setup and executed per radar (RadarChannel).  Its purpose
 // Is to simply set/clear flags based on whether the radar is sending message or not.
-type RadarFailsafeItem struct {
+type RadarFailsafePipelineItem struct {
 	TriggerPipelineItemMixin
-	SetChannels         utils.Uint128
-	ClearChannels       utils.Uint128
-	NoRadarActivitySecs int
+	SetChannels         utils.Uint128 `json:"SetChannels"`
+	ClearChannels       utils.Uint128 `json:"ClearChannels"`
+	NoRadarActivitySecs int           `json:"NoRadarActivitySecs"`
 }
 
-func (r *RadarFailsafeItem) AfterInit() {
-}
+//func (r *RadarFailsafePipelineItem) AfterInit() {
+//}
 
-func (r *RadarFailsafeItem) Execute(now time.Time, source utils.Uint128, display ITriggerDisplay) utils.Uint128 {
+func (r *RadarFailsafePipelineItem) Execute(now time.Time, source utils.Uint128, display ITriggerDisplay) utils.Uint128 {
 	// WARNING: Review the next line
 	if !utils.Time.IsExpired(r.UpdateOn, now, time.Duration(r.NoRadarActivitySecs)*time.Second) {
 		return source

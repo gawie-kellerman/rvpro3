@@ -212,9 +212,6 @@ func (u *UDPDataService) IsTerminated() bool {
 	return u.Terminated
 }
 
-func (u *UDPDataService) InitFromConfig(config *utils.Settings) {
-}
-
 type UDPSendData struct {
 	Address utils.IP4
 	Data    []byte

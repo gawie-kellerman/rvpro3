@@ -1,7 +1,6 @@
 package triggerpipeline
 
 import (
-	"encoding/json"
 	"time"
 
 	"rvpro3/radarvision.com/utils"
@@ -10,22 +9,34 @@ import (
 type TriggerPipelineItemMixin struct {
 	Order    int
 	Name     string
-	RadarIP  utils.IP4
+	RadarIP  utils.IP4 `json:"-"`
 	Triggers utils.Uint128
-	Status   ChannelStatus
 	SetOn    time.Time
 	UpdateOn time.Time
+	Parent   *TriggerPipeline `json:"-"`
 }
 
-func (t *TriggerPipelineItemMixin) MarshalJSON() ([]byte, error) {
-	return json.Marshal(map[string]interface{}{
-		"Name":       t.Name,
-		"Order":      t.Order,
-		"RadarIP":    t.RadarIP,
-		"Triggers":   t.Triggers.String(),
-		"Status":     string(t.Status),
-		"StatusName": t.Status.String(),
-	})
+//func (t *TriggerPipelineItemMixin) MarshalJSON() ([]byte, error) {
+//	return json.Marshal(map[string]interface{}{
+//		"Name":       t.Name,
+//		"Order":      t.Order,
+//		"RadarIP":    t.RadarIP,
+//		"Triggers":   t.Triggers.String(),
+//		"Status":     string(t.Status),
+//		"StatusName": t.Status.String(),
+//	})
+//}
+
+func (t *TriggerPipelineItemMixin) SetParent(pipeline *TriggerPipeline) {
+	t.Parent = pipeline
+}
+
+func (t *TriggerPipelineItemMixin) GetParent() *TriggerPipeline {
+	return t.Parent
+}
+
+func (t *TriggerPipelineItemMixin) SetUpdateOn(tm time.Time) {
+	t.UpdateOn = tm
 }
 
 func (t *TriggerPipelineItemMixin) GetOrder() int {
@@ -55,13 +66,13 @@ func (t *TriggerPipelineItemMixin) SetTrigger(now time.Time, hi uint64, lo uint6
 	return false
 }
 
-func (t *TriggerPipelineItemMixin) GetChannelStatus() ChannelStatus {
-	return t.Status
-}
-
-func (t *TriggerPipelineItemMixin) SetChannelStatus(channelStatus ChannelStatus) {
-	t.Status = channelStatus
-}
+//func (t *TriggerPipelineItemMixin) GetChannelStatus() ChannelStatus {
+//	return t.Status
+//}
+//
+//func (t *TriggerPipelineItemMixin) SetChannelStatus(channelStatus ChannelStatus) {
+//	t.Status = channelStatus
+//}
 
 func (t *TriggerPipelineItemMixin) GetSetOn() time.Time {
 	return t.SetOn

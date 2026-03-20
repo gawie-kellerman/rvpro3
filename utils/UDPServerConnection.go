@@ -1,7 +1,6 @@
 package utils
 
 import (
-	"fmt"
 	"net"
 	"os"
 	"time"
@@ -200,7 +199,6 @@ func (m *UDPServerConnection) WriteData(udpAddr net.UDPAddr, buffer []byte) erro
 		goto errLabel
 	}
 
-	fmt.Println("Writing from", cnx.LocalAddr(), "to", udpAddr.String(), len(buffer), "Bytes")
 	if _, err = cnx.WriteToUDP(buffer, &udpAddr); err != nil {
 		goto errLabel
 	}

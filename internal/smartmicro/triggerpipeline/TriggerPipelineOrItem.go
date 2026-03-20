@@ -8,6 +8,7 @@ import (
 )
 
 type TriggerPipelineOrItem struct {
+	Status ChannelStatus `json:"-"`
 	TriggerPipelineItemMixin
 }
 

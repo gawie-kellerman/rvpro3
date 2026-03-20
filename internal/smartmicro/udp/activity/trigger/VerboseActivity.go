@@ -12,12 +12,12 @@ type VerboseActivity struct {
 	MetricName string
 	Index      int
 	RadarIP4   utils.IP4
-	Metrics    VerboseActivityMetrics `json:"-"`
+	Metrics    VerboseActivityMetrics
 	interfaces.UDPActivityMixin
 }
 
 type VerboseActivityMetrics struct {
-	UnsupportedVersion *utils.Metric
+	ErrorMajorMinorVersion *utils.Metric
 	utils.MetricsInitMixin
 }
 
@@ -50,7 +50,7 @@ func (l *VerboseActivity) Process(
 			trigger.GetRelays(),
 		)
 	} else {
-		l.Metrics.UnsupportedVersion.IncAt(1, tm)
+		l.Metrics.ErrorMajorMinorVersion.IncAt(1, tm)
 	}
 
 }

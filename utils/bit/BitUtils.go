@@ -68,3 +68,7 @@ func ForLSB[T constraints.Integer](value T, callback func(int, bool)) {
 		check <<= 1
 	}
 }
+
+func ByteWidth[T constraints.Integer](bitWidth T) T {
+	return (bitWidth + 7) / 8
+}

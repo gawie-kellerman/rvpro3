@@ -6,6 +6,7 @@ import (
 	"os"
 	"time"
 
+	"rvpro3/radarvision.com/internal/smartmicro/instruction/face08700"
 	"rvpro3/radarvision.com/internal/smartmicro/port"
 	"rvpro3/radarvision.com/internal/smartmicro/service"
 	"rvpro3/radarvision.com/utils"
@@ -34,7 +35,7 @@ func getZoneWidths() *port.Instruction {
 
 	//res.AddDetail(port.Face08700.GetZoneWidth(1))
 	for n := 0; n < 10; n++ {
-		res.AddDetail(port.Face08700.ZoneSegments.GetXSegment(n))
+		res.AddDetail(face08700.Detail.ZoneSegments.GetXSegment(n))
 		//res.AddDetail(port.Face08700.Zones.GetWidthByZone(n))
 	}
 	//res.AddDetail(port.Face08700.GetNofZones())

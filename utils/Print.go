@@ -5,7 +5,13 @@ import (
 	"io"
 	"math"
 	"os"
+	"strings"
 	"time"
+
+	"github.com/charmbracelet/lipgloss"
+)
+import (
+	rt "runtime/debug"
 )
 
 var Print printClass
@@ -34,15 +40,66 @@ func (printClass) Detail(label string, format string, a ...any) (n int, err erro
 }
 
 func (printClass) WarnLn(a ...any) {
-	Print.DatetimeMS(time.Now(), false)
-	_, _ = fmt.Fprintf(out, "Warn: %*s", indent, "")
-	_, _ = fmt.Fprintln(out, a...)
+	Print.DateTime()
+
+	style := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("0")).
+		Background(lipgloss.Color("172")).
+		MarginRight(1).
+		Bold(true)
+
+	fmt.Print(style.Render("WRN"))
+
+	style = lipgloss.NewStyle().
+		Foreground(lipgloss.Color("172")).
+		Bold(true)
+
+	data := fmt.Sprint(a...)
+	fmt.Println(style.Render(data))
 }
 
 func (printClass) ErrorLn(a ...any) {
-	Print.DatetimeMS(time.Now(), false)
-	_, _ = fmt.Fprintf(out, "Error: %*s", indent, "")
-	_, _ = fmt.Fprintln(out, a...)
+	Print.DateTime()
+
+	style := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("0")).
+		Background(lipgloss.Color("1")).
+		MarginRight(1).
+		Bold(true)
+
+	fmt.Print(style.Render("ERR"))
+
+	style = lipgloss.NewStyle().
+		Foreground(lipgloss.Color("1")).
+		Bold(true)
+
+	data := fmt.Sprint(a...)
+	fmt.Println(style.Render(data))
+}
+
+func (printClass) Stack() {
+	stack := rt.Stack()
+	stackLines := strings.Split(string(stack), "\n")
+
+	for _, line := range stackLines {
+		Print.DateTime()
+		style := lipgloss.NewStyle().
+			Foreground(lipgloss.Color("0")).
+			Background(lipgloss.Color("1")).
+			MarginRight(1).
+			Bold(true)
+
+		fmt.Print(style.Render("STK"))
+
+		style = lipgloss.NewStyle().
+			Foreground(lipgloss.Color("1")).
+			Bold(true)
+
+		data := fmt.Sprint(line)
+		fmt.Println(style.Render(data))
+
+	}
+
 }
 
 func (printClass) InfoLn(a ...any) {
@@ -52,8 +109,30 @@ func (printClass) InfoLn(a ...any) {
 }
 
 func (printClass) Ln(a ...any) {
-	Print.DatetimeMS(time.Now(), false)
-	_, _ = fmt.Fprintln(out, a...)
+	Print.DateTime()
+	//style := lipgloss.NewStyle().
+	//	Foreground(lipgloss.Color("14"))
+
+	fmt.Println(a...)
+}
+
+func (printClass) Title(a ...interface{}) {
+	style := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("15")).
+		Bold(true)
+
+	Print.DateTime()
+
+	data := fmt.Sprint(a...)
+	fmt.Println(style.Render(data))
+}
+
+func (printClass) DateTime() {
+	style := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("3")).
+		MarginRight(1)
+
+	fmt.Print(style.Render(fmt.Sprint(time.Now().Format(DisplayDateTimeMS))))
 }
 
 func (printClass) RawLn(a ...any) {
@@ -117,4 +196,36 @@ func (printClass) DatetimeMS(now time.Time, forcePrint bool) {
 	if PrintDate || forcePrint {
 		_, _ = fmt.Fprint(out, now.Format(DisplayDateTimeMS), " ")
 	}
+}
+
+func (printClass) Command(desc string) {
+	Print.DateTime()
+	fmt.Println(fmt.Sprintf("  %s", desc))
+}
+
+func (printClass) CommandName(name string, desc string) {
+	Print.DateTime()
+
+	nameStyle := lipgloss.NewStyle().
+		Italic(true).
+		Foreground(lipgloss.Color("6")).
+		MarginLeft(4).Width(15)
+
+	fmt.Print(nameStyle.Render(name))
+	fmt.Print(desc)
+	fmt.Println()
+}
+
+func (printClass) Usage(message string) {
+	Print.Ln(message)
+}
+
+func (printClass) UsageExample(message string) {
+	Print.DateTime()
+
+	style := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("230")).
+		MarginLeft(2)
+
+	fmt.Println(style.Render(message))
 }

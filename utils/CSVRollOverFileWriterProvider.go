@@ -2,15 +2,19 @@ package utils
 
 import (
 	"fmt"
+	"os"
+	"path"
 	"time"
 )
 
 type CSVRollOverFileWriterProvider struct {
-	writer     CSVWriter
-	Template   string
-	Format     string
-	OnHeader   func(provider *CSVRollOverFileWriterProvider, writer *CSVWriter, oldFilename string, newFilename string)
-	OnFilename func(*CSVRollOverFileWriterProvider) string
+	writer           CSVWriter
+	PathTemplate     string
+	TimeFormat       string
+	OnHeader         func(provider *CSVRollOverFileWriterProvider, writer *CSVWriter, oldFilename string, newFilename string)
+	OnFilename       func(*CSVRollOverFileWriterProvider) string
+	OnShouldRollover func(*CSVRollOverFileWriterProvider) bool
+	FileDate         time.Time
 }
 
 func NewCSVRollOverFileWriterProvider(
@@ -19,11 +23,12 @@ func NewCSVRollOverFileWriterProvider(
 	onHeaderCallback func(*CSVRollOverFileWriterProvider, *CSVWriter, string, string),
 ) *CSVRollOverFileWriterProvider {
 	res := &CSVRollOverFileWriterProvider{
-		Template: template,
-		Format:   format,
-		OnHeader: onHeaderCallback,
+		PathTemplate: template,
+		TimeFormat:   format,
+		OnHeader:     onHeaderCallback,
 	}
 	res.OnFilename = res.OnFileNameCallback
+	res.OnShouldRollover = res.OnShouldRolloverCallback
 	return res
 }
 
@@ -32,27 +37,37 @@ func (c *CSVRollOverFileWriterProvider) GetWriter() (*CSVWriter, error) {
 		panic("CSVRollOverFileWriterProvider OnFilename is nil")
 	}
 
-	newFilename := c.OnFilename(c)
-	oldFilename := c.writer.Filename
-
-	if newFilename != c.writer.Filename {
+	if c.OnShouldRollover(c) {
+		newFilename := c.OnFilename(c)
 		c.writer.Close()
-		err := c.writer.CreateOrOpen(newFilename)
-
-		if err != nil {
+		if err := c.createPathFor(newFilename); err != nil {
+			return nil, err
+		}
+		if err := c.writer.CreateOrOpen(newFilename); err != nil {
 			return nil, err
 		}
 
 		if c.OnHeader != nil && c.writer.IsNewFile {
-			c.OnHeader(c, &c.writer, oldFilename, newFilename)
+			c.OnHeader(c, &c.writer, c.writer.Filename, newFilename)
 		}
 
-		return &c.writer, err
+		c.writer.Filename = newFilename
+		c.FileDate = time.Now()
+
+		return &c.writer, nil
 	}
 
 	return &c.writer, nil
 }
 
 func (c *CSVRollOverFileWriterProvider) OnFileNameCallback(*CSVRollOverFileWriterProvider) string {
-	return fmt.Sprintf(c.Template, time.Now().Format(c.Format))
+	return fmt.Sprintf(c.PathTemplate, Time.Approx().Format(c.TimeFormat))
+}
+
+func (c *CSVRollOverFileWriterProvider) OnShouldRolloverCallback(*CSVRollOverFileWriterProvider) bool {
+	return !Time.IsSameDay(Time.Approx(), c.FileDate)
+}
+
+func (c *CSVRollOverFileWriterProvider) createPathFor(filename string) error {
+	return os.MkdirAll(path.Dir(filename), os.ModePerm)
 }

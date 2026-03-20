@@ -14,9 +14,12 @@ type ITriggerPipelineItem interface {
 	SetTrigger(now time.Time, triggerHi uint64, triggerLo uint64) bool
 	GetSetOn() time.Time
 	GetUpdateOn() time.Time
-	GetChannelStatus() ChannelStatus
-	SetChannelStatus(channelStatus ChannelStatus)
+	SetParent(pipeline *TriggerPipeline)
+	GetParent() *TriggerPipeline
+	//GetChannelStatus() ChannelStatus
+	//SetChannelStatus(channelStatus ChannelStatus)
 	Execute(now time.Time, uint128 utils.Uint128, display ITriggerDisplay) utils.Uint128
+	SetUpdateOn(tm time.Time)
 	// AfterInit is used to initialize "static" variables used in execution.
-	AfterInit()
+	//AfterInit()
 }
