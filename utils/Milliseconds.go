@@ -18,3 +18,8 @@ func (m Milliseconds) Sleep() {
 func (m Milliseconds) Add(now time.Time) time.Time {
 	return now.Add(time.Duration(m))
 }
+
+func (m Milliseconds) Expired(now time.Time, previous time.Time) bool {
+	millis := now.Sub(previous)
+	return millis >= time.Duration(m)
+}

@@ -7,6 +7,7 @@ import (
 var tzOffset int
 var tzName string
 var lastTime time.Time
+var lastCount int
 
 const (
 	DisplayDateTimeMS   = "2006-01-02T15:04:05.000"
@@ -21,6 +22,7 @@ const (
 const (
 	FileDate           = "20060102"
 	FileDateTimeMS     = "20060102T150405.000"
+	FileTime           = "150405"
 	FileDateTimeMinute = "20060102T1504"
 	FileDateTimeHour   = "20060102T15"
 	FileDateTimeSecond = "20060102T150405"

@@ -43,6 +43,7 @@ func (c *bdfConverter) Convert(
 	dot := fixed.Point26_6{X: 0, Y: face.Metrics().Ascent}
 
 	for n := defBuilder.startChar; n <= defBuilder.endChar; n++ {
+		fmt.Println(n)
 		rect, mask, _, _, _ := face.Glyph(dot, rune(n))
 		yOffset := 0
 		if mask.Bounds().Dy() <= height {

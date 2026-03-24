@@ -71,3 +71,7 @@ func (r *Settings) ReadArgs() {
 		}
 	}
 }
+
+func (r *Settings) Split(value string) []string {
+	return strings.Split(value, ";")
+}

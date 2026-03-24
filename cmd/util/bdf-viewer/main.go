@@ -39,10 +39,11 @@ func main() {
 }
 
 func createOfficialFonts() {
-	createOfficialFont("Wingdings", "/home/gkellerman/Workspace/RadarVision/Source/rvpro3/cmd/util/bdf-viewer/fonts/Wingdings_5pt-7.bdf", 32, 54)
-	createOfficialFont("Roboto", "/home/gkellerman/Downloads/bdf/fonts/RobotoMono-Regular-7pt.bdf", 32, 126)
-	createOfficialFont("NotoSans", "/home/gkellerman/Downloads/bdf/fonts/NotoSans-Regular-8px.bdf", 32, 126)
-	createOfficialFont("Verdana", "/home/gkellerman/Downloads/bdf/fonts/verdana-6pt.bdf", 32, 126)
+	createOfficialFont("Wingdings", "/home/gkellerman/Workspace/RadarVision/Source/rvpro3/cmd/util/bdf-viewer/fonts/Wingdings_5pt-7.bdf", 33, 55)
+	//createOfficialFont("Roboto", "/home/gkellerman/Downloads/bdf/fonts/RobotoMono-Regular-7pt.bdf", 32, 126)
+	//createOfficialFont("NotoSans", "/home/gkellerman/Downloads/bdf/fonts/NotoSans-Regular-8px.bdf", 32, 126)
+	//createOfficialFont("Verdana", "/home/gkellerman/Downloads/bdf/fonts/verdana-6pt.bdf", 32, 126)
+	//createOfficialFont("Cozette", "/home/gkellerman/Downloads/Cozette-13.bdf", 32, 126)
 	//createOfficialFont("NotoSans", "/home/gkellerman/Downloads/bdf/fonts/04B_03__7pt.bdf", 32, 126)
 }
 
@@ -52,23 +53,23 @@ func createOfficialFont(baseName string, filePath string, startChar uint16, endC
 	utils.Print.RawLn(fontSrc)
 }
 
-func doPicker() {
-	picker := BdfPicker{}
-	utils.Debug.Panic(picker.Init("/home/gkellerman/Downloads/out.bdf", 32, 41))
-
-	picker.Add(62099)
-	picker.Add(61796)
-	picker.Add(60082)
-	picker.Add(0xf1eb)
-	picker.Add(0xee06)
-	picker.Add(0xee07)
-	picker.Add(0xee08)
-	picker.Add(0xee09)
-	picker.Add(0xee0a)
-	picker.Add(0xee0b)
-	//picker.Add(0xf16c6)
-	fmt.Println(picker.String())
-}
+//func doPicker() {
+//	picker := BdfPicker{}
+//	utils.Debug.Panic(picker.Init("/home/gkellerman/Downloads/out.bdf", 32, 41))
+//
+//	picker.Add(62099)
+//	picker.Add(61796)
+//	picker.Add(60082)
+//	picker.Add(0xf1eb)
+//	picker.Add(0xee06)
+//	picker.Add(0xee07)
+//	picker.Add(0xee08)
+//	picker.Add(0xee09)
+//	picker.Add(0xee0a)
+//	picker.Add(0xee0b)
+//	picker.Add(0xf16c6)
+//fmt.Println(picker.String())
+//}
 
 func oldMain() {
 	//bytes, err := os.ReadFile("/home/gkellerman/Downloads/bdf/fonts/Roboto-Regular-7pt.bdf") GOOD

@@ -31,7 +31,7 @@ type MJPegStreamService struct {
 	StreamURL            string                                                 `json:"StreamURL"`
 	StreamConnectTimeout time.Duration                                          `json:"StreamConnectTimeout"`
 	Enabled              bool                                                   `json:"Enabled"`
-	Terminate            bool                                                   `json:"Terminate"`
+	Terminate            bool                                                   `json:"ReadTerminate"`
 	Terminated           bool                                                   `json:"Terminated"`
 	ErrorDuration        time.Duration                                          `json:"ErrorDuration"`
 	ErrorCountLog        int                                                    `json:"ErrorCountLog"`

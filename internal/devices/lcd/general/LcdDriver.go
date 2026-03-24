@@ -86,7 +86,7 @@ func (l *LcdDriver) DrawPage(content []byte, pageNo int) (err error) {
 	return err
 }
 
-func (l *LcdDriver) DrawMono(mono interfaces.IMonoBuffer) (err error) {
+func (l *LcdDriver) DrawMono(mono interfaces.ILcdCanvas) (err error) {
 	if mono.Width() != 128 || mono.Height() != 64 {
 		return ErrNotLCDDimensions
 	}

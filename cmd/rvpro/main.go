@@ -5,12 +5,19 @@ import (
 	"flag"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/pkg/errors"
 	"rvpro3/radarvision.com/internal/api/services/testing"
 	"rvpro3/radarvision.com/internal/api/services/web"
+	"rvpro3/radarvision.com/internal/constants"
+	"rvpro3/radarvision.com/internal/devices/joystick"
+	"rvpro3/radarvision.com/internal/devices/lcd/general"
+	"rvpro3/radarvision.com/internal/devices/lcd/pages"
 	"rvpro3/radarvision.com/internal/models/servicemodel"
+	"rvpro3/radarvision.com/internal/router/server"
 	"rvpro3/radarvision.com/internal/sdlc/uartsdlc"
+	"rvpro3/radarvision.com/internal/services/ping"
 	"rvpro3/radarvision.com/internal/smartmicro/service"
 	"rvpro3/radarvision.com/internal/smartmicro/udp/activity/trigger"
 	"rvpro3/radarvision.com/internal/smartmicro/udp/broker"
@@ -28,7 +35,19 @@ var (
 	cfgFilename   string
 	runMode       string
 )
+
+var appInfo utils.AppInfo
+
 var services []utils.IRunnableService
+
+func captureSettings() {
+	appInfo.Version = utils.String.Or(version, "DEV!")
+	appInfo.BuildDate = utils.String.Or(buildDate, time.Now().Format(utils.FileDate))
+	appInfo.BuildTime = utils.String.Or(buildTime, time.Now().Format(utils.FileTime))
+	appInfo.BuildCommitID = utils.String.Or(buildCommitID, "dev")
+
+	utils.GlobalState.Set(constants.AppInfoStateName, &appInfo)
+}
 
 func showHelp() bool {
 	flag.Usage()
@@ -136,17 +155,15 @@ func startServices() {
 	}
 }
 
-func registerServiceSettings() *utils.Settings {
+func registerServiceSettings(target *utils.Settings) {
 	utils.Print.InfoLn("Registering service defaults")
 
 	res := &utils.Settings{}
 	res.Init()
 
 	for _, svc := range services {
-		svc.InitFromSettings(res)
+		svc.InitFromSettings(target)
 	}
-
-	return res
 }
 
 //func updateServiceSettings(settings *utils.Settings) {
@@ -213,8 +230,16 @@ func registerServices(settings *utils.Settings) {
 	registerSDLCServices(settings)
 	registerVideoServices(settings)
 
+	pageService := new(general.LcdPageService)
+	pageService.SetHomePage(&pages.LcdHomePage{})
+	pageService.ScreenSaverPage = &pages.LcdScreenSaverPage{}
+	registerService(pageService)
+	registerService(new(joystick.JoystickService))
 	registerService(new(web.WebService))
 	registerService(new(testing.SendTimeSocketService))
+	registerService(new(ping.PingStatsService))
+
+	registerService(new(server.RouterServerService))
 
 	//NB:  When creating UDPBrokersService, remember to add the WorkflowBuilder
 	//TODO: Add TcpHub/Router back into the fold
@@ -237,7 +262,8 @@ func doDumpTestConfig(cmdSettings *utils.Settings) {
 			os.Exit(1)
 		}
 
-		jsonData, err := json.MarshalIndent(config, "", "  ")
+		var jsonData []byte
+		jsonData, err = json.MarshalIndent(config, "", "  ")
 		utils.Debug.Panic(err)
 		utils.Print.RawLn(string(jsonData))
 	}
@@ -253,26 +279,19 @@ func doDumpFinalSettings(args *utils.Settings) {
 	args.MergeFromSettings(fileSettings)
 
 	registerServices(args)
-	svcSettings := registerServiceSettings()
+	registerServiceSettings(args)
 
-	utils.GlobalSettings.MergeFromSettings(svcSettings)
 	utils.GlobalSettings.MergeFromSettings(args)
 	utils.GlobalSettings.DumpTo(os.Stdout)
-
-	svcSettings = nil
 }
 
 func doRunMode(args *utils.Settings) {
 	fileSettings := loadSettingsFile(args)
 	args.MergeFromSettings(fileSettings)
-
-	registerServices(args)
-	svcSettings := registerServiceSettings()
-
-	utils.GlobalSettings.MergeFromSettings(svcSettings)
 	utils.GlobalSettings.MergeFromSettings(args)
 
-	svcSettings = nil
+	registerServices(&utils.GlobalSettings)
+	registerServiceSettings(&utils.GlobalSettings)
 
 	startServices()
 	awaitComplete()
@@ -281,6 +300,7 @@ func doRunMode(args *utils.Settings) {
 }
 
 func main() {
+	captureSettings()
 	showBranding()
 	args := loadArgs()
 

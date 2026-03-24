@@ -3,11 +3,11 @@ package main
 import (
 	"testing"
 
-	"rvpro3/radarvision.com/internal/devices/lcd/general"
+	"rvpro3/radarvision.com/internal/devices/lcd/interfaces"
 	"rvpro3/radarvision.com/utils"
 )
 
-var TextA8D2 = &general.Font{
+var TextA8D2 = &interfaces.Font{
 	Definition: []byte{
 		0x20, 0x00, 0x7E, 0x00, 0x0A,
 		0x00, 0x00, 0x01, 0x00, 0x0C, 0x00, 0x17, 0x00, 0x22, 0x00, 0x2D, 0x00, 0x38, 0x00, 0x43,

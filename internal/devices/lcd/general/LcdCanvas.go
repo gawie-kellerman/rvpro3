@@ -3,18 +3,83 @@ package general
 import (
 	"fmt"
 	"image"
+
+	"rvpro3/radarvision.com/internal/devices/lcd/interfaces"
 )
 
 type LcdCanvas struct {
 	width  int
 	height int
 	Buffer []byte
+	Font   *interfaces.Font
+	X      int
+	Y      int
 }
 
-func (l *LcdCanvas) Init(width int, height int) {
+func (l *LcdCanvas) Init(width int, height int, font *interfaces.Font) {
 	l.width = width
 	l.height = height
 	l.Buffer = make([]byte, l.ByteTotal())
+	l.Font = font
+}
+
+func (l *LcdCanvas) SetFont(font *interfaces.Font) {
+	l.Font = font
+}
+
+func (l *LcdCanvas) GetFont() *interfaces.Font {
+	return l.Font
+}
+
+func (l *LcdCanvas) SetXY(x, y int) interfaces.ILcdCanvas {
+	l.X = x
+	l.Y = y
+	return l
+}
+
+func (l *LcdCanvas) SetX(x int) interfaces.ILcdCanvas {
+	l.X = x
+	return l
+}
+
+func (l *LcdCanvas) DrawStrLn(text string) interfaces.ILcdCanvas {
+	_ = l.Font.DrawStr(l, text, l.X, l.Y)
+	return l.MoveCursorBy(0, int(l.Font.GetCharHeight()))
+}
+
+func (l *LcdCanvas) DrawLn() {
+	l.MoveCursorBy(0, int(l.Font.GetCharHeight()))
+}
+
+func (l *LcdCanvas) MoveLn() {
+	l.Y += int(l.Font.GetCharHeight())
+	l.X = 0
+}
+
+func (l *LcdCanvas) DrawRight(right int, text string) {
+	x := l.Font.GetTextWidth(text)
+	l.Font.DrawStr(l, text, right-x, l.Y)
+	l.X = right
+}
+
+func (l *LcdCanvas) DrawStr(text string) interfaces.ILcdCanvas {
+	width := l.Font.DrawStr(l, text, l.X, l.Y)
+	return l.MoveCursorBy(width, 0)
+}
+
+func (l *LcdCanvas) DrawSymbol(font *interfaces.Font, symbol uint16) interfaces.ILcdCanvas {
+	width := font.DrawCh(
+		l,
+		symbol,
+		l.X,
+		l.Y,
+	)
+
+	return l.MoveCursorBy(width, 0)
+}
+
+func (l *LcdCanvas) GetY() int {
+	return l.Y
 }
 
 func (l *LcdCanvas) InitSlice(width int, height int, slice []byte) {
@@ -44,6 +109,12 @@ func (l *LcdCanvas) Offsets(x, y int) (int, byte) {
 }
 
 func (l *LcdCanvas) Set(x int, y int) {
+	if x < 0 || x >= l.width {
+		return
+	}
+	if y < 0 || y >= l.height {
+		return
+	}
 	offset, pixel := l.Offsets(x, y)
 
 	l.Buffer[offset] |= pixel
@@ -94,10 +165,11 @@ func (l *LcdCanvas) DrawYOffset(yOffset int, mask image.Image) {
 	}
 }
 
-func (l *LcdCanvas) HorizontalLine(y int) {
+func (l *LcdCanvas) HorzLine(y int) interfaces.ILcdCanvas {
 	for x := 0; x < l.width; x++ {
 		l.Set(x, y)
 	}
+	return l
 }
 
 func (l *LcdCanvas) DumpToConsole() {
@@ -122,7 +194,7 @@ func (l *LcdCanvas) DumpToConsole() {
 }
 
 func (l *LcdCanvas) Copy(cur []byte, start int) {
-	copy(l.Buffer[start:len(cur)], cur)
+	copy(l.Buffer[start:start+len(cur)], cur)
 }
 
 func (l *LcdCanvas) GetPage(pageNo int) []byte {
@@ -147,6 +219,17 @@ func (l *LcdCanvas) Fill(pattern byte) {
 	}
 }
 
-func (l *LcdCanvas) DrawText(font *Font, text string, x int, y int) {
+func (l *LcdCanvas) DrawText(font *interfaces.Font, text string, x int, y int) {
 	font.DrawStr(l, text, x, y)
+}
+
+func (l *LcdCanvas) MoveCursorBy(x int, y int) interfaces.ILcdCanvas {
+	l.X += x
+	l.Y += y
+	return l
+}
+
+func (l *LcdCanvas) ClearScreen() {
+	clear(l.Buffer)
+	l.X, l.Y = 0, 0
 }

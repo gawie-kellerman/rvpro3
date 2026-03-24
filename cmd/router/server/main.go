@@ -30,7 +30,7 @@ func main() {
 type mainType struct {
 	HubIP     utils.IP4
 	Wg        sync.WaitGroup
-	Server    server.Server
+	Server    server.RouterServer
 	KeepAlive service.UDPKeepAliveService
 	Data      service.UDPDataService
 }

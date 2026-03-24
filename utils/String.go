@@ -28,3 +28,10 @@ func (stringUtil) ToInt64(source string) (int64, error) {
 
 	return strconv.ParseInt(source, 10, 64)
 }
+
+func (stringUtil) Or(option1 string, option2 string) string {
+	if option1 == "" {
+		return option2
+	}
+	return option1
+}

@@ -8,7 +8,7 @@ import (
 )
 
 func main() {
-	hc := client.Client{}
+	hc := client.RouterClient{}
 	hc.Start(utils.IP4Builder.FromString("192.168.0.103:45001"))
 	time.Sleep(6000 * time.Minute)
 	hc.StopAndJoin()

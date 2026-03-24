@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/rs/zerolog/log"
+	"rvpro3/radarvision.com/internal/constants"
 	"rvpro3/radarvision.com/internal/general"
 	"rvpro3/radarvision.com/internal/models/servicemodel"
 	"rvpro3/radarvision.com/internal/smartmicro/interfaces"
@@ -41,7 +42,7 @@ func (rc *UDPBrokersService) Start(state *utils.State, settings *utils.Settings)
 		return
 	}
 
-	dataService, ok := state.Get(service.UDPDataServiceName).(*service.UDPDataService)
+	dataService, ok := state.Get(constants.UDPDataServiceName).(*service.UDPDataService)
 
 	if !ok {
 		log.Warn().Msg("UDP Brokers not configured due to no UDP data service...")
@@ -109,7 +110,7 @@ func (rc *UDPBrokersService) AwaitStop(sleepTime time.Duration) {
 }
 
 func (rc *UDPBrokersService) AttachTo(udp *service.UDPDataService) {
-	udp.OnData = rc.OnData
+	udp.RegisterReceiver(rc.OnData)
 }
 
 func (rc *UDPBrokersService) OnData(

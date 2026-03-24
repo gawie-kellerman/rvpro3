@@ -2,6 +2,7 @@ package utils
 
 import (
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/rs/zerolog/log"
@@ -27,6 +28,11 @@ func (b *basic) Get(key string, def string) string {
 	}
 	b.data[globalKey] = def
 	return def
+}
+
+func (b *basic) GetArray(key string, def string) []string {
+	strArr := b.Get(key, def)
+	return strings.Split(strArr, ";")
 }
 
 func (b *basic) SetBool(key string, value bool) {

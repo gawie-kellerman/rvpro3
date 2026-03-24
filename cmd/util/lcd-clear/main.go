@@ -31,11 +31,11 @@ func main() {
 		//fonts.TextA8D2.DrawStr(&mono, "Text A8D2 1234567890:[*]", 0, y)
 		//y += int(fonts.TextA8D2.GetCharHeight()) + 2
 
-		fonts.TextA5D1.DrawStr(&mono, "Text A5D1 1234567890:[*]", 0, y)
-		y += int(fonts.TextA5D1.GetCharHeight()) + 2
-
-		fonts.RobotoA10D2.DrawStr(&mono, "Text Roboto 1234567890:[*]", 0, y)
-		y += int(fonts.RobotoA10D2.GetCharHeight()) + 2
+		//fonts.TextA5D1.DrawStr(&mono, "Text A5D1 1234567890:[*]", 0, y)
+		//y += int(fonts.TextA5D1.GetCharHeight()) + 2
+		//
+		//fonts.RobotoA10D2.DrawStr(&mono, "Text Roboto 1234567890:[*]", 0, y)
+		//y += int(fonts.RobotoA10D2.GetCharHeight()) + 2
 
 		fonts.WingdingsA5D1.DrawStr(&mono, string([]byte{32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53}), 0, y)
 		y += int(fonts.WingdingsA5D1.GetCharHeight()) + 2
@@ -48,6 +48,9 @@ func main() {
 
 		fonts.VerdanaA8D1.DrawStr(&mono, "Text Verdana 1234567890:[*]", 0, y)
 		y += int(fonts.VerdanaA8D1.GetCharHeight()) + 2
+
+		fonts.CozetteA10D3.DrawStr(&mono, "Text Cozette A10 1234567890:[*]", 0, y)
+		y += int(fonts.CozetteA10D3.GetCharHeight()) + 2
 
 		//fonts.TextA5D1.DrawStr(&mono, "ABCDEF", 0, 0)
 		//fonts.RobotoMonoA7D1.DrawStr(&mono, "ROBOTO MONO!", 0, 0)

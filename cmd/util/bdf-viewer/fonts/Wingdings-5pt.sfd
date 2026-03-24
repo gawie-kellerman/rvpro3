@@ -3,7 +3,7 @@ FontName: 04b03Medium
 FullName: 04b03 Medium
 FamilyName: 04b03
 Weight: Medium
-Copyright: 19992003 / yuji oshimoÿo / 04@dsg4.com / www.04.jp.org
+Copyright: 19992003 / yuji oshimoÃ¿o / 04@dsg4.com / www.04.jp.org
 UComments: "2026-3-20: Created with FontForge (http://fontforge.org)"
 Version: 001.000
 ItalicAngle: 0
@@ -22,7 +22,7 @@ OS2Version: 0
 OS2_WeightWidthSlopeOnly: 0
 OS2_UseTypoMetrics: 1
 CreationTime: 1773988950
-ModificationTime: 1773993362
+ModificationTime: 1774282577
 OS2TypoAscent: 0
 OS2TypoAOffset: 1
 OS2TypoDescent: 0
@@ -36,6 +36,7 @@ HheadAscent: 0
 HheadAOffset: 1
 HheadDescent: 0
 HheadDOffset: 1
+OS2Vendor: 'PfEd'
 Lookup: 257 0 0 "'lfbd' Left Bounds in Latin lookup 0" { "'lfbd' Left Bounds in Latin lookup 0-1"  } ['lfbd' ('DFLT' <'dflt' > 'latn' <'dflt' > ) ]
 DEI: 91125
 Encoding: UnicodeBmp
@@ -211,7 +212,7 @@ EndChar
 
 StartChar: $0037
 Encoding: 55 55 23
-Width: 576
+Width: 1000
 Flags: W
 LayerCount: 2
 EndChar
@@ -727,7 +728,7 @@ Flags: W
 LayerCount: 2
 EndChar
 EndChars
-BitmapFont: 7 97 5 2 1 FreeType
+BitmapFont: 7 98 5 2 1 FreeType
 BDFStartProperties: 25
 COMMENT 1 ""
 COMMENT 1 "Converted from OpenType font "04B_03__.TTF" by "otf2bdf 3.0"."
@@ -756,8 +757,6 @@ _OTF_FONTFILE 16 "04B_03__.TTF"
 _OTF_PSNAME 16 "04b03"
 BDFEndProperties
 Resolution: 100
-BDFChar: 0 32 3 0 -1 0 -1
-
 BDFChar: 1 33 7 0 5 0 5
 0M$kM82(#D
 BDFChar: 2 34 7 0 5 0 5
@@ -802,8 +801,8 @@ BDFChar: 21 53 7 0 5 0 5
 I!g;Q&GuM.
 BDFChar: 22 54 7 0 5 0 2
 &.na>
-BDFChar: 23 55 4 0 2 0 3
-i#j.-
+BDFChar: 23 55 7 0 5 0 5
+6mrTp7.:0V
 BDFChar: 24 56 4 0 2 0 3
 @%cFc
 BDFChar: 25 57 4 0 2 0 3
@@ -946,8 +945,6 @@ BDFChar: 93 125 3 0 2 0 3
 ^`YnX
 BDFChar: 94 126 4 1 2 3 3
 ^]4?7
-BDFChar: 95 160 3 0 -1 0 -1
-
 BDFChar: 96 8208 3 0 2 2 2
 huE`W
 EndBitmapFont

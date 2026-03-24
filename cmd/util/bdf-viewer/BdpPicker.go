@@ -6,7 +6,6 @@ import (
 	"github.com/tidbyt/go-bdf"
 	"golang.org/x/image/font"
 	"golang.org/x/image/math/fixed"
-	"rvpro3/radarvision.com/internal/devices/lcd/general"
 )
 
 type BdfPicker struct {
@@ -42,13 +41,14 @@ func (b *BdfPicker) Init(filename string, startChar uint16, endChar uint16) (err
 	return nil
 }
 
-func (b *BdfPicker) Add(char rune) {
-	rect, mask, _, _, _ := b.face.Glyph(b.dot, rune(char))
-
-	mono := general.LcdCanvas{}
-	mono.Init(b.font.PixelSize, int(b.height))
-	mono.DrawYOffset(rect.Min.Y, mask)
-	mono.DumpToConsole()
-
-	b.buffer.Add(mono.Width(), 8, mask)
-}
+//func (b *BdfPicker) add(char rune) {
+//	rect, mask, _, _, _ := b.face.Glyph(b.dot, rune(char))
+//
+//	mono := general.LcdCanvas{}
+//	mono.Init(b.font.PixelSize, int(b.height), b.font)
+//	mono.DrawYOffset(rect.Min.Y, mask)
+//	mono.DumpToConsole()
+//
+//	b.buffer.Add(mono.Width(), 8, mask)
+//}
+//
